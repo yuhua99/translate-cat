@@ -1,9 +1,23 @@
 import {
+  CAPTION_AVAILABILITY_REQUEST_EVENT,
+  CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
   CAPTION_REQUEST_EVENT,
   isTimedTextUrl,
   type CaptionsCapturedEventDetail,
 } from './caption-capture-event'
+
+interface YoutubePlayerElement extends HTMLElement {
+  getPlayerResponse?: () => YoutubePlayerResponse | undefined
+}
+
+interface YoutubePlayerResponse {
+  captions?: {
+    playerCaptionsTracklistRenderer?: {
+      captionTracks?: unknown[]
+    }
+  }
+}
 
 declare global {
   interface Window {
@@ -16,6 +30,7 @@ if (!window.__simpleTranslatorCaptionCaptureInstalled) {
   installXhrCapture()
   installFetchCapture()
   installCaptionRequestHandler()
+  installCaptionAvailabilityHandler()
 }
 
 function dispatchCaptionCapture(detail: CaptionsCapturedEventDetail): void {
@@ -110,6 +125,45 @@ function installCaptionRequestHandler(): void {
       // Intentionally no active fetch. Isolated world will force CC reload instead.
     }
   })
+}
+
+function installCaptionAvailabilityHandler(): void {
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return
+    const data = event.data as { requestId?: string; source?: string; type?: string }
+    if (data.source !== 'simple-translator' || data.type !== CAPTION_AVAILABILITY_REQUEST_EVENT)
+      return
+
+    try {
+      const response = readPlayerResponse()
+      const captionTracks = response?.captions?.playerCaptionsTracklistRenderer?.captionTracks
+      window.postMessage(
+        {
+          source: 'simple-translator',
+          type: CAPTION_AVAILABILITY_RESPONSE_EVENT,
+          requestId: data.requestId,
+          hasPlayerResponse: Boolean(response),
+          hasClosedCaptions: Array.isArray(captionTracks) && captionTracks.length > 0,
+        },
+        '*',
+      )
+    } catch (error) {
+      window.postMessage(
+        {
+          source: 'simple-translator',
+          type: CAPTION_AVAILABILITY_RESPONSE_EVENT,
+          requestId: data.requestId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        '*',
+      )
+    }
+  })
+}
+
+function readPlayerResponse(): YoutubePlayerResponse | undefined {
+  const player = document.getElementById('movie_player') as YoutubePlayerElement | null
+  return player?.getPlayerResponse?.()
 }
 
 function getFetchUrl(input: RequestInfo | URL): string {

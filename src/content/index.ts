@@ -3,10 +3,12 @@ import {
   CAPTION_REQUEST_EVENT,
   type CaptionsCapturedEventDetail,
 } from '../youtube/caption-capture-event'
+import { findCaptionButton, hasAvailableCaptions } from '../youtube/caption-availability'
 import { hideNativeCaptions, showNativeCaptions } from '../youtube/native-caption-hider'
 
 import { YoutubeSubtitleSession } from '../youtube/session'
-import { injectTranslateToggle } from '../youtube/translate-toggle'
+import { injectTranslateToggle, syncTranslateToggle } from '../youtube/translate-toggle'
+import { listenForMainVideoLoads } from '../youtube/video-load'
 import { showStatusOverlay } from '../youtube/status-overlay'
 import { SubtitleOverlayRenderer } from '../youtube/subtitle-overlay-renderer'
 import { createRuntimeTranslatorClient } from '../youtube/translator-client'
@@ -117,16 +119,31 @@ function handleMaybeVideoChanged(): void {
   hideNativeCaptions()
 }
 
-async function activateAiTranslate(settingsOverride?: ExtensionSettings): Promise<void> {
-  const validation = await sendMessage<MessageResponse>({ type: 'VALIDATE_ACTIVE_PROVIDER' })
-  if (!validation.ok) {
-    showStatusOverlay(`AI Translate: ${validation.error}`)
-    chrome.runtime.openOptionsPage()
-    return
+async function activateAiTranslate(
+  settingsOverride?: ExtensionSettings,
+  showUnavailableStatus = true,
+): Promise<boolean> {
+  const settings = settingsOverride ?? (await loadSettingsForActivation())
+  if (!settings) return false
+
+  if (!(await canUseCurrentCaptions())) {
+    deactivateAiTranslate()
+    void syncTranslateToggle()
+    if (showUnavailableStatus) {
+      showStatusOverlay('AI Translate: YouTube captions not provided')
+    }
+    return false
   }
 
-  const settings = settingsOverride ?? (await loadSettingsForActivation())
-  if (!settings) return
+  const validation = await sendMessage<MessageResponse>({
+    type: 'VALIDATE_ACTIVE_PROVIDER',
+  })
+  if (!validation.ok) {
+    showStatusOverlay(`AI Translate: ${validation.error}`)
+    void setEnabledSetting(false)
+    chrome.runtime.openOptionsPage()
+    return false
+  }
 
   aiModeActive = true
   createSession({ ...settings, enabled: true })
@@ -142,6 +159,7 @@ async function activateAiTranslate(settingsOverride?: ExtensionSettings): Promis
     }
   }, 1_000)
   startRenderLoop()
+  return true
 }
 
 function deactivateAiTranslate(): void {
@@ -164,6 +182,13 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
   const ccEnabled = isCcEnabled()
   if (!ccEnabled) {
     if (waitingForInitialCaptions || Date.now() < suppressCcOffUntil) return
+
+    if (!(await canUseCurrentCaptions())) {
+      deactivateAiTranslate()
+      void syncTranslateToggle()
+      return
+    }
+
     void setEnabledSetting(false)
     deactivateAiTranslate()
     return
@@ -189,7 +214,7 @@ function requestCurrentCaptions(): void {
 }
 
 async function forceSubtitleReload(): Promise<void> {
-  const button = document.querySelector<HTMLButtonElement>('.ytp-subtitles-button')
+  const button = findCaptionButton()
   if (!button) {
     showStatusOverlay('AI Translate: CC button not found')
     return
@@ -235,8 +260,16 @@ function stopRenderLoop(): void {
 }
 
 function isCcEnabled(): boolean {
-  const button = document.querySelector<HTMLButtonElement>('.ytp-subtitles-button')
-  return button?.getAttribute('aria-pressed') !== 'false'
+  const button = findCaptionButton()
+  return button !== null && button.getAttribute('aria-pressed') !== 'false'
+}
+
+async function canUseCurrentCaptions(): Promise<boolean> {
+  try {
+    return await hasAvailableCaptions()
+  } catch {
+    return false
+  }
 }
 
 function createSession(settings: ExtensionSettings): void {
@@ -265,7 +298,9 @@ function readVideoId(): string {
 }
 
 async function setEnabledSetting(enabled: boolean): Promise<void> {
-  const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
+  const response = await sendMessage<SettingsResponse>({
+    type: 'GET_SETTINGS',
+  })
   if (!response.ok || response.settings.enabled === enabled) return
 
   await sendMessage<SettingsResponse>({
@@ -275,7 +310,9 @@ async function setEnabledSetting(enabled: boolean): Promise<void> {
 }
 
 async function loadSettingsForActivation(): Promise<ExtensionSettings | undefined> {
-  const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
+  const response = await sendMessage<SettingsResponse>({
+    type: 'GET_SETTINGS',
+  })
   if (!response.ok) {
     showStatusOverlay(`AI Translate: ${response.error}`)
     return undefined
@@ -285,11 +322,13 @@ async function loadSettingsForActivation(): Promise<ExtensionSettings | undefine
 }
 
 async function applyStoredEnabledState(): Promise<void> {
-  const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
+  const response = await sendMessage<SettingsResponse>({
+    type: 'GET_SETTINGS',
+  })
   if (!response.ok) return
 
   if (response.settings.enabled) {
-    await activateAiTranslate(response.settings)
+    await activateAiTranslate(response.settings, false)
   }
 }
 
@@ -297,6 +336,10 @@ function boot(): void {
   listenForCaptionCapture()
   listenForPlayback()
   listenForNavigation()
+  listenForMainVideoLoads(() => {
+    void syncTranslateToggle()
+    if (!aiModeActive) void applyStoredEnabledState()
+  })
   listenForSettingsChanges()
   injectTranslateToggle()
   void applyStoredEnabledState()
