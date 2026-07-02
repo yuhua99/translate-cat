@@ -13,7 +13,7 @@ import { getSettings, setSettings } from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
 chrome.runtime.onInstalled.addListener(() => {
-  console.info('Simple Translator installed')
+  console.info('translate cat installed')
 })
 
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {

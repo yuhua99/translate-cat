@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "simple-translator",
+      "name": "translate-cat",
       "devDependencies": {
         "@types/bun": "latest",
         "@types/chrome": "latest",

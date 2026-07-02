@@ -1,4 +1,4 @@
-# Simple Translator SPEC
+# translate cat SPEC
 
 ## Goal
 

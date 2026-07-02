@@ -1,4 +1,4 @@
-# Simple Translator
+# translate cat
 
 Chrome MV3 extension — AI-powered real-time YouTube subtitle translation.
 
