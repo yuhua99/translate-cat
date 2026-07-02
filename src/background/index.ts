@@ -5,10 +5,7 @@ import {
   setProviderConfig,
   setProviderSecret,
 } from './providers/storage'
-import {
-  translateAsrSubtitleMessage,
-  translateSubtitleMessage,
-} from './providers/subtitle-translation'
+import { translateSubtitleMessage } from './providers/subtitle-translation'
 import { getSettings, setSettings } from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
@@ -88,16 +85,6 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       if (message.type === 'TRANSLATE_SUBTITLE_AI_PROVIDER') {
         sendResponse(
           (await translateSubtitleMessage(message, {
-            sync: chrome.storage.sync,
-            local: chrome.storage.local,
-          })) satisfies ExtensionResponse,
-        )
-        return
-      }
-
-      if (message.type === 'TRANSLATE_ASR_SUBTITLE_BATCH') {
-        sendResponse(
-          (await translateAsrSubtitleMessage(message, {
             sync: chrome.storage.sync,
             local: chrome.storage.local,
           })) satisfies ExtensionResponse,

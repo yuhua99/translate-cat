@@ -4,7 +4,7 @@ import type {
   ProviderTestOutput,
   ProviderType,
 } from '../background/providers/types'
-import type { AsrCueItem, ManualTranslationItem } from '../youtube/translation-validation'
+import type { ManualTranslationItem } from '../youtube/translation-validation'
 
 export interface ExtensionSettings {
   enabled: boolean
@@ -50,27 +50,6 @@ export interface TranslateSubtitleResult {
   usage?: ProviderUsage
 }
 
-export interface TranslateAsrSubtitleMessage {
-  type: 'TRANSLATE_ASR_SUBTITLE_BATCH'
-  providerType: ProviderType
-  videoId: string
-  trackId: string
-  segments: Array<{
-    id: string
-    startMs: number
-    text: string
-  }>
-  targetLanguage: string
-  contextBefore?: ContextCue[]
-  contextAfter?: ContextCue[]
-}
-
-export interface TranslateAsrSubtitleResult {
-  ok: true
-  cues: AsrCueItem[]
-  usage?: ProviderUsage
-}
-
 export type ExtensionMessage =
   | { type: 'GET_SETTINGS' }
   | { type: 'SET_SETTINGS'; settings: ExtensionSettings }
@@ -81,7 +60,6 @@ export type ExtensionMessage =
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
   | TranslateSubtitleMessage
-  | TranslateAsrSubtitleMessage
 
 export type SettingsResponse =
   | { ok: true; settings: ExtensionSettings }
@@ -98,10 +76,7 @@ export interface TranslationError {
   retried?: boolean
 }
 
-export type TranslationResponse =
-  | TranslateSubtitleResult
-  | TranslateAsrSubtitleResult
-  | TranslationError
+export type TranslationResponse = TranslateSubtitleResult | TranslationError
 export type ExtensionResponse =
   | SettingsResponse
   | MessageResponse

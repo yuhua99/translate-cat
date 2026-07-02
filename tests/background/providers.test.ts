@@ -178,36 +178,4 @@ describe('AnthropicProvider', () => {
     })
     expect(requestBody?.max_tokens).toBe(40)
   })
-
-  test('sends messages request and parses ASR cues', async () => {
-    let request: Request | undefined
-    globalThis.fetch = async (input, init) => {
-      request = new Request(input, init)
-      return Response.json({
-        content: [
-          {
-            type: 'text',
-            text: '{"cues":[{"startMs":0,"endMs":1000,"text":"你好","sourceSegmentIds":["s1"]}]}',
-          },
-        ],
-        usage: { input_tokens: 8, output_tokens: 4 },
-      })
-    }
-
-    const provider = new AnthropicProvider(
-      { type: 'anthropic', model: 'claude-sonnet-4-5' },
-      { apiKey: 'key' },
-    )
-    const result = await provider.translateAsr({
-      targetLanguage: 'Traditional Chinese',
-      segments: [{ id: 's1', text: 'Hello', startMs: 0 }],
-    })
-
-    expect(request?.url).toBe('https://api.anthropic.com/v1/messages')
-    expect(request?.headers.get('x-api-key')).toBe('key')
-    expect(result).toEqual({
-      cues: [{ startMs: 0, endMs: 1000, text: '你好', sourceSegmentIds: ['s1'] }],
-      usage: { inputTokens: 8, outputTokens: 4 },
-    })
-  })
 })

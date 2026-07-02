@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import {
-  translateAsrSubtitleMessage,
-  translateSubtitleMessage,
-} from '../../src/background/providers/subtitle-translation'
+import { translateSubtitleMessage } from '../../src/background/providers/subtitle-translation'
 import type { ProviderStores, ProviderStorageArea } from '../../src/background/providers/storage'
 
 const originalFetch = globalThis.fetch
@@ -109,45 +106,5 @@ describe('translateSubtitleMessage', () => {
     const cache = await stores.local.get('translationWindowCache')
     const entries = (cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined)?.entries
     expect(entries ?? {}).toEqual({})
-  })
-})
-
-describe('translateAsrSubtitleMessage', () => {
-  test('returns timestamped ASR cues', async () => {
-    globalThis.fetch = async () =>
-      Response.json({
-        choices: [
-          {
-            message: {
-              content:
-                '{"cues":[{"startMs":0,"endMs":1500,"text":"你好","sourceSegmentIds":["s1"]},{"startMs":1500,"endMs":3500,"text":"世界","sourceSegmentIds":["s2"]}]}',
-            },
-          },
-        ],
-      })
-
-    await expect(
-      translateAsrSubtitleMessage(
-        {
-          type: 'TRANSLATE_ASR_SUBTITLE_BATCH',
-          providerType: 'openai',
-          videoId: 'video-1',
-          trackId: 'en::asr',
-          targetLanguage: 'zh-TW',
-          segments: [
-            { id: 's1', startMs: 0, text: 'hello' },
-            { id: 's2', startMs: 1500, text: 'world' },
-          ],
-        },
-        createStores(),
-      ),
-    ).resolves.toEqual({
-      ok: true,
-      cues: [
-        { startMs: 0, endMs: 1500, text: '你好', sourceSegmentIds: ['s1'] },
-        { startMs: 1500, endMs: 3500, text: '世界', sourceSegmentIds: ['s2'] },
-      ],
-      usage: { inputTokens: undefined, outputTokens: undefined },
-    })
   })
 })

@@ -1,4 +1,4 @@
-import type { AsrCueItem, ManualTranslationItem } from '../../youtube/translation-validation'
+import type { ManualTranslationItem } from '../../youtube/translation-validation'
 import type { ContextCue, ProviderUsage } from '../../shared/messages'
 
 export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen'
@@ -29,22 +29,6 @@ export interface ManualTranslateOutput {
   usage?: ProviderUsage
 }
 
-export interface AsrTranslateInput {
-  segments: Array<{
-    id: string
-    startMs: number
-    text: string
-  }>
-  targetLanguage: string
-  contextBefore?: ContextCue[]
-  contextAfter?: ContextCue[]
-}
-
-export interface AsrTranslateOutput {
-  cues: AsrCueItem[]
-  usage?: ProviderUsage
-}
-
 export interface ProviderTestOutput {
   ok: true
   text: string
@@ -53,6 +37,5 @@ export interface ProviderTestOutput {
 
 export interface AiProvider {
   translateManual(input: ManualTranslateInput): Promise<ManualTranslateOutput>
-  translateAsr(input: AsrTranslateInput): Promise<AsrTranslateOutput>
   testConnection(): Promise<ProviderTestOutput>
 }

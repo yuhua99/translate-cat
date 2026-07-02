@@ -25,19 +25,6 @@ function createTranslatorClient(): TranslatorClient & { calls: string[][] } {
         })),
       }
     },
-    async translateAsrSubtitle(input) {
-      calls.push(input.segments.map((segment) => segment.id))
-
-      return {
-        ok: true,
-        cues: input.segments.map((segment) => ({
-          startMs: segment.startMs,
-          endMs: segment.startMs + 1500,
-          text: `asr:${segment.text}`,
-          sourceSegmentIds: [segment.id],
-        })),
-      }
-    },
   }
 }
 
@@ -94,9 +81,6 @@ describe('YoutubeSubtitleSession', () => {
       async translateSubtitle() {
         throw new Error('bad api key')
       },
-      async translateAsrSubtitle() {
-        throw new Error('bad api key')
-      },
     })
 
     session.windowFailedHandler = (_windowId, error) => {
@@ -148,9 +132,6 @@ describe('YoutubeSubtitleSession', () => {
             text: `zh:${segment.text}`,
           })),
         }
-      },
-      async translateAsrSubtitle() {
-        throw new Error('unused')
       },
     })
 

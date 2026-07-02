@@ -3,13 +3,6 @@ export interface ManualTranslationItem {
   text: string
 }
 
-export interface AsrCueItem {
-  startMs: number
-  endMs: number
-  text: string
-  sourceSegmentIds: string[]
-}
-
 export function validateManualTranslations(
   requestedIds: readonly string[],
   translations: readonly ManualTranslationItem[],
@@ -38,31 +31,4 @@ export function missingManualTranslationIds(
     validateManualTranslations(requestedIds, translations).map((item) => item.id),
   )
   return requestedIds.filter((id) => !translated.has(id))
-}
-
-export function validateAsrCues(
-  knownSegmentIds: readonly string[],
-  cues: readonly AsrCueItem[],
-): AsrCueItem[] {
-  const known = new Set(knownSegmentIds)
-  const valid: AsrCueItem[] = []
-  let previousEndMs = -Infinity
-
-  for (const cue of cues) {
-    const sourceSegmentIds = cue.sourceSegmentIds.filter((id) => known.has(id))
-
-    if (
-      cue.startMs < previousEndMs ||
-      cue.endMs <= cue.startMs ||
-      sourceSegmentIds.length === 0 ||
-      !cue.text.trim()
-    ) {
-      continue
-    }
-
-    valid.push({ ...cue, sourceSegmentIds })
-    previousEndMs = cue.endMs
-  }
-
-  return valid
 }

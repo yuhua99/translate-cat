@@ -1,9 +1,7 @@
 import { parseJsonObject } from './json'
-import { createAsrPrompt, createManualPrompt } from './prompts'
+import { createManualPrompt } from './prompts'
 import type {
   AiProvider,
-  AsrTranslateInput,
-  AsrTranslateOutput,
   ManualTranslateInput,
   ManualTranslateOutput,
   ProviderConfig,
@@ -28,12 +26,6 @@ export class AnthropicProvider implements AiProvider {
   async translateManual(input: ManualTranslateInput): Promise<ManualTranslateOutput> {
     const response = await this.complete(createManualPrompt(input))
     const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
-    return { ...parsed, usage: response.usage }
-  }
-
-  async translateAsr(input: AsrTranslateInput): Promise<AsrTranslateOutput> {
-    const response = await this.complete(createAsrPrompt(input))
-    const parsed = parseJsonObject<AsrTranslateOutput>(response.content)
     return { ...parsed, usage: response.usage }
   }
 

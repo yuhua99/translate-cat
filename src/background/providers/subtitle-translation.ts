@@ -3,13 +3,10 @@ import { createProvider } from './factory'
 import { getProviderConfig, getProviderSecret, type ProviderStores } from './storage'
 import {
   missingManualTranslationIds,
-  validateAsrCues,
   validateManualTranslations,
 } from '../../youtube/translation-validation'
 import type { ProviderType } from './types'
 import type {
-  TranslateAsrSubtitleMessage,
-  TranslateAsrSubtitleResult,
   TranslateSubtitleMessage,
   TranslateSubtitleResult,
   TranslationError,
@@ -125,32 +122,6 @@ export async function translateSubtitleMessage(
   return {
     ok: true,
     translations,
-    usage: result.data.usage,
-  }
-}
-
-export async function translateAsrSubtitleMessage(
-  message: TranslateAsrSubtitleMessage,
-  stores: ProviderStores,
-): Promise<TranslateAsrSubtitleResult | TranslationError> {
-  const provider = await resolveProvider(message.providerType, stores)
-
-  const result = await withRetry(() =>
-    provider.translateAsr({
-      segments: message.segments,
-      targetLanguage: message.targetLanguage,
-      contextBefore: message.contextBefore,
-      contextAfter: message.contextAfter,
-    }),
-  )
-
-  if (!result.ok) return result
-
-  const knownSegmentIds = message.segments.map((segment) => segment.id)
-
-  return {
-    ok: true,
-    cues: validateAsrCues(knownSegmentIds, result.data.cues),
     usage: result.data.usage,
   }
 }
