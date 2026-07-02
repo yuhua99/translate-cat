@@ -183,14 +183,8 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
   if (!ccEnabled) {
     if (waitingForInitialCaptions || Date.now() < suppressCcOffUntil) return
 
-    if (!(await canUseCurrentCaptions())) {
-      deactivateAiTranslate()
-      void syncTranslateToggle()
-      return
-    }
-
-    void setEnabledSetting(false)
     deactivateAiTranslate()
+    void syncTranslateToggle()
     return
   }
 
