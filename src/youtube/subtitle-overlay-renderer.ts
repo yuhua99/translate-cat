@@ -6,13 +6,11 @@ export function findActiveCue(
   cues: readonly TranslatedCue[],
   currentTimeMs: number,
 ): TranslatedCue | undefined {
-  const sortedCues = [...cues].sort((left, right) => left.startMs - right.startMs)
-
-  for (let index = 0; index < sortedCues.length; index += 1) {
-    const cue = sortedCues[index]
+  for (let index = 0; index < cues.length; index += 1) {
+    const cue = cues[index]
     if (!cue) continue
 
-    const nextStartMs = sortedCues[index + 1]?.startMs ?? Infinity
+    const nextStartMs = cues[index + 1]?.startMs ?? Infinity
     const effectiveEndMs = Math.min(cue.endMs, nextStartMs)
     if (currentTimeMs >= cue.startMs && currentTimeMs < effectiveEndMs) return cue
   }
