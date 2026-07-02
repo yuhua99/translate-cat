@@ -117,6 +117,40 @@ describe('YoutubeSubtitleSession', () => {
     expect(session.windowsFailed.size).toBe(0)
   })
 
+  test('recapturing identical captions preserves translation state; changed input resets', async () => {
+    const client = createTranslatorClient()
+    const session = new YoutubeSubtitleSession(settings, client)
+
+    const captured = {
+      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+      responseText: JSON.stringify({
+        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
+      }),
+    }
+
+    session.handleCapturedCaptions(captured)
+    await session.ensureTranslations(1000, true)
+
+    expect(session.windowsCompleted.size).toBeGreaterThan(0)
+    const cuesBefore = session.translatedCues
+    const completedBefore = new Set(session.windowsCompleted)
+
+    session.handleCapturedCaptions(captured)
+
+    expect(session.translatedCues).toBe(cuesBefore)
+    expect(session.windowsCompleted).toEqual(completedBefore)
+
+    session.handleCapturedCaptions({
+      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+      responseText: JSON.stringify({
+        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Changed' }] }],
+      }),
+    })
+
+    expect(session.translatedCues).toEqual([])
+    expect(session.windowsCompleted.size).toBe(0)
+  })
+
   test('retries a non-fatally failed window after cooldown', async () => {
     let attempts = 0
     const session = new YoutubeSubtitleSession(settings, {

@@ -60,6 +60,14 @@ export class YoutubeSubtitleSession {
       this.resetForNavigation(parsed.track.videoId)
     }
 
+    if (
+      this.videoId === parsed.track.videoId &&
+      this.track?.trackId === parsed.track.trackId &&
+      sameSegments(this.segments, parsed.segments)
+    ) {
+      return
+    }
+
     this.videoId = parsed.track.videoId
     this.track = parsed.track
     this.mode = parsed.track.mode
@@ -250,4 +258,12 @@ function inferSegmentEndTimes(segments: readonly CaptionSegment[]): CaptionSegme
 function adjustCueEndMs(startMs: number, endMs: number, text: string): number {
   const readMs = Math.max(MIN_READ_MS, Array.from(text).length * READ_MS_PER_CHAR)
   return Math.max(endMs, startMs + readMs)
+}
+
+function sameSegments(a: readonly CaptionSegment[], b: readonly CaptionSegment[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    if (a[i].startMs !== b[i].startMs || a[i].text !== b[i].text) return false
+  }
+  return true
 }
