@@ -78,7 +78,9 @@ function installXhrCapture(): void {
 
     if (url && isTimedTextUrl(url)) {
       this.addEventListener('readystatechange', () => {
-        if (this.readyState === 4 && this.status === 200 && this.responseText) {
+        if (this.readyState !== 4 || this.status !== 200) return
+        if (this.responseType !== '' && this.responseType !== 'text') return
+        if (this.responseText) {
           dispatchCaptionCapture({ url, responseText: this.responseText })
         }
       })
@@ -92,7 +94,7 @@ function installFetchCapture(): void {
   const originalFetch = window.fetch
 
   async function patchedFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-    const response = await originalFetch(input, init)
+    const response = await originalFetch.call(window, input, init)
     const url = getFetchUrl(input)
 
     if (!isTimedTextUrl(url)) {
