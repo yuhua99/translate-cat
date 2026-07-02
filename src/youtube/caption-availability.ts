@@ -21,7 +21,13 @@ export function findCaptionButton(): HTMLButtonElement | null {
 export async function hasAvailableCaptions(button = findCaptionButton()): Promise<boolean> {
   if (!button) return false
 
-  const response = await requestCaptionAvailability()
+  let response
+  try {
+    response = await requestCaptionAvailability()
+  } catch (error) {
+    console.warn('Caption availability request failed, retrying', error)
+    response = await requestCaptionAvailability()
+  }
   return response.hasPlayerResponse && response.hasClosedCaptions
 }
 
