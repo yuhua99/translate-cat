@@ -25,6 +25,8 @@ let renderer: SubtitleOverlayRenderer | undefined
 let aiModeActive = false
 let lastVideoId = readVideoId()
 let animationFrameId: number | undefined
+let navigationPollId: number | undefined
+let captionRetryTimeoutId: number | undefined
 let lastCaptionRequestAt = 0
 let suppressCcOffUntil = 0
 let autoCcToggled = false
@@ -86,7 +88,17 @@ function listenForPlayback(): void {
 
 function listenForNavigation(): void {
   window.addEventListener('yt-navigate-finish', handleMaybeVideoChanged)
-  window.setInterval(handleMaybeVideoChanged, 1_000)
+}
+
+function startNavigationPoll(): void {
+  if (navigationPollId !== undefined) return
+  navigationPollId = window.setInterval(handleMaybeVideoChanged, 1_000)
+}
+
+function stopNavigationPoll(): void {
+  if (navigationPollId === undefined) return
+  window.clearInterval(navigationPollId)
+  navigationPollId = undefined
 }
 
 function listenForSettingsChanges(): void {
@@ -116,7 +128,23 @@ function handleMaybeVideoChanged(): void {
   }
 
   session?.resetForNavigation(videoId)
+  armCaptionCapture()
+}
+
+function armCaptionCapture(): void {
   hideNativeCaptions()
+  autoCcToggled = false
+  waitingForInitialCaptions = true
+  requestCurrentCaptions()
+  void forceSubtitleReload()
+  void scheduleCurrentWindow()
+  window.clearTimeout(captionRetryTimeoutId)
+  captionRetryTimeoutId = window.setTimeout(() => {
+    captionRetryTimeoutId = undefined
+    if (aiModeActive && (!session?.track || session.segments.length === 0)) {
+      void forceSubtitleReload()
+    }
+  }, 1_000)
 }
 
 async function activateAiTranslate(
@@ -146,29 +174,27 @@ async function activateAiTranslate(
 
   aiModeActive = true
   createSession({ ...settings, enabled: true })
-  hideNativeCaptions()
-  autoCcToggled = false
-  waitingForInitialCaptions = true
-  requestCurrentCaptions()
-  void forceSubtitleReload()
-  void scheduleCurrentWindow()
-  window.setTimeout(() => {
-    if (aiModeActive && (!session?.track || session.segments.length === 0)) {
-      void forceSubtitleReload()
-    }
-  }, 1_000)
+  armCaptionCapture()
   startRenderLoop()
+  startNavigationPoll()
   return true
 }
 
-function deactivateAiTranslate(): void {
+function teardownAiTranslate(): void {
   aiModeActive = false
   waitingForInitialCaptions = false
+  window.clearTimeout(captionRetryTimeoutId)
+  captionRetryTimeoutId = undefined
   session?.stop()
   session = undefined
   renderer?.clear()
-  showNativeCaptions()
   stopRenderLoop()
+  stopNavigationPoll()
+}
+
+function deactivateAiTranslate(): void {
+  teardownAiTranslate()
+  showNativeCaptions()
 }
 
 async function scheduleCurrentWindow(video = document.querySelector('video')): Promise<void> {
@@ -270,10 +296,8 @@ function createSession(settings: ExtensionSettings): void {
 
   session.fatalErrorHandler = (error: string) => {
     showStatusOverlay(`AI Translate error: ${error}`)
-    aiModeActive = false
-    session?.stop()
-    renderer?.clear()
     // Per spec: do not restore native captions on fatal error
+    teardownAiTranslate()
   }
 
   session.windowFailedHandler = (_windowId: string, error: string) => {
