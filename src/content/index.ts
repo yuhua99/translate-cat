@@ -141,7 +141,6 @@ async function activateAiTranslate(
   if (!validation.ok) {
     showStatusOverlay(`AI Translate: ${validation.error}`)
     void setEnabledSetting(false)
-    chrome.runtime.openOptionsPage()
     return false
   }
 
