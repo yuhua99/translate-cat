@@ -1,4 +1,5 @@
 import { getCachedTranslations, setCachedTranslations } from '../cache'
+import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { createProvider } from './factory'
 import { getProviderConfig, getProviderSecret, type ProviderStores } from './storage'
 import {
@@ -16,13 +17,18 @@ const MAX_RETRIES = 2
 const RETRY_BASE_MS = 1_000
 
 function isFatalError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return /\b401\b|\b403\b/.test(message)
+  return error instanceof ProviderHttpError && (error.status === 401 || error.status === 403)
 }
 
 function isRetryableError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return /\b429\b|\b5\d{2}\b|network|fetch|timeout|JSON|parse/i.test(message)
+  if (error instanceof ProviderHttpError) {
+    return error.status === 408 || error.status === 429 || error.status >= 500
+  }
+  return (
+    error instanceof ProviderNetworkError ||
+    error instanceof SyntaxError ||
+    error instanceof ProviderJsonParseError
+  )
 }
 
 function backoffMs(attempt: number): number {

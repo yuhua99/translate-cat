@@ -1,3 +1,5 @@
+import { ProviderJsonParseError } from './errors'
+
 export function parseJsonObject<T>(text: string): T {
   const trimmed = text.trim()
 
@@ -17,5 +19,5 @@ export function parseJsonObject<T>(text: string): T {
     return JSON.parse(trimmed.slice(start, end + 1)) as T
   }
 
-  throw new Error('Provider response did not contain JSON object')
+  throw new ProviderJsonParseError('Provider response did not contain JSON object')
 }

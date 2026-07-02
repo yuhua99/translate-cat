@@ -1,3 +1,4 @@
+import { ProviderHttpError, ProviderNetworkError } from './errors'
 import { parseJsonObject } from './json'
 import { createManualPrompt } from './prompts'
 import type {
@@ -51,24 +52,36 @@ export class AnthropicProvider implements AiProvider {
       throw new Error(`Missing API key for provider: ${this.config.type}`)
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        max_tokens: options.maxTokens ?? 4096,
-        temperature: 0,
-        system: options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
+    let response: Response
+    try {
+      response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+          'x-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          max_tokens: options.maxTokens ?? 4096,
+          temperature: 0,
+          system:
+            options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+    } catch (error) {
+      throw new ProviderNetworkError(
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
+    }
 
     if (!response.ok) {
-      throw new Error(`Anthropic request failed: ${response.status} ${await response.text()}`)
+      throw new ProviderHttpError(
+        `Anthropic request failed: ${response.status} ${await response.text()}`,
+        response.status,
+      )
     }
 
     const json = (await response.json()) as AnthropicResponse

@@ -107,4 +107,58 @@ describe('translateSubtitleMessage', () => {
     const entries = (cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined)?.entries
     expect(entries ?? {}).toEqual({})
   })
+
+  test('401 response is fatal and not retried', async () => {
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return new Response('unauthorized', { status: 401 })
+    }
+
+    const result = await translateSubtitleMessage(
+      {
+        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+        providerType: 'openai',
+        videoId: 'video-1',
+        trackId: 'en::manual',
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+      },
+      createStores(),
+    )
+
+    expect(fetchCalls).toBe(1)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fatal).toBe(true)
+      expect(result.retried).toBe(false)
+    }
+  })
+
+  test('400 response is non-retryable and non-fatal', async () => {
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return new Response('bad request', { status: 400 })
+    }
+
+    const result = await translateSubtitleMessage(
+      {
+        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+        providerType: 'openai',
+        videoId: 'video-1',
+        trackId: 'en::manual',
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+      },
+      createStores(),
+    )
+
+    expect(fetchCalls).toBe(1)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.fatal).toBe(false)
+      expect(result.retried).toBe(false)
+    }
+  })
 })

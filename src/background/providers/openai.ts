@@ -1,3 +1,4 @@
+import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { parseJsonObject } from './json'
 import { createManualPrompt } from './prompts'
 import type {
@@ -65,10 +66,7 @@ export class OpenAiProvider implements AiProvider {
       try {
         return await this.fetchAndParse(prompt, options)
       } catch (error) {
-        if (
-          error instanceof SyntaxError ||
-          (error instanceof Error && /JSON|parse/i.test(error.message))
-        ) {
+        if (error instanceof SyntaxError || error instanceof ProviderJsonParseError) {
           // Fall through to retry without json_object
         } else {
           throw error
@@ -105,33 +103,44 @@ export class OpenAiProvider implements AiProvider {
   }
 
   private async fetchChatCompletion(prompt: string, options: CompletionOptions): Promise<string> {
-    const response = await fetch(`${this.defaultBaseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${this.secret.apiKey}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        temperature: 0,
-        ...(options.maxTokens ? { max_completion_tokens: options.maxTokens } : {}),
-        ...(options.json === false ? {} : { response_format: { type: 'json_object' } }),
-        ...this.extraChatCompletionBody(),
-        messages: [
-          {
-            role: 'system',
-            content:
-              options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
-          },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    })
+    let response: Response
+    try {
+      response = await fetch(`${this.defaultBaseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${this.secret.apiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.config.model,
+          temperature: 0,
+          ...(options.maxTokens ? { max_completion_tokens: options.maxTokens } : {}),
+          ...(options.json === false ? {} : { response_format: { type: 'json_object' } }),
+          ...this.extraChatCompletionBody(),
+          messages: [
+            {
+              role: 'system',
+              content:
+                options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
+            },
+            { role: 'user', content: prompt },
+          ],
+        }),
+      })
+    } catch (error) {
+      throw new ProviderNetworkError(
+        error instanceof Error ? error.message : String(error),
+        { cause: error },
+      )
+    }
 
     const responseText = await response.text()
 
     if (!response.ok) {
-      throw new Error(`${this.providerLabel} request failed: ${response.status} ${responseText}`)
+      throw new ProviderHttpError(
+        `${this.providerLabel} request failed: ${response.status} ${responseText}`,
+        response.status,
+      )
     }
 
     return responseText
