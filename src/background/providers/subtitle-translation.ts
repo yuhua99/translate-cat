@@ -118,7 +118,7 @@ export async function translateSubtitleMessage(
     console.warn(`[yt-translator] Missing translations for ids: ${missingIds.join(', ')}`)
   }
 
-  if (translations.length > 0) {
+  if (missingIds.length === 0) {
     await setCachedTranslations(stores.local, cacheKey, translations)
   }
 

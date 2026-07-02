@@ -73,6 +73,43 @@ describe('translateSubtitleMessage', () => {
     expect(requestBody?.messages?.at(-1)?.content).toContain('"id":"0"')
     expect(requestBody?.messages?.at(-1)?.content).not.toContain('"id":"a"')
   })
+
+  test('does not cache partial translations when some ids are missing', async () => {
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return Response.json({
+        choices: [
+          {
+            message: {
+              content: '{"translations":[{"id":"0","text":"你好"}]}',
+            },
+          },
+        ],
+      })
+    }
+
+    const stores = createStores()
+    const message = {
+      type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+      providerType: 'openai',
+      videoId: 'video-1',
+      trackId: 'en::manual',
+      targetLanguage: 'zh-TW',
+      items: [
+        { id: 'a', text: 'Hello', startMs: 0, endMs: 1000 },
+        { id: 'b', text: 'World', startMs: 1000 },
+      ],
+    } as const
+
+    await translateSubtitleMessage(message, stores)
+    await translateSubtitleMessage(message, stores)
+
+    expect(fetchCalls).toBe(2)
+    const cache = await stores.local.get('translationWindowCache')
+    const entries = (cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined)?.entries
+    expect(entries ?? {}).toEqual({})
+  })
 })
 
 describe('translateAsrSubtitleMessage', () => {
