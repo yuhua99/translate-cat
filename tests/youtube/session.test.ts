@@ -121,7 +121,7 @@ describe('YoutubeSubtitleSession', () => {
     })
     session.windowsInFlight.add('0-30000')
     session.windowsCompleted.add('0-30000')
-    session.windowsFailed.add('0-30000')
+    session.windowsFailed.set('0-30000', Date.now())
 
     session.resetForNavigation('video-2')
 
@@ -131,5 +131,50 @@ describe('YoutubeSubtitleSession', () => {
     expect(session.windowsInFlight.size).toBe(0)
     expect(session.windowsCompleted.size).toBe(0)
     expect(session.windowsFailed.size).toBe(0)
+  })
+
+  test('retries a non-fatally failed window after cooldown', async () => {
+    let attempts = 0
+    const session = new YoutubeSubtitleSession(settings, {
+      async translateSubtitle(input) {
+        attempts += 1
+        if (attempts === 1) {
+          throw new Error('transient')
+        }
+        return {
+          ok: true,
+          translations: input.segments.map((segment) => ({
+            id: segment.id,
+            text: `zh:${segment.text}`,
+          })),
+        }
+      },
+      async translateAsrSubtitle() {
+        throw new Error('unused')
+      },
+    })
+
+    session.handleCapturedCaptions({
+      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+      responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
+    })
+
+    await session.ensureTranslations(1000, true)
+    expect(attempts).toBe(1)
+    expect(session.windowsFailed.size).toBe(1)
+
+    await session.ensureTranslations(1000, true)
+    expect(attempts).toBe(1)
+
+    for (const key of session.windowsFailed.keys()) {
+      session.windowsFailed.set(key, Date.now() - 31_000)
+    }
+
+    const failedId = [...session.windowsFailed.keys()][0]
+
+    await session.ensureTranslations(1000, true)
+    expect(attempts).toBe(2)
+    expect(session.windowsFailed.has(failedId)).toBe(false)
+    expect(session.windowsCompleted.has(failedId)).toBe(true)
   })
 })

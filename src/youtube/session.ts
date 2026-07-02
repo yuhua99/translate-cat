@@ -19,7 +19,7 @@ export class YoutubeSubtitleSession {
   translatedCues: TranslatedCue[] = []
   windowsInFlight = new Set<string>()
   windowsCompleted = new Set<string>()
-  windowsFailed = new Set<string>()
+  windowsFailed = new Map<string, number>()
   abortController = new AbortController()
   translatedSegmentIds = new Set<string>()
 
@@ -93,8 +93,12 @@ export class YoutubeSubtitleSession {
       return
     }
 
-    if (this.windowsFailed.has(window.id)) {
-      return
+    const failedAt = this.windowsFailed.get(window.id)
+    if (failedAt !== undefined) {
+      if (Date.now() - failedAt < RETRY_COOLDOWN_MS) {
+        return
+      }
+      this.windowsFailed.delete(window.id)
     }
 
     const segments = this.segmentsInWindow(window)
@@ -131,12 +135,12 @@ export class YoutubeSubtitleSession {
       const fatal = (error as { fatal?: boolean }).fatal === true
 
       if (fatal) {
-        this.windowsFailed.add(window.id)
+        this.windowsFailed.set(window.id, Infinity)
         this.fatalErrorHandler?.(message)
         return
       }
 
-      this.windowsFailed.add(window.id)
+      this.windowsFailed.set(window.id, Date.now())
       this.windowFailedHandler?.(window.id, message)
     } finally {
       this.windowsInFlight.delete(window.id)
@@ -238,6 +242,7 @@ export class YoutubeSubtitleSession {
   }
 }
 
+const RETRY_COOLDOWN_MS = 30_000
 const READ_MS_PER_CHAR = 200
 const MIN_READ_MS = 800
 const FALLBACK_SEGMENT_MS = 1_500
