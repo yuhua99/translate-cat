@@ -112,10 +112,11 @@ async function toggleEnabled(): Promise<void> {
 
   const settings = await loadSettings()
   const next = { ...settings, enabled: !settings.enabled }
+
+  const response = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings: next })
+  if (!response.ok) return
+
   enabled = next.enabled
-
-  await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings: next })
-
   await syncTranslateToggle()
 }
 
