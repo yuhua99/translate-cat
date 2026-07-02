@@ -11,7 +11,6 @@ interface CacheState {
 
 interface CacheEntry {
   createdAt: number
-  lastAccessedAt: number
   expiresAt: number
   sizeBytes: number
   translations: ManualTranslationItem[]
@@ -21,47 +20,49 @@ const CACHE_KEY = 'translationWindowCache'
 const TTL_MS = 3 * 24 * 60 * 60 * 1000
 const MAX_BYTES = 5 * 1024 * 1024
 
+let writeQueue: Promise<unknown> = Promise.resolve()
+
+function enqueueWrite<T>(task: () => Promise<T>): Promise<T> {
+  const next = writeQueue.then(task, task)
+  writeQueue = next.catch(() => undefined)
+  return next
+}
+
 export async function getCachedTranslations(
   storage: CacheStorageArea,
   key: string,
 ): Promise<ManualTranslationItem[] | undefined> {
   const state = await readState(storage)
   const entry = state.entries[key]
-  const now = Date.now()
-
   if (!entry) return undefined
-  if (entry.expiresAt <= now) {
-    delete state.entries[key]
-    await writeState(storage, state)
-    return undefined
-  }
-
-  entry.lastAccessedAt = now
-  await writeState(storage, rotate(state))
+  if (entry.expiresAt <= Date.now()) return undefined
   return entry.translations
 }
 
-export async function setCachedTranslations(
+export function setCachedTranslations(
   storage: CacheStorageArea,
   key: string,
   translations: ManualTranslationItem[],
 ): Promise<void> {
-  const state = await readState(storage)
-  const now = Date.now()
-  const entry: CacheEntry = {
-    createdAt: now,
-    lastAccessedAt: now,
-    expiresAt: now + TTL_MS,
-    sizeBytes: byteLength(JSON.stringify(translations)),
-    translations,
-  }
+  return enqueueWrite(async () => {
+    const state = await readState(storage)
+    const now = Date.now()
+    const entry: CacheEntry = {
+      createdAt: now,
+      expiresAt: now + TTL_MS,
+      sizeBytes: byteLength(JSON.stringify(translations)),
+      translations,
+    }
 
-  state.entries[key] = entry
-  await writeState(storage, rotate(state))
+    state.entries[key] = entry
+    await writeState(storage, rotate(state))
+  })
 }
 
-export async function clearTranslationCache(storage: CacheStorageArea): Promise<void> {
-  await storage.set({ [CACHE_KEY]: { entries: {} } satisfies CacheState })
+export function clearTranslationCache(storage: CacheStorageArea): Promise<void> {
+  return enqueueWrite(async () => {
+    await storage.set({ [CACHE_KEY]: { entries: {} } satisfies CacheState })
+  })
 }
 
 function rotate(state: CacheState): CacheState {
@@ -74,7 +75,7 @@ function rotate(state: CacheState): CacheState {
   if (total <= MAX_BYTES) return state
 
   const entries = Object.entries(state.entries).sort(
-    ([, a], [, b]) => a.lastAccessedAt - b.lastAccessedAt,
+    ([, a], [, b]) => a.createdAt - b.createdAt,
   )
   for (const [key, entry] of entries) {
     delete state.entries[key]
