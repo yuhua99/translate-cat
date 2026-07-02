@@ -154,14 +154,12 @@ export class YoutubeSubtitleSession {
     side: 'before' | 'after',
     maxCount: number,
   ): Array<{ id: string; text: string }> {
-    const sorted = [...this.segments].sort((a, b) => a.startMs - b.startMs)
-
     if (side === 'before') {
-      const before = sorted.filter((s) => s.startMs < window.startMs)
+      const before = this.segments.filter((s) => s.startMs < window.startMs)
       return before.slice(-maxCount).map((s) => ({ id: s.id, text: s.text }))
     }
 
-    const after = sorted.filter((s) => s.startMs >= window.endMs)
+    const after = this.segments.filter((s) => s.startMs >= window.endMs)
     return after.slice(0, maxCount).map((s) => ({ id: s.id, text: s.text }))
   }
 
