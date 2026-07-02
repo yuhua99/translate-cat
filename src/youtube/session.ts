@@ -223,9 +223,7 @@ export class YoutubeSubtitleSession {
   }
 
   private upsertTranslatedCue(cue: TranslatedCue): void {
-    const existingIndex = this.translatedCues.findIndex(
-      (item) => item.id === cue.id || item.startMs === cue.startMs,
-    )
+    const existingIndex = this.translatedCues.findIndex((item) => item.id === cue.id)
     if (existingIndex >= 0) {
       this.translatedCues[existingIndex] = cue
     } else {
