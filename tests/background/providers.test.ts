@@ -178,4 +178,28 @@ describe('AnthropicProvider', () => {
     })
     expect(requestBody?.max_tokens).toBe(40)
   })
+
+  test('translates with 8192 max_tokens and fails clearly on truncation', async () => {
+    let requestBody: Record<string, unknown> | undefined
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({
+        content: [{ type: 'text', text: '{"translations":[{"id":"a","te' }],
+        stop_reason: 'max_tokens',
+      })
+    }
+
+    const provider = new AnthropicProvider(
+      { type: 'anthropic', model: 'claude-sonnet-4-5' },
+      { apiKey: 'key' },
+    )
+
+    await expect(
+      provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      }),
+    ).rejects.toThrow('Anthropic response truncated at max_tokens limit')
+    expect(requestBody?.max_tokens).toBe(8192)
+  })
 })

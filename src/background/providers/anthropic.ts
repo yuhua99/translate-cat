@@ -12,6 +12,7 @@ import type {
 
 interface AnthropicResponse {
   content?: Array<{ type: string; text?: string }>
+  stop_reason?: string
   usage?: {
     input_tokens?: number
     output_tokens?: number
@@ -63,7 +64,7 @@ export class AnthropicProvider implements AiProvider {
         },
         body: JSON.stringify({
           model: this.config.model,
-          max_tokens: options.maxTokens ?? 4096,
+          max_tokens: options.maxTokens ?? 8192,
           temperature: 0,
           system:
             options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
@@ -85,6 +86,13 @@ export class AnthropicProvider implements AiProvider {
     }
 
     const json = (await response.json()) as AnthropicResponse
+
+    if (json.stop_reason === 'max_tokens') {
+      // Plain Error on purpose: isRetryableError must not retry — the same
+      // truncation would recur. Do not convert to ProviderJsonParseError.
+      throw new Error('Anthropic response truncated at max_tokens limit')
+    }
+
     const content = json.content?.find((item) => item.type === 'text')?.text
 
     if (!content) {
