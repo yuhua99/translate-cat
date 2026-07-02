@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" alt="translate cat" width="128" />
+</p>
+
 # translate cat
 
 Chrome MV3 extension — AI-powered real-time YouTube subtitle translation.
