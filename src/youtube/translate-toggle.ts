@@ -1,5 +1,17 @@
-import { DEFAULT_SETTINGS, type ExtensionSettings } from '../shared/messages'
+import {
+  DEFAULT_SETTINGS,
+  type ExtensionMessage,
+  type ExtensionResponse,
+  type ExtensionSettings,
+  type SettingsResponse,
+} from '../shared/messages'
 import { findCaptionButton, hasAvailableCaptions } from './caption-availability'
+
+function sendMessage<TResponse extends ExtensionResponse>(
+  message: ExtensionMessage,
+): Promise<TResponse> {
+  return chrome.runtime.sendMessage(message)
+}
 
 const BUTTON_ID = 'simple-translator-toggle'
 const SYNC_DEBOUNCE_MS = 150
@@ -102,17 +114,14 @@ async function toggleEnabled(): Promise<void> {
   const next = { ...settings, enabled: !settings.enabled }
   enabled = next.enabled
 
-  chrome.storage.sync.set({ settings: next })
+  await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings: next })
 
   await syncTranslateToggle()
 }
 
 async function loadSettings(): Promise<ExtensionSettings> {
-  return new Promise<ExtensionSettings>((resolve) => {
-    chrome.storage.sync.get('settings', (result) => {
-      resolve((result.settings as ExtensionSettings | undefined) ?? DEFAULT_SETTINGS)
-    })
-  })
+  const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
+  return response.ok ? response.settings : DEFAULT_SETTINGS
 }
 
 function updateButtonFromSettings(settings: ExtensionSettings): void {
