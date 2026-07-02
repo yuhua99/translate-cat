@@ -92,7 +92,15 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         return
       }
 
-      sendResponse({ ok: true, message: 'pong' } satisfies ExtensionResponse)
+      if (message.type === 'PING') {
+        sendResponse({ ok: true, message: 'pong' } satisfies ExtensionResponse)
+        return
+      }
+
+      sendResponse({
+        ok: false,
+        error: `Unknown message type: ${String((message as { type?: string }).type)}`,
+      } satisfies ExtensionResponse)
     } catch (error) {
       sendResponse({
         ok: false,
