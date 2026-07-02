@@ -1,4 +1,4 @@
-import type { ExtensionSettings } from '../shared/messages'
+import { DEFAULT_SETTINGS, type ExtensionSettings } from '../shared/messages'
 import { findCaptionButton, hasAvailableCaptions } from './caption-availability'
 
 const BUTTON_ID = 'simple-translator-toggle'
@@ -99,7 +99,6 @@ async function toggleEnabled(): Promise<void> {
   if (button?.disabled) return
 
   const settings = await loadSettings()
-  if (!settings) return
   const next = { ...settings, enabled: !settings.enabled }
   enabled = next.enabled
 
@@ -108,10 +107,10 @@ async function toggleEnabled(): Promise<void> {
   await syncTranslateToggle()
 }
 
-async function loadSettings(): Promise<ExtensionSettings | null> {
-  return new Promise<ExtensionSettings | null>((resolve) => {
+async function loadSettings(): Promise<ExtensionSettings> {
+  return new Promise<ExtensionSettings>((resolve) => {
     chrome.storage.sync.get('settings', (result) => {
-      resolve((result.settings as ExtensionSettings | undefined) ?? null)
+      resolve((result.settings as ExtensionSettings | undefined) ?? DEFAULT_SETTINGS)
     })
   })
 }
@@ -160,8 +159,6 @@ function listenForSettingsChanges(): void {
 
 export function injectTranslateToggle(): void {
   void loadSettings().then((settings) => {
-    if (!settings) return
-
     observeCaptionButton()
     void syncTranslateToggle()
     listenForSettingsChanges()
