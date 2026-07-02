@@ -21,7 +21,6 @@ export class YoutubeSubtitleSession {
   windowsCompleted = new Set<string>()
   windowsFailed = new Map<string, number>()
   abortController = new AbortController()
-  translatedSegmentIds = new Set<string>()
 
   /** Called when a fatal error (401/403) stops the session. */
   fatalErrorHandler?: (error: string) => void
@@ -49,7 +48,6 @@ export class YoutubeSubtitleSession {
     this.mode = undefined
     this.segments = []
     this.translatedCues = []
-    this.translatedSegmentIds.clear()
     this.windowsCompleted.clear()
     this.windowsFailed.clear()
     this.start()
@@ -67,7 +65,6 @@ export class YoutubeSubtitleSession {
     this.mode = parsed.track.mode
     this.segments = inferSegmentEndTimes(parsed.segments)
     this.translatedCues = []
-    this.translatedSegmentIds.clear()
     this.windowsInFlight.clear()
     this.windowsCompleted.clear()
     this.windowsFailed.clear()
@@ -113,18 +110,15 @@ export class YoutubeSubtitleSession {
     try {
       const contextBefore = this.getContextCues(window, 'before', 2)
       const contextAfter = this.getContextCues(window, 'after', 2)
-      const translatedIds =
-        this.mode === 'asr'
-          ? await this.translateManualSegments(
-              mergeAsrSegments(segments),
-              true,
-              contextBefore,
-              contextAfter,
-            )
-          : await this.translateManualSegments(segments, false, contextBefore, contextAfter)
-
-      for (const id of translatedIds) {
-        this.translatedSegmentIds.add(id)
+      if (this.mode === 'asr') {
+        await this.translateManualSegments(
+          mergeAsrSegments(segments),
+          true,
+          contextBefore,
+          contextAfter,
+        )
+      } else {
+        await this.translateManualSegments(segments, false, contextBefore, contextAfter)
       }
 
       this.windowsCompleted.add(window.id)
@@ -168,9 +162,9 @@ export class YoutubeSubtitleSession {
     extendForReading: boolean,
     contextBefore?: Array<{ id: string; text: string }>,
     contextAfter?: Array<{ id: string; text: string }>,
-  ): Promise<string[]> {
+  ): Promise<void> {
     if (!this.track) {
-      return []
+      return
     }
 
     const result = await this.translatorClient.translateSubtitle(
@@ -193,7 +187,6 @@ export class YoutubeSubtitleSession {
     }
 
     const translations = new Map(result.translations.map((item) => [item.id, item.text]))
-    const translatedIds: string[] = []
 
     for (const segment of segments) {
       const translatedText = translations.get(segment.id)
@@ -216,10 +209,7 @@ export class YoutubeSubtitleSession {
         translatedText,
         sourceSegmentIds: [segment.id],
       })
-      translatedIds.push(segment.id)
     }
-
-    return translatedIds
   }
 
   private upsertTranslatedCue(cue: TranslatedCue): void {

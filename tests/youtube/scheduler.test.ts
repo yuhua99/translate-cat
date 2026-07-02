@@ -16,8 +16,8 @@ describe('planTranslationWindows', () => {
         translatedUpToMs: 15_000,
       }),
     ).toEqual([
-      { id: '0-30000', startMs: 0, endMs: 30_000, priority: 'current' },
-      { id: '30000-60000', startMs: 30_000, endMs: 60_000, priority: 'lookahead' },
+      { id: '0-30000', startMs: 0, endMs: 30_000 },
+      { id: '30000-60000', startMs: 30_000, endMs: 60_000 },
     ])
   })
 
@@ -32,18 +32,4 @@ describe('planTranslationWindows', () => {
     ).toEqual([])
   })
 
-  test('bounds window by duration', () => {
-    expect(
-      planTranslationWindows({
-        ...emptyState,
-        ccEnabled: true,
-        currentTimeMs: 50_000,
-        translatedUpToMs: 50_000,
-        durationMs: 65_000,
-      }),
-    ).toEqual([
-      { id: '30000-60000', startMs: 30_000, endMs: 60_000, priority: 'current' },
-      { id: '60000-65000', startMs: 60_000, endMs: 65_000, priority: 'lookahead' },
-    ])
-  })
 })
