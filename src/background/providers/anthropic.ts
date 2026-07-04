@@ -25,8 +25,11 @@ export class AnthropicProvider implements AiProvider {
     private readonly secret: ProviderSecret,
   ) {}
 
-  async translateManual(input: ManualTranslateInput): Promise<ManualTranslateOutput> {
-    const response = await this.complete(createManualPrompt(input))
+  async translateManual(
+    input: ManualTranslateInput,
+    signal?: AbortSignal,
+  ): Promise<ManualTranslateOutput> {
+    const response = await this.complete(createManualPrompt(input), {}, signal)
     const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
     return { ...parsed, usage: response.usage }
   }
@@ -46,6 +49,7 @@ export class AnthropicProvider implements AiProvider {
   private async complete(
     prompt: string,
     options: { maxTokens?: number; system?: string } = {},
+    signal?: AbortSignal,
   ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     const apiKey = this.secret.apiKey
 
@@ -57,6 +61,7 @@ export class AnthropicProvider implements AiProvider {
     try {
       response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal,
         headers: {
           'anthropic-version': '2023-06-01',
           'content-type': 'application/json',

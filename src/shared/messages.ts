@@ -46,6 +46,7 @@ export interface TranslateSubtitleMessage {
   targetLanguage: string
   contextBefore?: ContextCue[]
   contextAfter?: ContextCue[]
+  requestId?: string
 }
 
 export interface TranslateSubtitleResult {
@@ -64,6 +65,7 @@ export type ExtensionMessage =
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
   | { type: 'TRANSLATE_TEXT'; text: string }
+  | { type: 'CANCEL_TRANSLATION'; requestId: string }
   | TranslateSubtitleMessage
 
 export type SettingsResponse =

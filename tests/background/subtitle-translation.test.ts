@@ -137,6 +137,63 @@ describe('translateSubtitleMessage', () => {
     }
   })
 
+  test('already-aborted signal short-circuits without calling fetch', async () => {
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[]}' } }],
+      })
+    }
+
+    const controller = new AbortController()
+    controller.abort()
+
+    const result = await translateSubtitleMessage(
+      {
+        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+        providerType: 'openai',
+        videoId: 'video-1',
+        trackId: 'en::manual',
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+      },
+      createStores(),
+      controller.signal,
+    )
+
+    expect(fetchCalls).toBe(0)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('aborted')
+  })
+
+  test('abort during backoff prevents the next retry attempt', async () => {
+    let fetchCalls = 0
+    const controller = new AbortController()
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      queueMicrotask(() => controller.abort())
+      return new Response('server error', { status: 503 })
+    }
+
+    const result = await translateSubtitleMessage(
+      {
+        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+        providerType: 'openai',
+        videoId: 'video-1',
+        trackId: 'en::manual',
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+      },
+      createStores(),
+      controller.signal,
+    )
+
+    expect(fetchCalls).toBe(1)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.error).toBe('aborted')
+  })
+
   test('400 response is non-retryable and non-fatal', async () => {
     let fetchCalls = 0
     globalThis.fetch = async () => {

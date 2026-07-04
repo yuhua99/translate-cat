@@ -112,6 +112,28 @@ describe('OpenAiProvider', () => {
       usage: { inputTokens: 10, outputTokens: 5 },
     })
   })
+
+  test('forwards abort signal to fetch', async () => {
+    let receivedSignal: AbortSignal | null | undefined
+    globalThis.fetch = async (_input, init) => {
+      receivedSignal = init?.signal
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
+      })
+    }
+
+    const controller = new AbortController()
+    const provider = new OpenAiProvider(
+      { type: 'openai', model: 'gpt-4.1-mini' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual(
+      { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+      controller.signal,
+    )
+
+    expect(receivedSignal).toBe(controller.signal)
+  })
 })
 
 describe('OpencodeZenProvider', () => {
@@ -152,6 +174,28 @@ describe('OpencodeZenProvider', () => {
         items: [{ id: 'a', text: 'Hello', startMs: 0 }],
       }),
     ).rejects.toThrow('opencode Zen request failed: 400')
+  })
+
+  test('forwards abort signal to fetch', async () => {
+    let receivedSignal: AbortSignal | null | undefined
+    globalThis.fetch = async (_input, init) => {
+      receivedSignal = init?.signal
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
+      })
+    }
+
+    const controller = new AbortController()
+    const provider = new OpencodeZenProvider(
+      { type: 'opencodeZen', model: 'qwen3.6-plus' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual(
+      { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+      controller.signal,
+    )
+
+    expect(receivedSignal).toBe(controller.signal)
   })
 })
 
@@ -201,5 +245,27 @@ describe('AnthropicProvider', () => {
       }),
     ).rejects.toThrow('Anthropic response truncated at max_tokens limit')
     expect(requestBody?.max_tokens).toBe(8192)
+  })
+
+  test('forwards abort signal to fetch', async () => {
+    let receivedSignal: AbortSignal | null | undefined
+    globalThis.fetch = async (_input, init) => {
+      receivedSignal = init?.signal
+      return Response.json({
+        content: [{ type: 'text', text: '{"translations":[{"id":"a","text":"你好"}]}' }],
+      })
+    }
+
+    const controller = new AbortController()
+    const provider = new AnthropicProvider(
+      { type: 'anthropic', model: 'claude-sonnet-4-5' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual(
+      { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+      controller.signal,
+    )
+
+    expect(receivedSignal).toBe(controller.signal)
   })
 })

@@ -1,8 +1,6 @@
 import type { CaptionSegment, CaptionTrack } from './caption-types'
 import type { ProviderType } from '../background/providers/types'
-import type { TranslateSubtitleResult } from '../shared/messages'
-
-import type { TranslationError } from '../shared/messages'
+import type { TranslateSubtitleResult, TranslationError } from '../shared/messages'
 
 export interface TranslatorClient {
   translateSubtitle(
@@ -23,22 +21,44 @@ export interface TranslateSubtitleInput {
 
 export function createRuntimeTranslatorClient(): TranslatorClient {
   return {
-    translateSubtitle(input: TranslateSubtitleInput): Promise<TranslateSubtitleResult> {
-      return chrome.runtime.sendMessage({
-        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        providerType: input.providerType,
-        videoId: input.videoId,
-        trackId: input.track.trackId,
-        targetLanguage: input.targetLanguage,
-        items: input.segments.map((segment) => ({
-          id: segment.id,
-          text: segment.text,
-          startMs: segment.startMs,
-          endMs: segment.endMs,
-        })),
-        contextBefore: input.contextBefore,
-        contextAfter: input.contextAfter,
-      })
+    async translateSubtitle(
+      input: TranslateSubtitleInput,
+      signal?: AbortSignal,
+    ): Promise<TranslateSubtitleResult | TranslationError> {
+      if (signal?.aborted) {
+        return { ok: false, error: 'aborted', fatal: false }
+      }
+
+      const requestId = crypto.randomUUID()
+
+      const onAbort = (): void => {
+        try {
+          void chrome.runtime.sendMessage({ type: 'CANCEL_TRANSLATION', requestId }).catch(() => {})
+        } catch {}
+      }
+
+      signal?.addEventListener('abort', onAbort, { once: true })
+
+      try {
+        return await chrome.runtime.sendMessage({
+          type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+          providerType: input.providerType,
+          videoId: input.videoId,
+          trackId: input.track.trackId,
+          targetLanguage: input.targetLanguage,
+          items: input.segments.map((segment) => ({
+            id: segment.id,
+            text: segment.text,
+            startMs: segment.startMs,
+            endMs: segment.endMs,
+          })),
+          contextBefore: input.contextBefore,
+          contextAfter: input.contextAfter,
+          requestId,
+        })
+      } finally {
+        signal?.removeEventListener('abort', onAbort)
+      }
     },
   }
 }

@@ -37,17 +37,44 @@ function backoffMs(attempt: number): number {
   return RETRY_BASE_MS * Math.pow(2, attempt)
 }
 
+function abortedError(): TranslationError {
+  return { ok: false, error: 'aborted', fatal: false }
+}
+
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve()
+      return
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    const onAbort = () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }
+    signal?.addEventListener('abort', onAbort)
+  })
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<{ ok: true; data: T } | TranslationError> {
   let lastError: unknown
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+    if (signal?.aborted) return abortedError()
     try {
       const data = await fn()
       return { ok: true, data }
     } catch (error) {
       lastError = error
+
+      if (signal?.aborted) return abortedError()
 
       if (isFatalError(error)) {
         return {
@@ -67,7 +94,8 @@ async function withRetry<T>(
         }
       }
 
-      await new Promise((resolve) => setTimeout(resolve, backoffMs(attempt)))
+      await abortableDelay(backoffMs(attempt), signal)
+      if (signal?.aborted) return abortedError()
     }
   }
 
@@ -82,6 +110,7 @@ async function withRetry<T>(
 export async function translateSubtitleMessage(
   message: TranslateSubtitleMessage,
   stores: ProviderStores,
+  signal?: AbortSignal,
 ): Promise<TranslateSubtitleResult | TranslationError> {
   const providerConfig = await getProviderConfig(stores.sync, message.providerType)
   const cacheKey = createWindowCacheKey(message, providerConfig.model)
@@ -98,13 +127,18 @@ export async function translateSubtitleMessage(
     providerItems.map((item, index) => [item.id, message.items[index]?.id]),
   )
 
-  const result = await withRetry(() =>
-    provider.translateManual({
-      items: providerItems,
-      targetLanguage: message.targetLanguage,
-      contextBefore: message.contextBefore,
-      contextAfter: message.contextAfter,
-    }),
+  const result = await withRetry(
+    () =>
+      provider.translateManual(
+        {
+          items: providerItems,
+          targetLanguage: message.targetLanguage,
+          contextBefore: message.contextBefore,
+          contextAfter: message.contextAfter,
+        },
+        signal,
+      ),
+    signal,
   )
 
   if (!result.ok) return result

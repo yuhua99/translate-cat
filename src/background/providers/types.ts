@@ -36,6 +36,6 @@ export interface ProviderTestOutput {
 }
 
 export interface AiProvider {
-  translateManual(input: ManualTranslateInput): Promise<ManualTranslateOutput>
+  translateManual(input: ManualTranslateInput, signal?: AbortSignal): Promise<ManualTranslateOutput>
   testConnection(): Promise<ProviderTestOutput>
 }

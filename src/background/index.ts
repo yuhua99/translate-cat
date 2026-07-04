@@ -13,6 +13,8 @@ chrome.runtime.onInstalled.addListener(() => {
   console.info('translate cat installed')
 })
 
+const pendingTranslations = new Map<string, AbortController>()
+
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
   void (async () => {
     try {
@@ -83,12 +85,32 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       }
 
       if (message.type === 'TRANSLATE_SUBTITLE_AI_PROVIDER') {
-        sendResponse(
-          (await translateSubtitleMessage(message, {
-            sync: chrome.storage.sync,
-            local: chrome.storage.local,
-          })) satisfies ExtensionResponse,
-        )
+        const { requestId } = message
+        const controller = requestId ? new AbortController() : undefined
+        if (requestId && controller) pendingTranslations.set(requestId, controller)
+        try {
+          sendResponse(
+            (await translateSubtitleMessage(
+              message,
+              { sync: chrome.storage.sync, local: chrome.storage.local },
+              controller?.signal,
+            )) satisfies ExtensionResponse,
+          )
+        } finally {
+          if (requestId) pendingTranslations.delete(requestId)
+        }
+        return
+      }
+
+      if (message.type === 'CANCEL_TRANSLATION') {
+        const controller = pendingTranslations.get(message.requestId)
+        if (controller) {
+          controller.abort()
+          pendingTranslations.delete(message.requestId)
+          sendResponse({ ok: true, message: 'cancelled' } satisfies ExtensionResponse)
+        } else {
+          sendResponse({ ok: true, message: 'not found' } satisfies ExtensionResponse)
+        }
         return
       }
 

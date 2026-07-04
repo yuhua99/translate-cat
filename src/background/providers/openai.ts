@@ -34,8 +34,11 @@ export class OpenAiProvider implements AiProvider {
     private readonly providerLabel = 'OpenAI',
   ) {}
 
-  async translateManual(input: ManualTranslateInput): Promise<ManualTranslateOutput> {
-    const response = await this.complete(createManualPrompt(input))
+  async translateManual(
+    input: ManualTranslateInput,
+    signal?: AbortSignal,
+  ): Promise<ManualTranslateOutput> {
+    const response = await this.complete(createManualPrompt(input), {}, signal)
     const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
     return { ...parsed, usage: response.usage }
   }
@@ -57,6 +60,7 @@ export class OpenAiProvider implements AiProvider {
   private async complete(
     prompt: string,
     options: CompletionOptions = {},
+    signal?: AbortSignal,
   ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
     if (!this.secret.apiKey) {
       throw new Error(`Missing API key for provider: ${this.config.type}`)
@@ -64,7 +68,7 @@ export class OpenAiProvider implements AiProvider {
 
     if (options.json !== false) {
       try {
-        return await this.fetchAndParse(prompt, options)
+        return await this.fetchAndParse(prompt, options, signal)
       } catch (error) {
         if (error instanceof SyntaxError || error instanceof ProviderJsonParseError) {
           // Fall through to retry without json_object
@@ -74,14 +78,15 @@ export class OpenAiProvider implements AiProvider {
       }
     }
 
-    return await this.fetchAndParse(prompt, { ...options, json: false })
+    return await this.fetchAndParse(prompt, { ...options, json: false }, signal)
   }
 
   private async fetchAndParse(
     prompt: string,
     options: CompletionOptions,
+    signal?: AbortSignal,
   ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
-    const responseText = await this.fetchChatCompletion(prompt, options)
+    const responseText = await this.fetchChatCompletion(prompt, options, signal)
     const json = JSON.parse(responseText) as OpenAiResponse
     const content = extractOpenAiContent(json)
 
@@ -102,11 +107,16 @@ export class OpenAiProvider implements AiProvider {
     return {}
   }
 
-  private async fetchChatCompletion(prompt: string, options: CompletionOptions): Promise<string> {
+  private async fetchChatCompletion(
+    prompt: string,
+    options: CompletionOptions,
+    signal?: AbortSignal,
+  ): Promise<string> {
     let response: Response
     try {
       response = await fetch(`${this.defaultBaseUrl}/chat/completions`, {
         method: 'POST',
+        signal,
         headers: {
           authorization: `Bearer ${this.secret.apiKey}`,
           'content-type': 'application/json',
