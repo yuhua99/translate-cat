@@ -112,7 +112,7 @@ function updateSaveRequired(): void {
     getProviderType() !== currentSettings.providerType ||
     getSelectedModel() !== savedModel ||
     providerApiKeyInput.value.trim() !== savedApiKey
-  saveButton.disabled = !dirty
+  saveButton.hidden = !dirty
 }
 
 function renderSettings(settings: ExtensionSettings): void {
@@ -148,7 +148,7 @@ async function loadSettings(): Promise<void> {
 }
 
 async function saveSettings(): Promise<void> {
-  saveButton.disabled = true
+  saveButton.hidden = true
   status.textContent = 'Testing provider...'
 
   // snapshot form values so in-flight edits don't leak into saves
@@ -211,7 +211,7 @@ async function saveSettings(): Promise<void> {
   } catch (error) {
     status.textContent = error instanceof Error ? error.message : String(error)
   } finally {
-    saveButton.disabled = false
+    updateSaveRequired()
   }
 }
 

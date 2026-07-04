@@ -3,6 +3,7 @@
 Chrome MV3 extension (TypeScript + Bun, no framework) that overlays AI-translated YouTube subtitles. Built by `scripts/build.ts` → `dist/`; load unpacked from there.
 
 ## Invariants
+
 - `src/youtube/main-world-capture.ts` runs in the page's MAIN world: no `chrome.*` APIs, no imports with chrome types at runtime; talk to the extension only via `postMessage`/`CustomEvent` (constants in `caption-capture-event.ts`).
 - Settings are read/written only through `GET_SETTINGS`/`SET_SETTINGS` runtime messages to the background worker (it merges `DEFAULT_SETTINGS`). Never call `chrome.storage` for settings from content/YouTube code.
 - API keys live in `chrome.storage.local` (`providerSecrets`); configs and settings in `chrome.storage.sync`. Never log secrets or move them to sync.
@@ -12,6 +13,7 @@ Chrome MV3 extension (TypeScript + Bun, no framework) that overlays AI-translate
 - Manifest permissions are frozen per SPEC.md: `storage` + the four host permissions. Do not add more.
 
 ## Architecture contract
+
 - `src/content/index.ts` — activation lifecycle and CC-state orchestration only (arm/teardown, render loop, navigation poll).
 - `src/youtube/session.ts` — per-video translation state (segments, windows, cues); no DOM.
 - `src/youtube/scheduler.ts` — pure window planning; keep it side-effect free.
@@ -21,10 +23,12 @@ Chrome MV3 extension (TypeScript + Bun, no framework) that overlays AI-translate
 - `tests/` mirrors `src/`; test pure logic (parsing, scheduling, session, providers via stubbed `fetch`) — no browser/DOM harness exists.
 
 ## Quality gates (run before handoff)
+
 ```bash
 bun run check   # typecheck + lint + fmt:check + test + build
 ```
 
 ## Commit format
+
 `<type>: <imperative summary>` — types: feat, fix, refactor, perf, docs, chore.
 Body explains the user-visible symptom for fixes. Avoid `update`, `cleanup`, `wip`.

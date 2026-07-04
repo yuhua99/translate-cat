@@ -72,10 +72,9 @@ export class AnthropicProvider implements AiProvider {
         }),
       })
     } catch (error) {
-      throw new ProviderNetworkError(
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new ProviderNetworkError(error instanceof Error ? error.message : String(error), {
+        cause: error,
+      })
     }
 
     if (!response.ok) {

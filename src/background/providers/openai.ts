@@ -128,10 +128,9 @@ export class OpenAiProvider implements AiProvider {
         }),
       })
     } catch (error) {
-      throw new ProviderNetworkError(
-        error instanceof Error ? error.message : String(error),
-        { cause: error },
-      )
+      throw new ProviderNetworkError(error instanceof Error ? error.message : String(error), {
+        cause: error,
+      })
     }
 
     const responseText = await response.text()

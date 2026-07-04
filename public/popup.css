@@ -86,11 +86,6 @@ button:hover {
   background: #e5e7eb;
 }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 #status {
   min-height: 18px;
   margin: 0;

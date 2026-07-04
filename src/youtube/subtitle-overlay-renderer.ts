@@ -78,4 +78,3 @@ export class SubtitleOverlayRenderer {
     return overlay
   }
 }
-

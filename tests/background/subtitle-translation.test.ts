@@ -104,7 +104,9 @@ describe('translateSubtitleMessage', () => {
 
     expect(fetchCalls).toBe(2)
     const cache = await stores.local.get('translationWindowCache')
-    const entries = (cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined)?.entries
+    const entries = (
+      cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined
+    )?.entries
     expect(entries ?? {}).toEqual({})
   })
 

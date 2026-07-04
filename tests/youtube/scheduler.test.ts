@@ -31,5 +31,4 @@ describe('planTranslationWindows', () => {
       }),
     ).toEqual([])
   })
-
 })

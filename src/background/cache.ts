@@ -74,9 +74,7 @@ function rotate(state: CacheState): CacheState {
   let total = totalBytes(state)
   if (total <= MAX_BYTES) return state
 
-  const entries = Object.entries(state.entries).sort(
-    ([, a], [, b]) => a.createdAt - b.createdAt,
-  )
+  const entries = Object.entries(state.entries).sort(([, a], [, b]) => a.createdAt - b.createdAt)
   for (const [key, entry] of entries) {
     delete state.entries[key]
     total -= entry.sizeBytes
