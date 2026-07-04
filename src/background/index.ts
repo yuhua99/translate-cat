@@ -53,11 +53,11 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       }
 
       if (message.type === 'TEST_PROVIDER') {
+        const secret = message.secret.apiKey
+          ? message.secret
+          : await getProviderSecret(chrome.storage.local, message.config.type)
         sendResponse(
-          (await testProviderConnection(
-            message.config,
-            message.secret,
-          )) satisfies ExtensionResponse,
+          (await testProviderConnection(message.config, secret)) satisfies ExtensionResponse,
         )
         return
       }
