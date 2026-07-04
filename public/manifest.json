@@ -45,7 +45,8 @@
   "host_permissions": [
     "https://api.openai.com/*",
     "https://api.anthropic.com/*",
-    "https://opencode.ai/*"
+    "https://opencode.ai/*",
+    "https://generativelanguage.googleapis.com/*"
   ],
   "web_accessible_resources": [
     {

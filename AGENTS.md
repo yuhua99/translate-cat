@@ -10,7 +10,6 @@ Chrome MV3 extension (TypeScript + Bun, no framework) that overlays AI-translate
 - Never persist `enabled: false` from inferred player state (CC button off, timeouts). Only an explicit user action (toggle button, popup) may change the stored setting; transient failures deactivate locally and self-heal on the next video load.
 - Provider fetch/parse failures must throw the typed errors in `src/background/providers/errors.ts`; `subtitle-translation.ts` classifies them (401/403 fatal, 408/429/5xx/network/parse retryable). A plain `Error` means non-retryable — don't "upgrade" it.
 - Translation cache: reads are pure; all writes go through the module write queue in `cache.ts`; only complete windows (no missing ids) may be cached.
-- Manifest `permissions` (`storage`) and the three provider `host_permissions` are frozen. Do not add more.
 
 ## Architecture contract
 

@@ -1,7 +1,7 @@
 import type { ManualTranslationItem } from '../../youtube/translation-validation'
 import type { ContextCue, ProviderUsage } from '../../shared/messages'
 
-export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen'
+export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini'
 
 export interface ProviderConfig {
   type: ProviderType

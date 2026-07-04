@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { AnthropicProvider } from '../../src/background/providers/anthropic'
+import {
+  ProviderHttpError,
+  ProviderJsonParseError,
+  ProviderNetworkError,
+} from '../../src/background/providers/errors'
+import { GeminiProvider } from '../../src/background/providers/gemini'
 import { parseJsonObject } from '../../src/background/providers/json'
 import { OpenAiProvider } from '../../src/background/providers/openai'
 import {
@@ -188,6 +194,175 @@ describe('OpencodeZenProvider', () => {
     const controller = new AbortController()
     const provider = new OpencodeZenProvider(
       { type: 'opencodeZen', model: 'qwen3.6-plus' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual(
+      { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+      controller.signal,
+    )
+
+    expect(receivedSignal).toBe(controller.signal)
+  })
+})
+
+describe('GeminiProvider', () => {
+  test('tests connection with tiny request', async () => {
+    let requestBody: Record<string, unknown> | undefined
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({
+        candidates: [{ content: { parts: [{ text: 'OK' }] } }],
+        usageMetadata: { promptTokenCount: 4, candidatesTokenCount: 1 },
+      })
+    }
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+
+    await expect(provider.testConnection()).resolves.toEqual({
+      ok: true,
+      text: 'OK',
+      usage: { inputTokens: 4, outputTokens: 1 },
+    })
+    expect(
+      (requestBody?.generationConfig as { maxOutputTokens?: number } | undefined)?.maxOutputTokens,
+    ).toBe(40)
+  })
+
+  test('testConnection throws on mismatched reply', async () => {
+    globalThis.fetch = async () =>
+      Response.json({
+        candidates: [{ content: { parts: [{ text: 'nope' }] } }],
+      })
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+
+    await expect(provider.testConnection()).rejects.toThrow(
+      'Provider test failed: expected OK, got nope',
+    )
+  })
+
+  test('sends generateContent request and parses manual translations', async () => {
+    let request: Request | undefined
+    let requestBody: Record<string, unknown> | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
+      return Response.json({
+        candidates: [
+          { content: { parts: [{ text: '{"translations":[{"id":"a","text":"你好"}]}' }] } },
+        ],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
+      })
+    }
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+    const result = await provider.translateManual({
+      targetLanguage: 'Traditional Chinese',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    expect(request?.url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    )
+    expect(request?.headers.get('x-goog-api-key')).toBe('key')
+    expect(requestBody).toHaveProperty('contents')
+    expect(requestBody).toHaveProperty('generationConfig')
+    expect(result).toEqual({
+      translations: [{ id: 'a', text: '你好' }],
+      usage: { inputTokens: 10, outputTokens: 5 },
+    })
+  })
+
+  test('throws ProviderHttpError on non-2xx response', async () => {
+    globalThis.fetch = async () => new Response('rate limited', { status: 429 })
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+
+    const promise = provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+    await expect(promise).rejects.toBeInstanceOf(ProviderHttpError)
+    await expect(promise).rejects.toMatchObject({ status: 429 })
+  })
+
+  test('throws ProviderNetworkError on fetch rejection', async () => {
+    globalThis.fetch = async () => {
+      throw new TypeError('network down')
+    }
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+
+    await expect(
+      provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      }),
+    ).rejects.toBeInstanceOf(ProviderNetworkError)
+  })
+
+  test('fails clearly on MAX_TOKENS truncation with plain Error', async () => {
+    globalThis.fetch = async () =>
+      Response.json({
+        candidates: [
+          {
+            content: { parts: [{ text: '{"translations":[{"id":"a","te' }] },
+            finishReason: 'MAX_TOKENS',
+          },
+        ],
+      })
+
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
+      { apiKey: 'key' },
+    )
+
+    let caught: unknown
+    try {
+      await provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      })
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(Error)
+    expect(caught).not.toBeInstanceOf(ProviderHttpError)
+    expect(caught).not.toBeInstanceOf(ProviderNetworkError)
+    expect(caught).not.toBeInstanceOf(ProviderJsonParseError)
+    expect((caught as Error).message).toContain('MAX_TOKENS')
+  })
+
+  test('forwards abort signal to fetch', async () => {
+    let receivedSignal: AbortSignal | null | undefined
+    globalThis.fetch = async (_input, init) => {
+      receivedSignal = init?.signal
+      return Response.json({
+        candidates: [
+          { content: { parts: [{ text: '{"translations":[{"id":"a","text":"你好"}]}' }] } },
+        ],
+      })
+    }
+
+    const controller = new AbortController()
+    const provider = new GeminiProvider(
+      { type: 'gemini', model: 'gemini-2.5-flash' },
       { apiKey: 'key' },
     )
     await provider.translateManual(

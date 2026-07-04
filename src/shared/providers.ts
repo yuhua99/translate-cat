@@ -55,6 +55,18 @@ export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
       'mimo-v2.5',
     ],
   },
+  gemini: {
+    label: 'Google Gemini',
+    defaultModel: 'gemini-3.1-flash-lite',
+    models: [
+      'gemini-3.1-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-3.1-pro-preview',
+      'gemini-3-flash-preview',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+    ],
+  },
 }
 
 export const ALL_PROVIDER_TYPES = Object.keys(PROVIDER_REGISTRY) as ProviderType[]
