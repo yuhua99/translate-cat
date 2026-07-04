@@ -9,6 +9,7 @@ import {
 } from '../shared/messages'
 import type { ProviderConfig, ProviderSecret, ProviderType } from '../background/providers/types'
 import { ALL_PROVIDER_TYPES, getProviderLabel, getProviderModels } from '../shared/providers'
+import { enhanceSelect } from './dropdown'
 
 const TARGET_LANGUAGES: Array<{ value: string; label: string }> = [
   { value: 'zh-TW', label: '繁體中文' },
@@ -46,6 +47,12 @@ function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
 ): Promise<TResponse> {
   return chrome.runtime.sendMessage(message)
+}
+
+function setStatus(text: string, kind: 'success' | 'error' | 'neutral' = 'neutral'): void {
+  status.textContent = text
+  status.classList.toggle('success', kind === 'success')
+  status.classList.toggle('error', kind === 'error')
 }
 
 function getProviderType(): ProviderType {
@@ -137,7 +144,7 @@ async function loadSettings(): Promise<void> {
   const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
   if (!response.ok) {
     renderSettings(DEFAULT_SETTINGS)
-    status.textContent = response.error
+    setStatus(response.error, 'error')
     return
   }
 
@@ -152,7 +159,7 @@ async function loadSettings(): Promise<void> {
 
 async function saveSettings(): Promise<void> {
   saveButton.hidden = true
-  status.textContent = 'Testing provider...'
+  setStatus('Testing provider...')
 
   // snapshot form values so in-flight edits don't leak into saves
   const providerType = getProviderType()
@@ -169,7 +176,7 @@ async function saveSettings(): Promise<void> {
     })
 
     if (!testResponse.ok) {
-      status.textContent = testResponse.error
+      setStatus(testResponse.error, 'error')
       return
     }
 
@@ -182,7 +189,7 @@ async function saveSettings(): Promise<void> {
 
     const settingsResponse = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings })
     if (!settingsResponse.ok) {
-      status.textContent = settingsResponse.error
+      setStatus(settingsResponse.error, 'error')
       return
     }
 
@@ -191,7 +198,7 @@ async function saveSettings(): Promise<void> {
       config,
     })
     if (!configResponse.ok) {
-      status.textContent = configResponse.error
+      setStatus(configResponse.error, 'error')
       return
     }
 
@@ -202,7 +209,7 @@ async function saveSettings(): Promise<void> {
         secret,
       })
       if (!secretResponse.ok) {
-        status.textContent = secretResponse.error
+        setStatus(secretResponse.error, 'error')
         return
       }
     }
@@ -210,10 +217,10 @@ async function saveSettings(): Promise<void> {
     currentSettings = settings
     savedModel = model
     savedApiKey = apiKey
-    status.textContent = 'Saved'
+    setStatus('Saved', 'success')
     updateSaveRequired()
   } catch (error) {
-    status.textContent = error instanceof Error ? error.message : String(error)
+    setStatus(error instanceof Error ? error.message : String(error), 'error')
   } finally {
     updateSaveRequired()
   }
@@ -238,5 +245,9 @@ selectionEnabledInput.addEventListener('change', updateSaveRequired)
 saveButton.addEventListener('click', () => {
   void saveSettings()
 })
+
+enhanceSelect(providerTypeInput)
+enhanceSelect(providerModelPresetInput)
+enhanceSelect(targetLanguageInput)
 
 void loadSettings()

@@ -8,7 +8,7 @@
   </head>
   <body>
     <main>
-      <p style="text-align: center; margin: 0">
+      <p class="logo">
         <img src="icons/icon-128.png" alt="translate cat" width="64" />
       </p>
 
@@ -38,14 +38,18 @@
       </section>
 
       <section>
+        <h2>Selection</h2>
+        <label class="toggle">
+          <input id="selection-enabled" type="checkbox" />
+          Enable selection translation
+        </label>
+      </section>
+
+      <section>
         <h2>Translation</h2>
         <label>
           Target language
           <select id="target-language"></select>
-        </label>
-        <label class="toggle">
-          <input id="selection-enabled" type="checkbox" />
-          Selection translation
         </label>
       </section>
 
