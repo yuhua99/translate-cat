@@ -43,7 +43,6 @@
   ],
   "permissions": ["storage"],
   "host_permissions": [
-    "https://www.youtube.com/*",
     "https://api.openai.com/*",
     "https://api.anthropic.com/*",
     "https://opencode.ai/*"
