@@ -37,6 +37,7 @@ describe('settings storage', () => {
     const storage = createMemoryStorage()
     const settings: ExtensionSettings = {
       enabled: true,
+      selectionEnabled: true,
       targetLanguage: 'ja',
       providerType: 'opencodeZen',
     }

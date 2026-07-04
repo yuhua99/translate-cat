@@ -24,6 +24,7 @@ async function buildOnce(): Promise<void> {
       'src/background/index.ts',
       'src/content/index.ts',
       'src/popup/index.ts',
+      'src/selection/index.ts',
       'src/youtube/main-world-capture.ts',
     ],
     outdir: OUT_DIR,

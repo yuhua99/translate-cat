@@ -30,6 +30,7 @@ function requiredElement<T extends Element>(selector: string): T {
 }
 
 const targetLanguageInput = requiredElement<HTMLSelectElement>('#target-language')
+const selectionEnabledInput = requiredElement<HTMLInputElement>('#selection-enabled')
 const providerTypeInput = requiredElement<HTMLSelectElement>('#provider-type')
 const providerModelPresetInput = requiredElement<HTMLSelectElement>('#provider-model-preset')
 const customModelRow = requiredElement<HTMLElement>('#custom-model-row')
@@ -109,6 +110,7 @@ function renderTargetLanguages(selected: string): void {
 function updateSaveRequired(): void {
   const dirty =
     targetLanguageInput.value !== currentSettings.targetLanguage ||
+    selectionEnabledInput.checked !== currentSettings.selectionEnabled ||
     getProviderType() !== currentSettings.providerType ||
     getSelectedModel() !== savedModel ||
     providerApiKeyInput.value.trim() !== savedApiKey
@@ -118,6 +120,7 @@ function updateSaveRequired(): void {
 function renderSettings(settings: ExtensionSettings): void {
   currentSettings = settings
   renderTargetLanguages(settings.targetLanguage)
+  selectionEnabledInput.checked = settings.selectionEnabled
   renderProviderTypes(settings.providerType)
   renderModelPresets(settings.providerType)
 }
@@ -173,6 +176,7 @@ async function saveSettings(): Promise<void> {
     const settings: ExtensionSettings = {
       ...currentSettings,
       targetLanguage: targetLanguageInput.value,
+      selectionEnabled: selectionEnabledInput.checked,
       providerType,
     }
 
@@ -228,6 +232,8 @@ providerModelPresetInput.addEventListener('change', () => {
 for (const input of [providerApiKeyInput, providerModelInput, targetLanguageInput]) {
   input.addEventListener('input', updateSaveRequired)
 }
+
+selectionEnabledInput.addEventListener('change', updateSaveRequired)
 
 saveButton.addEventListener('click', () => {
   void saveSettings()

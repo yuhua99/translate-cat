@@ -10,12 +10,14 @@ export const SETTINGS_KEY = 'settings'
 
 export interface ExtensionSettings {
   enabled: boolean
+  selectionEnabled: boolean
   targetLanguage: string
   providerType: ProviderType
 }
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabled: false,
+  selectionEnabled: true,
   targetLanguage: 'zh-TW',
   providerType: 'opencodeZen',
 }
@@ -61,6 +63,7 @@ export type ExtensionMessage =
   | { type: 'SET_PROVIDER_SECRET'; providerType: ProviderType; secret: ProviderSecret }
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
+  | { type: 'TRANSLATE_TEXT'; text: string }
   | TranslateSubtitleMessage
 
 export type SettingsResponse =
@@ -79,12 +82,16 @@ export interface TranslationError {
 }
 
 export type TranslationResponse = TranslateSubtitleResult | TranslationError
+export type TranslateTextResponse =
+  | { ok: true; translation: string; usage?: ProviderUsage }
+  | TranslationError
 export type ExtensionResponse =
   | SettingsResponse
   | MessageResponse
   | ProviderConfigResponse
   | ProviderTestResponse
   | TranslationResponse
+  | TranslateTextResponse
 
 export function watchSettings(callback: (settings: ExtensionSettings) => void): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {

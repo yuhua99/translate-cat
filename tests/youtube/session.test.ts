@@ -5,6 +5,7 @@ import type { ExtensionSettings, TranslateSubtitleResult } from '../../src/share
 
 const settings: ExtensionSettings = {
   enabled: true,
+  selectionEnabled: true,
   targetLanguage: 'Traditional Chinese',
   providerType: 'openai',
 }

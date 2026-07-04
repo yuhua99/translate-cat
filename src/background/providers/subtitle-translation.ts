@@ -2,6 +2,7 @@ import { getCachedTranslations, setCachedTranslations } from '../cache'
 import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { createProvider } from './factory'
 import { getProviderConfig, getProviderSecret, type ProviderStores } from './storage'
+import { getSettings } from '../settings-storage'
 import {
   missingManualTranslationIds,
   validateManualTranslations,
@@ -10,6 +11,7 @@ import type { ProviderType } from './types'
 import type {
   TranslateSubtitleMessage,
   TranslateSubtitleResult,
+  TranslateTextResponse,
   TranslationError,
 } from '../../shared/messages'
 
@@ -160,4 +162,28 @@ async function resolveProvider(providerType: ProviderType, stores: ProviderStore
   const config = await getProviderConfig(stores.sync, providerType)
   const secret = await getProviderSecret(stores.local, providerType)
   return createProvider(config, secret)
+}
+
+export async function translateTextMessage(
+  text: string,
+  stores: ProviderStores,
+): Promise<TranslateTextResponse> {
+  const settings = await getSettings(stores.sync)
+  const provider = await resolveProvider(settings.providerType, stores)
+
+  const result = await withRetry(() =>
+    provider.translateManual({
+      items: [{ id: 'sel-0', text, startMs: 0 }],
+      targetLanguage: settings.targetLanguage,
+    }),
+  )
+
+  if (!result.ok) return result
+
+  const [translation] = validateManualTranslations(['sel-0'], result.data.translations)
+  if (!translation) {
+    return { ok: false, error: 'empty translation', fatal: false }
+  }
+
+  return { ok: true, translation: translation.text, usage: result.data.usage }
 }

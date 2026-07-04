@@ -1,15 +1,29 @@
 :root {
   color-scheme: dark;
+  --tc-bg: #111827;
+  --tc-surface: #0f172a;
+  --tc-fg: #f4f4f5;
+  --tc-fg-muted: #cbd5e1;
+  --tc-fg-subtle: #94a3b8;
+  --tc-border: #1f2937;
+  --tc-accent: #3b82f6;
+  --tc-btn-bg: #f9fafb;
+  --tc-btn-bg-hover: #e5e7eb;
+  --tc-btn-fg: #111827;
+  --tc-radius: 10px;
+  --tc-radius-md: 8px;
+  --tc-radius-sm: 6px;
+  --tc-font: 13px/1.4 system-ui, sans-serif;
+  --tc-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --tc-error: #f87171;
 }
 
 body {
   margin: 0;
   min-width: 340px;
-  color: #f4f4f5;
-  background: #111827;
-  font:
-    13px/1.4 system-ui,
-    sans-serif;
+  color: var(--tc-fg);
+  background: var(--tc-bg);
+  font: var(--tc-font);
 }
 
 main {
@@ -30,7 +44,7 @@ h1 {
 h2 {
   font-size: 13px;
   font-weight: 600;
-  color: #cbd5e1;
+  color: var(--tc-fg-muted);
 }
 
 [hidden] {
@@ -41,15 +55,26 @@ section {
   display: grid;
   gap: 8px;
   padding: 10px 12px;
-  border: 1px solid #1f2937;
-  border-radius: 10px;
+  border: 1px solid var(--tc-border);
+  border-radius: var(--tc-radius);
 }
 
 label {
   display: grid;
   gap: 4px;
   font-size: 12px;
-  color: #94a3b8;
+  color: var(--tc-fg-subtle);
+}
+
+label.toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+label.toggle input {
+  margin: 0;
 }
 
 button,
@@ -61,33 +86,33 @@ select {
 input,
 select {
   padding: 6px 8px;
-  border: 1px solid #1f2937;
-  border-radius: 6px;
-  background: #0f172a;
-  color: #f4f4f5;
+  border: 1px solid var(--tc-border);
+  border-radius: var(--tc-radius-sm);
+  background: var(--tc-surface);
+  color: var(--tc-fg);
 }
 
 input:focus,
 select:focus {
-  outline: 1px solid #3b82f6;
+  outline: 1px solid var(--tc-accent);
 }
 
 button {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--tc-radius-md);
   padding: 8px 12px;
-  color: #111827;
-  background: #f9fafb;
+  color: var(--tc-btn-fg);
+  background: var(--tc-btn-bg);
   cursor: pointer;
   justify-self: start;
 }
 
 button:hover {
-  background: #e5e7eb;
+  background: var(--tc-btn-bg-hover);
 }
 
 #status {
   min-height: 18px;
   margin: 0;
-  color: #cbd5e1;
+  color: var(--tc-fg-muted);
 }
