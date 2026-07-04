@@ -1,11 +1,11 @@
-import { DEFAULT_SETTINGS, type ExtensionSettings } from '../shared/messages'
+import { DEFAULT_SETTINGS, SETTINGS_KEY, type ExtensionSettings } from '../shared/messages'
+
+export { SETTINGS_KEY }
 
 export interface SettingsStorageArea {
   get(key: string): Promise<Record<string, unknown>>
   set(items: Record<string, unknown>): Promise<void>
 }
-
-export const SETTINGS_KEY = 'settings'
 
 export async function getSettings(storage: SettingsStorageArea): Promise<ExtensionSettings> {
   const stored = await storage.get(SETTINGS_KEY)

@@ -6,6 +6,8 @@ import type {
 } from '../background/providers/types'
 import type { ManualTranslationItem } from '../youtube/translation-validation'
 
+export const SETTINGS_KEY = 'settings'
+
 export interface ExtensionSettings {
   enabled: boolean
   targetLanguage: string
@@ -83,3 +85,17 @@ export type ExtensionResponse =
   | ProviderConfigResponse
   | ProviderTestResponse
   | TranslationResponse
+
+export function watchSettings(callback: (settings: ExtensionSettings) => void): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'sync') return
+    const change = changes[SETTINGS_KEY]
+    if (!change) return
+    const next = change.newValue
+    const merged: ExtensionSettings =
+      next && typeof next === 'object'
+        ? { ...DEFAULT_SETTINGS, ...(next as Partial<ExtensionSettings>) }
+        : { ...DEFAULT_SETTINGS }
+    callback(merged)
+  })
+}

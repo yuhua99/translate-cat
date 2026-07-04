@@ -12,12 +12,13 @@ import { listenForMainVideoLoads } from '../youtube/video-load'
 import { showStatusOverlay } from '../youtube/status-overlay'
 import { SubtitleOverlayRenderer } from '../youtube/subtitle-overlay-renderer'
 import { createRuntimeTranslatorClient } from '../youtube/translator-client'
-import type {
-  ExtensionMessage,
-  ExtensionResponse,
-  ExtensionSettings,
-  MessageResponse,
-  SettingsResponse,
+import {
+  watchSettings,
+  type ExtensionMessage,
+  type ExtensionResponse,
+  type ExtensionSettings,
+  type MessageResponse,
+  type SettingsResponse,
 } from '../shared/messages'
 
 let session: YoutubeSubtitleSession | undefined
@@ -102,11 +103,7 @@ function stopNavigationPoll(): void {
 }
 
 function listenForSettingsChanges(): void {
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'sync' || !changes.settings) return
-    const nextSettings = changes.settings.newValue as ExtensionSettings | undefined
-    if (!nextSettings) return
-
+  watchSettings((nextSettings) => {
     if (nextSettings.enabled) {
       void activateAiTranslate(nextSettings)
     } else {

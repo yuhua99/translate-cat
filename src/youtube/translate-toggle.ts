@@ -1,5 +1,6 @@
 import {
   DEFAULT_SETTINGS,
+  watchSettings,
   type ExtensionMessage,
   type ExtensionResponse,
   type ExtensionSettings,
@@ -160,11 +161,7 @@ function observeCaptionButton(): void {
 }
 
 function listenForSettingsChanges(): void {
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName !== 'sync' || !changes.settings) return
-    const next = changes.settings.newValue as ExtensionSettings | undefined
-    if (next) updateButtonFromSettings(next)
-  })
+  watchSettings(updateButtonFromSettings)
 }
 
 export function injectTranslateToggle(): void {
