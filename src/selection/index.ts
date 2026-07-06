@@ -252,14 +252,6 @@ async function translate(x: number, y: number, text: string): Promise<void> {
   }
 }
 
-function getSelectionRect(selection: Selection): DOMRect | null {
-  if (selection.rangeCount === 0) return null
-  const range = selection.getRangeAt(0)
-  const rect = range.getBoundingClientRect()
-  if (rect.width === 0 && rect.height === 0) return null
-  return rect
-}
-
 function onMouseUp(event: MouseEvent): void {
   if (!enabled) {
     dismiss()
@@ -282,13 +274,8 @@ function onMouseUp(event: MouseEvent): void {
   }
   if (isInsideRoot(selection.anchorNode) || isInsideRoot(selection.focusNode)) return
   if (!document.body) return
-  const rect = getSelectionRect(selection)
-  if (!rect) {
-    dismiss()
-    return
-  }
-  const x = rect.right + 4
-  const y = rect.bottom + 4
+  const x = event.clientX + 4
+  const y = event.clientY + 4
   renderIcon(x, y, text)
 }
 
