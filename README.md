@@ -6,6 +6,8 @@
 
 Chrome extension for AI translation.
 
+[Install from Chrome Web Store](https://chromewebstore.google.com/detail/translate-cat/aibehclppnalahklmeiccpcgikeibogh)
+
 ## Features
 
 - **YouTube subtitles** — translates captions in real time
