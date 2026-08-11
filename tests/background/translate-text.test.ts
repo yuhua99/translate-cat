@@ -29,9 +29,11 @@ function createStores(): ProviderStores {
 }
 
 describe('translateTextMessage', () => {
-  test('returns translation for the selected text', async () => {
-    globalThis.fetch = async () =>
-      Response.json({
+  test('uses the selection prompt for a phrase', async () => {
+    let requestBody: { messages?: Array<{ content?: string }> } | undefined
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as { messages?: Array<{ content?: string }> }
+      return Response.json({
         choices: [
           {
             message: {
@@ -40,12 +42,45 @@ describe('translateTextMessage', () => {
           },
         ],
       })
+    }
 
     await expect(translateTextMessage('Hello world', createStores())).resolves.toEqual({
       ok: true,
       translation: '你好世界',
       usage: { inputTokens: undefined, outputTokens: undefined },
     })
+    expect(requestBody?.messages?.[0]?.content).toBe(
+      'You are a translation engine. Return valid JSON only.',
+    )
+    expect(requestBody?.messages?.[1]?.content).toContain('Translate the selected text to zh-TW.')
+  })
+
+  test('uses the dictionary prompt for a single word', async () => {
+    let requestBody: { messages?: Array<{ content?: string }> } | undefined
+    globalThis.fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body)) as { messages?: Array<{ content?: string }> }
+      return Response.json({
+        choices: [
+          {
+            message: {
+              content: '{"translations":[{"id":"sel-0","text":"hello\\n名詞：問候語"}]}',
+            },
+          },
+        ],
+      })
+    }
+
+    await expect(translateTextMessage('  hello  ', createStores())).resolves.toEqual({
+      ok: true,
+      translation: 'hello\n名詞：問候語',
+      usage: { inputTokens: undefined, outputTokens: undefined },
+    })
+    expect(requestBody?.messages?.[0]?.content).toBe(
+      'You are a concise bilingual dictionary. Return valid JSON only.',
+    )
+    expect(requestBody?.messages?.[1]?.content).toContain(
+      'Explain the word like a dictionary for a learner, in zh-TW.',
+    )
   })
 
   test('401 response is fatal and not retried', async () => {

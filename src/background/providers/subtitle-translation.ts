@@ -205,9 +205,12 @@ export async function translateTextMessage(
   const settings = await getSettings(stores.sync)
   const provider = await resolveProvider(settings.providerType, stores)
 
+  const trimmedText = text.trim()
+  const mode = trimmedText && !/\s/u.test(trimmedText) ? 'dictionary' : 'selection'
   const result = await withRetry(() =>
     provider.translateManual({
-      items: [{ id: 'sel-0', text, startMs: 0 }],
+      mode,
+      items: [{ id: 'sel-0', text: trimmedText, startMs: 0 }],
       targetLanguage: settings.targetLanguage,
     }),
   )

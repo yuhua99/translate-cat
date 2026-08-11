@@ -1,6 +1,6 @@
 import { ProviderHttpError, ProviderNetworkError } from './errors'
 import { parseJsonObject } from './json'
-import { createManualPrompt } from './prompts'
+import { createManualPrompt, createManualSystemPrompt } from './prompts'
 import type {
   AiProvider,
   ManualTranslateInput,
@@ -29,7 +29,11 @@ export class AnthropicProvider implements AiProvider {
     input: ManualTranslateInput,
     signal?: AbortSignal,
   ): Promise<ManualTranslateOutput> {
-    const response = await this.complete(createManualPrompt(input), {}, signal)
+    const response = await this.complete(
+      createManualPrompt(input),
+      { system: createManualSystemPrompt(input) },
+      signal,
+    )
     const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
     return { ...parsed, usage: response.usage }
   }
