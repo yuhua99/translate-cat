@@ -113,6 +113,7 @@ describe('OpenAiProvider', () => {
 
     expect(request?.url).toBe('https://api.openai.com/v1/chat/completions')
     expect(request?.headers.get('authorization')).toBe('Bearer key')
+    expect(await request?.json()).not.toHaveProperty('temperature')
     expect(result).toEqual({
       translations: [{ id: 'a', text: '你好' }],
       usage: { inputTokens: 10, outputTokens: 5 },

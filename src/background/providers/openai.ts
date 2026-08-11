@@ -123,7 +123,6 @@ export class OpenAiProvider implements AiProvider {
         },
         body: JSON.stringify({
           model: this.config.model,
-          temperature: 0,
           ...(options.maxTokens ? { max_completion_tokens: options.maxTokens } : {}),
           ...(options.json === false ? {} : { response_format: { type: 'json_object' } }),
           ...this.extraChatCompletionBody(),
