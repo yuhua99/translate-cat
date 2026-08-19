@@ -52,7 +52,6 @@ export interface TranslateSubtitleResult {
 export type ExtensionMessage =
   | { type: 'GET_SETTINGS' }
   | { type: 'SET_SETTINGS'; settings: ExtensionSettings }
-  | { type: 'PING' }
   | { type: 'GET_PROVIDER_CONFIG'; providerType: ProviderType }
   | { type: 'SET_PROVIDER_CONFIG'; config: ProviderConfig }
   | { type: 'SET_PROVIDER_SECRET'; providerType: ProviderType; secret: ProviderSecret }
