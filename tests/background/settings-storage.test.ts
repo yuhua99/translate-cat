@@ -1,14 +1,8 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  getSettings,
-  setSettings,
-  type SettingsStorageArea,
-} from '../../src/background/settings-storage'
+import { getSettings, setSettings } from '../../src/background/settings-storage'
 import { DEFAULT_SETTINGS, type ExtensionSettings } from '../../src/shared/messages'
 
-function createMemoryStorage(
-  initial: Record<string, unknown> = {},
-): SettingsStorageArea & { data: Record<string, unknown> } {
+function createMemoryStorage(initial: Record<string, unknown> = {}) {
   const data = { ...initial }
 
   return {

@@ -1,6 +1,6 @@
 import type { ManualTranslationItem } from '../youtube/translation-validation'
 
-export interface CacheStorageArea {
+interface CacheStorageArea {
   get(key: string): Promise<Record<string, unknown>>
   set(items: Record<string, unknown>): Promise<void>
 }

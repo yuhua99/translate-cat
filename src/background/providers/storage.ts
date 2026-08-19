@@ -11,10 +11,8 @@ export interface ProviderStores {
   local: ProviderStorageArea
 }
 
-export const PROVIDER_CONFIGS_KEY = 'providerConfigs'
-export const PROVIDER_SECRETS_KEY = 'providerSecrets'
-
-export { getDefaultProviderConfig }
+const PROVIDER_CONFIGS_KEY = 'providerConfigs'
+const PROVIDER_SECRETS_KEY = 'providerSecrets'
 
 export async function getProviderConfig(
   storage: ProviderStorageArea,

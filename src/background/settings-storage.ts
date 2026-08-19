@@ -1,8 +1,6 @@
 import { DEFAULT_SETTINGS, SETTINGS_KEY, type ExtensionSettings } from '../shared/messages'
 
-export { SETTINGS_KEY }
-
-export interface SettingsStorageArea {
+interface SettingsStorageArea {
   get(key: string): Promise<Record<string, unknown>>
   set(items: Record<string, unknown>): Promise<void>
 }

@@ -8,10 +8,7 @@ import {
 import { GeminiProvider } from '../../src/background/providers/gemini'
 import { parseJsonObject } from '../../src/background/providers/json'
 import { OpenAiProvider } from '../../src/background/providers/openai'
-import {
-  OPENCODE_ZEN_BASE_URL,
-  OpencodeZenProvider,
-} from '../../src/background/providers/opencode-zen'
+import { OpencodeZenProvider } from '../../src/background/providers/opencode-zen'
 import {
   getProviderConfig,
   getProviderSecret,
@@ -155,7 +152,7 @@ describe('OpencodeZenProvider', () => {
       items: [{ id: 'a', text: 'Hello', startMs: 0 }],
     })
 
-    expect(request?.url).toBe(`${OPENCODE_ZEN_BASE_URL}/chat/completions`)
+    expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
     expect(await request?.json()).toMatchObject({ thinking: { type: 'disabled' } })
   })
 
