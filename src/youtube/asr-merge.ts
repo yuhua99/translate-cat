@@ -61,11 +61,9 @@ function createMergedSegment(
 
   return {
     id: `${first.id}:merged:${index}:${hashSourceIds(sourceIds)}`,
-    index,
     startMs: first.startMs,
     endMs: nextStartMs ?? last.endMs ?? last.startMs + FALLBACK_END_MS,
     text,
-    normalizedText: text.toLowerCase(),
   }
 }
 

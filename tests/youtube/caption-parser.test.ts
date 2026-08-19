@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { normalizeCaptionText, parseCapturedCaptions } from '../../src/youtube/caption-parser'
+import { parseCapturedCaptions } from '../../src/youtube/caption-parser'
 
 describe('parseCapturedCaptions', () => {
   test('parses JSON3 manual captions with stable ids', () => {
@@ -13,14 +13,13 @@ describe('parseCapturedCaptions', () => {
       }),
     })
 
-    expect(result.track).toMatchObject({ videoId: 'video-1', languageCode: 'en', mode: 'manual' })
+    expect(result.track).toMatchObject({ videoId: 'video-1', mode: 'manual' })
     expect(result.segments).toHaveLength(2)
     expect(result.segments[0]).toMatchObject({
       id: 'video-1:en:English:manual:0',
       startMs: 1000,
       endMs: 3000,
       text: 'Hello world',
-      normalizedText: 'hello world',
     })
     expect(result.segments[1].id).toBe('video-1:en:English:manual:1')
   })
@@ -47,7 +46,6 @@ describe('parseCapturedCaptions', () => {
         startMs: 1500,
         endMs: 3500,
         text: 'Tom & Jerry\nLine 2',
-        normalizedText: 'tom & jerry line 2',
       }),
     ])
   })
@@ -60,9 +58,5 @@ describe('parseCapturedCaptions', () => {
     })
 
     expect(result.segments[0]).toMatchObject({ startMs: 2500, endMs: 4000, text: 'こんにちは' })
-  })
-
-  test('normalizes repeated whitespace and html entities', () => {
-    expect(normalizeCaptionText(' A&nbsp;&amp;&nbsp;B\nC ')).toBe('a & b c')
   })
 })

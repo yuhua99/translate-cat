@@ -211,9 +211,7 @@ export class YoutubeSubtitleSession {
               translatedText,
             )
           : (segment.endMs ?? segment.startMs + 1_500),
-        sourceText: segment.text,
         translatedText,
-        sourceSegmentIds: [segment.id],
       })
     }
   }

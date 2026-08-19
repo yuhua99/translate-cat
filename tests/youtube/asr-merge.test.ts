@@ -6,7 +6,6 @@ function seg(startMs: number, text: string, id?: string): CaptionSegment {
   const stableId = id ?? `s${startMs}`
   return {
     id: stableId,
-    index: 0,
     startMs,
     text,
   }

@@ -51,9 +51,7 @@ describe('YoutubeSubtitleSession', () => {
         id: 'video-1:en::manual:0',
         startMs: 1000,
         endMs: 2000,
-        sourceText: 'Hello',
         translatedText: 'zh:Hello',
-        sourceSegmentIds: ['video-1:en::manual:0'],
       },
     ])
   })

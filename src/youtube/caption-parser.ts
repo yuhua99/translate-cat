@@ -35,10 +35,6 @@ export function parseCapturedCaptions(input: CapturedCaptionResponse): ParsedCap
   return { track, segments: parseXmlCaptions(response, track) }
 }
 
-export function normalizeCaptionText(text: string): string {
-  return decodeHtmlEntities(text).replace(/\s+/g, ' ').trim().toLowerCase()
-}
-
 function createTrack(url: string): CaptionTrack {
   const parsedUrl = new URL(url, 'https://www.youtube.com')
   const videoId =
@@ -50,7 +46,6 @@ function createTrack(url: string): CaptionTrack {
   return {
     videoId,
     trackId: `${languageCode}:${name}:${mode}`,
-    languageCode,
     mode,
   }
 }
@@ -165,11 +160,9 @@ function createSegment(
 
   return {
     id: `${track.videoId}:${track.trackId}:${index}`,
-    index,
     startMs,
     endMs,
     text: decodedText,
-    normalizedText: normalizeCaptionText(decodedText),
   }
 }
 

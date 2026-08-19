@@ -32,7 +32,7 @@ afterEach(() => {
 const input: TranslateSubtitleInput = {
   providerType: 'openai',
   videoId: 'v1',
-  track: { trackId: 't1', languageCode: 'en', kind: 'manual' } as never,
+  track: { trackId: 't1', kind: 'manual' } as never,
   segments: [{ id: 'v1:en::manual:0', text: 'Hello', startMs: 0, endMs: 1000 } as never],
   targetLanguage: 'zh-TW',
 }

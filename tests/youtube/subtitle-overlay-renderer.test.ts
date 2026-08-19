@@ -3,7 +3,7 @@ import { findActiveCue } from '../../src/youtube/subtitle-overlay-renderer'
 import type { TranslatedCue } from '../../src/youtube/caption-types'
 
 function cue(id: string, startMs: number, endMs: number): TranslatedCue {
-  return { id, startMs, endMs, sourceText: id, translatedText: id, sourceSegmentIds: [id] }
+  return { id, startMs, endMs, translatedText: id }
 }
 
 describe('findActiveCue', () => {
