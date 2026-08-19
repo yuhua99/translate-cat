@@ -13,10 +13,6 @@ import type {
 interface OpenAiResponse {
   choices?: Array<{ message?: { content?: string | Array<{ text?: string; type?: string }> } }>
   output_text?: string
-  usage?: {
-    prompt_tokens?: number
-    completion_tokens?: number
-  }
 }
 
 interface CompletionOptions {
@@ -43,8 +39,7 @@ export class OpenAiProvider implements AiProvider {
       { system: createManualSystemPrompt(input) },
       signal,
     )
-    const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
-    return { ...parsed, usage: response.usage }
+    return parseJsonObject<ManualTranslateOutput>(response.content)
   }
 
   async testConnection(): Promise<ProviderTestOutput> {
@@ -58,14 +53,14 @@ export class OpenAiProvider implements AiProvider {
     if (text !== 'OK') {
       throw new Error(`Provider test failed: expected OK, got ${text}`)
     }
-    return { ok: true, text, usage: response.usage }
+    return { ok: true, text }
   }
 
   private async complete(
     prompt: string,
     options: CompletionOptions = {},
     signal?: AbortSignal,
-  ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
+  ): Promise<{ content: string }> {
     if (!this.secret.apiKey) {
       throw new Error(`Missing API key for provider: ${this.config.type}`)
     }
@@ -89,7 +84,7 @@ export class OpenAiProvider implements AiProvider {
     prompt: string,
     options: CompletionOptions,
     signal?: AbortSignal,
-  ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
+  ): Promise<{ content: string }> {
     const responseText = await this.fetchChatCompletion(prompt, options, signal)
     const json = JSON.parse(responseText) as OpenAiResponse
     const content = extractOpenAiContent(json)
@@ -98,13 +93,7 @@ export class OpenAiProvider implements AiProvider {
       throw new Error(`OpenAI response missing message content: ${responseText.slice(0, 500)}`)
     }
 
-    return {
-      content: content ?? '',
-      usage: {
-        inputTokens: json.usage?.prompt_tokens,
-        outputTokens: json.usage?.completion_tokens,
-      },
-    }
+    return { content: content ?? '' }
   }
 
   protected extraChatCompletionBody(): Record<string, unknown> {

@@ -15,10 +15,6 @@ interface GeminiResponse {
     content?: { parts?: Array<{ text?: string }> }
     finishReason?: string
   }>
-  usageMetadata?: {
-    promptTokenCount?: number
-    candidatesTokenCount?: number
-  }
 }
 
 export class GeminiProvider implements AiProvider {
@@ -36,8 +32,7 @@ export class GeminiProvider implements AiProvider {
       { system: createManualSystemPrompt(input) },
       signal,
     )
-    const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
-    return { ...parsed, usage: response.usage }
+    return parseJsonObject<ManualTranslateOutput>(response.content)
   }
 
   async testConnection(): Promise<ProviderTestOutput> {
@@ -49,14 +44,14 @@ export class GeminiProvider implements AiProvider {
     if (text !== 'OK') {
       throw new Error(`Provider test failed: expected OK, got ${text}`)
     }
-    return { ok: true, text, usage: response.usage }
+    return { ok: true, text }
   }
 
   private async complete(
     prompt: string,
     options: { maxTokens?: number; system?: string } = {},
     signal?: AbortSignal,
-  ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
+  ): Promise<{ content: string }> {
     const apiKey = this.secret.apiKey
 
     if (!apiKey) {
@@ -113,12 +108,6 @@ export class GeminiProvider implements AiProvider {
       throw new Error('Gemini response missing text content')
     }
 
-    return {
-      content,
-      usage: {
-        inputTokens: json.usageMetadata?.promptTokenCount,
-        outputTokens: json.usageMetadata?.candidatesTokenCount,
-      },
-    }
+    return { content }
   }
 }

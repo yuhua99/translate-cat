@@ -1,5 +1,5 @@
 import type { ManualTranslationItem } from '../../youtube/translation-validation'
-import type { ContextCue, ProviderUsage } from '../../shared/messages'
+import type { ContextCue } from '../../shared/messages'
 
 export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini'
 
@@ -27,13 +27,11 @@ export interface ManualTranslateInput {
 
 export interface ManualTranslateOutput {
   translations: ManualTranslationItem[]
-  usage?: ProviderUsage
 }
 
 export interface ProviderTestOutput {
   ok: true
   text: string
-  usage?: ProviderUsage
 }
 
 export interface AiProvider {

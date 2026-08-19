@@ -161,11 +161,7 @@ export async function translateSubtitleMessage(
     await setCachedTranslations(stores.local, cacheKey, translations)
   }
 
-  return {
-    ok: true,
-    translations,
-    usage: result.data.usage,
-  }
+  return { ok: true, translations }
 }
 
 function createWindowCacheKey(message: TranslateSubtitleMessage, model: string): string {
@@ -222,5 +218,5 @@ export async function translateTextMessage(
     return { ok: false, error: 'empty translation', fatal: false }
   }
 
-  return { ok: true, translation: translation.text, usage: result.data.usage }
+  return { ok: true, translation: translation.text }
 }

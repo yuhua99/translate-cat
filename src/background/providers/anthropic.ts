@@ -13,10 +13,6 @@ import type {
 interface AnthropicResponse {
   content?: Array<{ type: string; text?: string }>
   stop_reason?: string
-  usage?: {
-    input_tokens?: number
-    output_tokens?: number
-  }
 }
 
 export class AnthropicProvider implements AiProvider {
@@ -34,8 +30,7 @@ export class AnthropicProvider implements AiProvider {
       { system: createManualSystemPrompt(input) },
       signal,
     )
-    const parsed = parseJsonObject<ManualTranslateOutput>(response.content)
-    return { ...parsed, usage: response.usage }
+    return parseJsonObject<ManualTranslateOutput>(response.content)
   }
 
   async testConnection(): Promise<ProviderTestOutput> {
@@ -47,14 +42,14 @@ export class AnthropicProvider implements AiProvider {
     if (text !== 'OK') {
       throw new Error(`Provider test failed: expected OK, got ${text}`)
     }
-    return { ok: true, text, usage: response.usage }
+    return { ok: true, text }
   }
 
   private async complete(
     prompt: string,
     options: { maxTokens?: number; system?: string } = {},
     signal?: AbortSignal,
-  ): Promise<{ content: string; usage?: { inputTokens?: number; outputTokens?: number } }> {
+  ): Promise<{ content: string }> {
     const apiKey = this.secret.apiKey
 
     if (!apiKey) {
@@ -107,12 +102,6 @@ export class AnthropicProvider implements AiProvider {
       throw new Error('Anthropic response missing text content')
     }
 
-    return {
-      content,
-      usage: {
-        inputTokens: json.usage?.input_tokens,
-        outputTokens: json.usage?.output_tokens,
-      },
-    }
+    return { content }
   }
 }

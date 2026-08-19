@@ -22,11 +22,6 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   providerType: 'opencodeZen',
 }
 
-export interface ProviderUsage {
-  inputTokens?: number
-  outputTokens?: number
-}
-
 export interface ContextCue {
   id: string
   text: string
@@ -52,7 +47,6 @@ export interface TranslateSubtitleMessage {
 export interface TranslateSubtitleResult {
   ok: true
   translations: ManualTranslationItem[]
-  usage?: ProviderUsage
 }
 
 export type ExtensionMessage =
@@ -84,9 +78,7 @@ export interface TranslationError {
 }
 
 export type TranslationResponse = TranslateSubtitleResult | TranslationError
-export type TranslateTextResponse =
-  | { ok: true; translation: string; usage?: ProviderUsage }
-  | TranslationError
+export type TranslateTextResponse = { ok: true; translation: string } | TranslationError
 export type ExtensionResponse =
   | SettingsResponse
   | MessageResponse

@@ -65,7 +65,6 @@ describe('translateSubtitleMessage', () => {
         { id: 'a', text: '你好' },
         { id: 'b', text: '世界' },
       ],
-      usage: { inputTokens: undefined, outputTokens: undefined },
     })
     expect(requestBody?.messages?.at(-1)?.content).toContain('"id":"0"')
     expect(requestBody?.messages?.at(-1)?.content).not.toContain('"id":"a"')

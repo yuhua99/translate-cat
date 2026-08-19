@@ -74,7 +74,6 @@ describe('OpenAiProvider', () => {
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
       return Response.json({
         choices: [{ message: { content: 'OK' } }],
-        usage: { prompt_tokens: 4, completion_tokens: 1 },
       })
     }
 
@@ -86,7 +85,6 @@ describe('OpenAiProvider', () => {
     await expect(provider.testConnection()).resolves.toEqual({
       ok: true,
       text: 'OK',
-      usage: { inputTokens: 4, outputTokens: 1 },
     })
     expect(requestBody?.max_completion_tokens).toBe(40)
     expect(requestBody).not.toHaveProperty('response_format')
@@ -98,7 +96,6 @@ describe('OpenAiProvider', () => {
       request = new Request(input, init)
       return Response.json({
         choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
-        usage: { prompt_tokens: 10, completion_tokens: 5 },
       })
     }
 
@@ -116,7 +113,6 @@ describe('OpenAiProvider', () => {
     expect(await request?.json()).not.toHaveProperty('temperature')
     expect(result).toEqual({
       translations: [{ id: 'a', text: '你好' }],
-      usage: { inputTokens: 10, outputTokens: 5 },
     })
   })
 
@@ -213,7 +209,6 @@ describe('GeminiProvider', () => {
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
       return Response.json({
         candidates: [{ content: { parts: [{ text: 'OK' }] } }],
-        usageMetadata: { promptTokenCount: 4, candidatesTokenCount: 1 },
       })
     }
 
@@ -225,7 +220,6 @@ describe('GeminiProvider', () => {
     await expect(provider.testConnection()).resolves.toEqual({
       ok: true,
       text: 'OK',
-      usage: { inputTokens: 4, outputTokens: 1 },
     })
     expect(
       (requestBody?.generationConfig as { maxOutputTokens?: number } | undefined)?.maxOutputTokens,
@@ -258,7 +252,6 @@ describe('GeminiProvider', () => {
         candidates: [
           { content: { parts: [{ text: '{"translations":[{"id":"a","text":"你好"}]}' }] } },
         ],
-        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 },
       })
     }
 
@@ -279,7 +272,6 @@ describe('GeminiProvider', () => {
     expect(requestBody).toHaveProperty('generationConfig')
     expect(result).toEqual({
       translations: [{ id: 'a', text: '你好' }],
-      usage: { inputTokens: 10, outputTokens: 5 },
     })
   })
 
@@ -382,7 +374,6 @@ describe('AnthropicProvider', () => {
       requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>
       return Response.json({
         content: [{ type: 'text', text: 'OK' }],
-        usage: { input_tokens: 4, output_tokens: 1 },
       })
     }
 
@@ -394,7 +385,6 @@ describe('AnthropicProvider', () => {
     await expect(provider.testConnection()).resolves.toEqual({
       ok: true,
       text: 'OK',
-      usage: { inputTokens: 4, outputTokens: 1 },
     })
     expect(requestBody?.max_tokens).toBe(40)
   })

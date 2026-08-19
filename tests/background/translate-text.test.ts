@@ -47,7 +47,6 @@ describe('translateTextMessage', () => {
     await expect(translateTextMessage('Hello world', createStores())).resolves.toEqual({
       ok: true,
       translation: '你好世界',
-      usage: { inputTokens: undefined, outputTokens: undefined },
     })
     expect(requestBody?.messages?.[0]?.content).toBe(
       'You are a translation engine. Return valid JSON only.',
@@ -73,7 +72,6 @@ describe('translateTextMessage', () => {
     await expect(translateTextMessage('  hello  ', createStores())).resolves.toEqual({
       ok: true,
       translation: 'hello\n名詞：問候語',
-      usage: { inputTokens: undefined, outputTokens: undefined },
     })
     expect(requestBody?.messages?.[0]?.content).toBe(
       'You are a concise bilingual dictionary. Return valid JSON only.',
