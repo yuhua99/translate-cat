@@ -9,10 +9,14 @@ explains what data the extension handles and how.
 ## What the extension processes
 
 - **Text to be translated.** When you enable YouTube subtitle translation, the
-  captions of the current video are sent to the AI provider you configured.
-  When you use selection translation, the text you select and trigger is sent
-  to that provider. This text is transmitted solely to produce a translation
-  and is not stored by the extension after the translation is displayed.
+  captions of the current video are sent to the third-party AI provider you
+  selected. When you use selection translation, the text you select and trigger
+  is sent to that provider. This text is transmitted solely to produce a
+  translation and is not stored by the extension after the translation is
+  displayed.
+- **Context menus.** The `contextMenus` permission lets the extension add a
+  right-click menu item for translating selected text. It is used only to
+  trigger selection translation.
 - **Your settings.** Provider choice, model, and target language are stored in
   your browser via `chrome.storage.sync` so they follow your Chrome profile.
 - **Your API keys.** API keys are stored locally in `chrome.storage.local` on
