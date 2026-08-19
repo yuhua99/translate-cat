@@ -16,10 +16,6 @@ export function showStatusOverlay(message: string): void {
   }, 3_000)
 }
 
-export function clearStatusOverlay(): void {
-  document.getElementById(STATUS_ID)?.remove()
-}
-
 function ensureStatusOverlay(): HTMLElement {
   const existing = document.getElementById(STATUS_ID)
   if (existing) return existing

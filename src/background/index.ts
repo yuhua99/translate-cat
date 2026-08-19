@@ -1,4 +1,4 @@
-import { testProviderConnection } from './providers/provider-test'
+import { createProvider } from './providers/factory'
 import {
   getProviderConfig,
   getProviderSecret,
@@ -57,7 +57,10 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           ? message.secret
           : await getProviderSecret(chrome.storage.local, message.config.type)
         sendResponse(
-          (await testProviderConnection(message.config, secret)) satisfies ExtensionResponse,
+          (await createProvider(
+            message.config,
+            secret,
+          ).testConnection()) satisfies ExtensionResponse,
         )
         return
       }

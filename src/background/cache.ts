@@ -55,13 +55,7 @@ export function setCachedTranslations(
     }
 
     state.entries[key] = entry
-    await writeState(storage, rotate(state))
-  })
-}
-
-export function clearTranslationCache(storage: CacheStorageArea): Promise<void> {
-  return enqueueWrite(async () => {
-    await storage.set({ [CACHE_KEY]: { entries: {} } satisfies CacheState })
+    await storage.set({ [CACHE_KEY]: rotate(state) })
   })
 }
 
@@ -88,10 +82,6 @@ async function readState(storage: CacheStorageArea): Promise<CacheState> {
   const stored = await storage.get(CACHE_KEY)
   const state = stored[CACHE_KEY] as CacheState | undefined
   return state?.entries ? state : { entries: {} }
-}
-
-async function writeState(storage: CacheStorageArea, state: CacheState): Promise<void> {
-  await storage.set({ [CACHE_KEY]: state })
 }
 
 function totalBytes(state: CacheState): number {

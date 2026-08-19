@@ -19,7 +19,6 @@ interface CompletionOptions {
   maxTokens?: number
   json?: boolean
   system?: string
-  allowEmptyContent?: boolean
 }
 
 export class OpenAiProvider implements AiProvider {
@@ -47,7 +46,6 @@ export class OpenAiProvider implements AiProvider {
       maxTokens: 40,
       json: false,
       system: 'Reply exactly: OK',
-      allowEmptyContent: false,
     })
     const text = response.content.trim()
     if (text !== 'OK') {
@@ -89,7 +87,7 @@ export class OpenAiProvider implements AiProvider {
     const json = JSON.parse(responseText) as OpenAiResponse
     const content = extractOpenAiContent(json)
 
-    if (!content && !options.allowEmptyContent) {
+    if (!content) {
       throw new Error(`OpenAI response missing message content: ${responseText.slice(0, 500)}`)
     }
 
