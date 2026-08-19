@@ -111,6 +111,7 @@ let root: HTMLDivElement | null = null
 let bubbleBody: HTMLDivElement | null = null
 let showingIcon = false
 let enabled = false
+let contextMenuSelection: { x: number; y: number; text: string; oversized: boolean } | null = null
 
 function isInsideRoot(node: Node | null): boolean {
   if (!node) return false
@@ -279,6 +280,29 @@ function onMouseUp(event: MouseEvent): void {
   renderIcon(x, y, text)
 }
 
+function onContextMenu(event: MouseEvent): void {
+  const text = window.getSelection()?.toString().trim()
+  if (!text) {
+    contextMenuSelection = null
+    return
+  }
+  contextMenuSelection = {
+    x: event.clientX,
+    y: event.clientY,
+    text,
+    oversized: text.length > MAX_LEN,
+  }
+}
+
+function onContextMenuTranslate(message: ExtensionMessage): void {
+  if (message.type !== 'CONTEXT_MENU_TRANSLATE' || !contextMenuSelection) return
+  if (contextMenuSelection.oversized) {
+    renderBubble(contextMenuSelection.x, contextMenuSelection.y, 'Selection too long', true)
+    return
+  }
+  void translate(contextMenuSelection.x, contextMenuSelection.y, contextMenuSelection.text)
+}
+
 function onMouseDown(event: MouseEvent): void {
   if (isInsideRoot(event.target as Node)) return
   dismiss()
@@ -310,6 +334,8 @@ async function main(): Promise<void> {
   subscribeToSettings()
   document.addEventListener('mouseup', onMouseUp, true)
   document.addEventListener('mousedown', onMouseDown, true)
+  document.addEventListener('contextmenu', onContextMenu, true)
+  chrome.runtime.onMessage.addListener(onContextMenuTranslate)
   window.addEventListener('scroll', onScrollOrResize, true)
   window.addEventListener('resize', onScrollOrResize, true)
 }

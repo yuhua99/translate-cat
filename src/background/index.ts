@@ -11,6 +11,20 @@ import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
 chrome.runtime.onInstalled.addListener(() => {
   console.info('translate cat installed')
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'translate-cat-selection',
+      title: 'Translate with translate cat',
+      contexts: ['selection'],
+    })
+  })
+})
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== 'translate-cat-selection' || info.frameId !== 0 || !tab?.id) return
+  void chrome.tabs
+    .sendMessage(tab.id, { type: 'CONTEXT_MENU_TRANSLATE' } satisfies ExtensionMessage)
+    .catch(() => {})
 })
 
 const pendingTranslations = new Map<string, AbortController>()

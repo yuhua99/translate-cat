@@ -58,6 +58,7 @@ export type ExtensionMessage =
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
   | { type: 'TRANSLATE_TEXT'; text: string }
+  | { type: 'CONTEXT_MENU_TRANSLATE' }
   | { type: 'CANCEL_TRANSLATION'; requestId: string }
   | TranslateSubtitleMessage
 
