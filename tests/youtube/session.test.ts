@@ -44,7 +44,7 @@ describe('YoutubeSubtitleSession', () => {
     await session.ensureTranslations(1000, true)
 
     expect(session.videoId).toBe('video-1')
-    expect(session.mode).toBe('manual')
+    expect(session.track?.mode).toBe('manual')
     expect(client.calls).toEqual([['video-1:en::manual:0']])
     expect(session.translatedCues).toEqual([
       {

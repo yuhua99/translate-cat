@@ -1,7 +1,6 @@
 import { mergeAsrSegments } from './asr-merge'
 import { parseCapturedCaptions } from './caption-parser'
 import type {
-  CaptionMode,
   CaptionSegment,
   CaptionTrack,
   CapturedCaptionResponse,
@@ -14,7 +13,6 @@ import type { ExtensionSettings } from '../shared/messages'
 export class YoutubeSubtitleSession {
   videoId = ''
   track?: CaptionTrack
-  mode?: CaptionMode
   segments: CaptionSegment[] = []
   translatedCues: TranslatedCue[] = []
   windowsInFlight = new Set<string>()
@@ -45,7 +43,6 @@ export class YoutubeSubtitleSession {
     this.stop()
     this.videoId = videoId
     this.track = undefined
-    this.mode = undefined
     this.segments = []
     this.translatedCues = []
     this.windowsCompleted.clear()
@@ -70,7 +67,6 @@ export class YoutubeSubtitleSession {
 
     this.videoId = parsed.track.videoId
     this.track = parsed.track
-    this.mode = parsed.track.mode
     this.segments = inferSegmentEndTimes(parsed.segments)
     this.translatedCues = []
     this.windowsInFlight.clear()
@@ -118,7 +114,7 @@ export class YoutubeSubtitleSession {
     try {
       const contextBefore = this.getContextCues(window, 'before', 2)
       const contextAfter = this.getContextCues(window, 'after', 2)
-      if (this.mode === 'asr') {
+      if (this.track.mode === 'asr') {
         await this.translateManualSegments(
           mergeAsrSegments(segments),
           true,
