@@ -24,10 +24,19 @@ jobs:
       - name: Package
         run: cd dist && zip -r ../extension.zip .
 
+      - name: Extract Release Notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v version="$version" '
+            started && /^## \[/ { exit }
+            $0 ~ "^## \\[" version "\\]" { started = 1 }
+            started { print }
+          ' CHANGELOG.md > "$RUNNER_TEMP/release-body.md"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: extension.zip
-          body_path: CHANGELOG.md
+          body_path: ${{ runner.temp }}/release-body.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
