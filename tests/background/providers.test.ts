@@ -82,10 +82,7 @@ describe('OpenAiProvider', () => {
       { apiKey: 'key' },
     )
 
-    await expect(provider.testConnection()).resolves.toEqual({
-      ok: true,
-      text: 'OK',
-    })
+    await expect(provider.testConnection()).resolves.toEqual({ ok: true })
     expect(requestBody?.max_completion_tokens).toBe(40)
     expect(requestBody).not.toHaveProperty('response_format')
   })
@@ -217,10 +214,7 @@ describe('GeminiProvider', () => {
       { apiKey: 'key' },
     )
 
-    await expect(provider.testConnection()).resolves.toEqual({
-      ok: true,
-      text: 'OK',
-    })
+    await expect(provider.testConnection()).resolves.toEqual({ ok: true })
     expect(
       (requestBody?.generationConfig as { maxOutputTokens?: number } | undefined)?.maxOutputTokens,
     ).toBe(40)
@@ -382,10 +376,7 @@ describe('AnthropicProvider', () => {
       { apiKey: 'key' },
     )
 
-    await expect(provider.testConnection()).resolves.toEqual({
-      ok: true,
-      text: 'OK',
-    })
+    await expect(provider.testConnection()).resolves.toEqual({ ok: true })
     expect(requestBody?.max_tokens).toBe(40)
   })
 

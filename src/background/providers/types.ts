@@ -31,7 +31,6 @@ export interface ManualTranslateOutput {
 
 export interface ProviderTestOutput {
   ok: true
-  text: string
 }
 
 export interface AiProvider {

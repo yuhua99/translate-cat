@@ -42,13 +42,13 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
       if (message.type === 'SET_PROVIDER_CONFIG') {
         await setProviderConfig(chrome.storage.sync, message.config)
-        sendResponse({ ok: true, message: 'provider config saved' } satisfies ExtensionResponse)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 
       if (message.type === 'SET_PROVIDER_SECRET') {
         await setProviderSecret(chrome.storage.local, message.providerType, message.secret)
-        sendResponse({ ok: true, message: 'provider secret saved' } satisfies ExtensionResponse)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 
@@ -83,7 +83,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           } satisfies ExtensionResponse)
           return
         }
-        sendResponse({ ok: true, message: 'ok' } satisfies ExtensionResponse)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 
@@ -110,9 +110,9 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         if (controller) {
           controller.abort()
           pendingTranslations.delete(message.requestId)
-          sendResponse({ ok: true, message: 'cancelled' } satisfies ExtensionResponse)
+          sendResponse({ ok: true } satisfies ExtensionResponse)
         } else {
-          sendResponse({ ok: true, message: 'not found' } satisfies ExtensionResponse)
+          sendResponse({ ok: true } satisfies ExtensionResponse)
         }
         return
       }
@@ -128,7 +128,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       }
 
       if (message.type === 'PING') {
-        sendResponse({ ok: true, message: 'pong' } satisfies ExtensionResponse)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 

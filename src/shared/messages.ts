@@ -65,7 +65,7 @@ export type ExtensionMessage =
 export type SettingsResponse =
   | { ok: true; settings: ExtensionSettings }
   | { ok: false; error: string }
-export type MessageResponse = { ok: true; message: string } | { ok: false; error: string }
+export type MessageResponse = { ok: true } | { ok: false; error: string }
 export type ProviderConfigResponse =
   | { ok: true; config: ProviderConfig }
   | { ok: false; error: string }

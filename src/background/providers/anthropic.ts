@@ -42,7 +42,7 @@ export class AnthropicProvider implements AiProvider {
     if (text !== 'OK') {
       throw new Error(`Provider test failed: expected OK, got ${text}`)
     }
-    return { ok: true, text }
+    return { ok: true }
   }
 
   private async complete(
