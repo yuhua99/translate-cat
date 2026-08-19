@@ -81,7 +81,6 @@ async function withRetry<T>(
           ok: false,
           error: error instanceof Error ? error.message : String(error),
           fatal: true,
-          retried: attempt > 0,
         }
       }
 
@@ -90,7 +89,6 @@ async function withRetry<T>(
           ok: false,
           error: error instanceof Error ? error.message : String(error),
           fatal: false,
-          retried: attempt > 0,
         }
       }
 
@@ -103,7 +101,6 @@ async function withRetry<T>(
     ok: false,
     error: lastError instanceof Error ? lastError.message : String(lastError),
     fatal: false,
-    retried: true,
   }
 }
 

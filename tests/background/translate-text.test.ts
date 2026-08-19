@@ -81,7 +81,7 @@ describe('translateTextMessage', () => {
     )
   })
 
-  test('401 response is fatal and not retried', async () => {
+  test('401 response is fatal', async () => {
     let fetchCalls = 0
     globalThis.fetch = async () => {
       fetchCalls += 1
@@ -94,7 +94,6 @@ describe('translateTextMessage', () => {
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.fatal).toBe(true)
-      expect(result.retried).toBe(false)
     }
   })
 
@@ -111,7 +110,6 @@ describe('translateTextMessage', () => {
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.fatal).toBe(false)
-      expect(result.retried).toBe(false)
     }
   })
 

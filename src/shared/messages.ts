@@ -74,7 +74,6 @@ export interface TranslationError {
   ok: false
   error: string
   fatal?: boolean
-  retried?: boolean
 }
 
 export type TranslationResponse = TranslateSubtitleResult | TranslationError
