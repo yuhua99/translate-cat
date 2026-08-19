@@ -13,7 +13,7 @@ Chrome extension for AI translation.
 - **YouTube subtitles** — translates captions in real time
 - **Selection translation** — select text on any page, click the cat icon
 
-Providers: OpenAI, Anthropic, [opencode Zen](https://opencode.ai).
+Providers: OpenAI, Anthropic, Google Gemini, [opencode Zen](https://opencode.ai).
 
 ## Install
 

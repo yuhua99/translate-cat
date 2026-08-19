@@ -33,6 +33,7 @@ choose. Your use of these services is governed by their own privacy policies:
 
 - OpenAI — https://openai.com/policies/privacy-policy
 - Anthropic — https://www.anthropic.com/legal/privacy
+- Google Gemini — https://generativelanguage.googleapis.com
 - opencode Zen — https://opencode.ai
 
 ## Data retention
