@@ -2,7 +2,6 @@ import {
   CAPTION_AVAILABILITY_REQUEST_EVENT,
   CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
-  CAPTION_REQUEST_EVENT,
   isTimedTextUrl,
   type CaptionsCapturedEventDetail,
 } from './caption-capture-event'
@@ -29,7 +28,6 @@ if (!window.__simpleTranslatorCaptionCaptureInstalled) {
   window.__simpleTranslatorCaptionCaptureInstalled = true
   installXhrCapture()
   installFetchCapture()
-  installCaptionRequestHandler()
   installCaptionAvailabilityHandler()
 }
 
@@ -112,21 +110,6 @@ function installFetchCapture(): void {
   }
 
   window.fetch = Object.assign(patchedFetch, originalFetch)
-}
-
-function installCaptionRequestHandler(): void {
-  window.addEventListener(CAPTION_REQUEST_EVENT, () => {
-    // Intentionally no active fetch. YouTube timedtext often returns empty body
-    // unless request originates from player with its playback tokens.
-  })
-
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return
-    const data = event.data as { source?: string; type?: string }
-    if (data.source === 'simple-translator' && data.type === CAPTION_REQUEST_EVENT) {
-      // Intentionally no active fetch. Isolated world will force CC reload instead.
-    }
-  })
 }
 
 function installCaptionAvailabilityHandler(): void {

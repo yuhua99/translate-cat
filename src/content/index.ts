@@ -1,8 +1,4 @@
-import {
-  CAPTION_EVENT,
-  CAPTION_REQUEST_EVENT,
-  type CaptionsCapturedEventDetail,
-} from '../youtube/caption-capture-event'
+import { CAPTION_EVENT, type CaptionsCapturedEventDetail } from '../youtube/caption-capture-event'
 import { findCaptionButton, hasAvailableCaptions } from '../youtube/caption-availability'
 import { hideNativeCaptions, showNativeCaptions } from '../youtube/native-caption-hider'
 
@@ -28,7 +24,6 @@ let lastVideoId = readVideoId()
 let animationFrameId: number | undefined
 let navigationPollId: number | undefined
 let captionRetryTimeoutId: number | undefined
-let lastCaptionRequestAt = 0
 let suppressCcOffUntil = 0
 let autoCcToggled = false
 let waitingForInitialCaptions = false
@@ -132,7 +127,6 @@ function armCaptionCapture(): void {
   hideNativeCaptions()
   autoCcToggled = false
   waitingForInitialCaptions = true
-  requestCurrentCaptions()
   void forceSubtitleReload()
   void scheduleCurrentWindow()
   window.clearTimeout(captionRetryTimeoutId)
@@ -197,10 +191,6 @@ function deactivateAiTranslate(): void {
 async function scheduleCurrentWindow(video = document.querySelector('video')): Promise<void> {
   if (!aiModeActive || !session || !video) return
 
-  if (!session.track) {
-    requestCurrentCaptions()
-  }
-
   const ccEnabled = isCcEnabled()
   if (!ccEnabled) {
     if (waitingForInitialCaptions || Date.now() < suppressCcOffUntil) return
@@ -217,14 +207,6 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
   const currentTimeMs = video.currentTime * 1000
   hideNativeCaptions()
   await session.ensureTranslations(currentTimeMs, true)
-}
-
-function requestCurrentCaptions(): void {
-  const now = Date.now()
-  if (now - lastCaptionRequestAt < 1_000) return
-  lastCaptionRequestAt = now
-  window.dispatchEvent(new CustomEvent(CAPTION_REQUEST_EVENT))
-  window.postMessage({ source: 'simple-translator', type: CAPTION_REQUEST_EVENT }, '*')
 }
 
 async function forceSubtitleReload(): Promise<void> {
