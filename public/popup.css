@@ -161,26 +161,40 @@ button:hover {
   background: var(--tc-btn-bg-hover);
 }
 
-#save {
+#save,
+#codex-sign-in {
   background: var(--tc-accent);
   color: #ffffff;
+}
+
+#save {
   justify-self: stretch;
 }
 
-#save:hover {
+#save:hover,
+#codex-sign-in:hover {
   background: var(--tc-accent-hover);
 }
 
-#status {
+#codex-auth-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#status,
+#codex-auth-status {
   margin: 0;
   color: var(--tc-fg-muted);
 }
 
-#status:empty {
+#status:empty,
+#codex-auth-status:empty {
   display: none;
 }
 
-#status.success {
+#status.success,
+#codex-auth-status.success {
   color: var(--tc-success);
 }
 

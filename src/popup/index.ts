@@ -3,6 +3,7 @@ import {
   type ExtensionMessage,
   type ExtensionResponse,
   type ExtensionSettings,
+  type ProviderAuthStatusResponse,
   type ProviderConfigResponse,
   type ProviderTestResponse,
   type SettingsResponse,
@@ -36,7 +37,11 @@ const providerTypeInput = requiredElement<HTMLSelectElement>('#provider-type')
 const providerModelPresetInput = requiredElement<HTMLSelectElement>('#provider-model-preset')
 const customModelRow = requiredElement<HTMLElement>('#custom-model-row')
 const providerModelInput = requiredElement<HTMLInputElement>('#provider-model')
+const providerApiKeyRow = requiredElement<HTMLElement>('#provider-api-key-row')
 const providerApiKeyInput = requiredElement<HTMLInputElement>('#provider-api-key')
+const codexAuthRow = requiredElement<HTMLElement>('#codex-auth-row')
+const codexSignInButton = requiredElement<HTMLButtonElement>('#codex-sign-in')
+const codexAuthStatus = requiredElement<HTMLParagraphElement>('#codex-auth-status')
 const saveButton = requiredElement<HTMLButtonElement>('#save')
 const status = requiredElement<HTMLParagraphElement>('#status')
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
@@ -57,6 +62,36 @@ function setStatus(text: string, kind: 'success' | 'error' | 'neutral' = 'neutra
 
 function getProviderType(): ProviderType {
   return providerTypeInput.value as ProviderType
+}
+
+function isOAuthProvider(providerType = getProviderType()): boolean {
+  return providerType === 'codex'
+}
+
+function syncProviderAuth(): void {
+  const isOAuth = isOAuthProvider()
+  providerApiKeyRow.hidden = isOAuth
+  codexAuthRow.hidden = !isOAuth
+  codexAuthStatus.textContent = ''
+  codexAuthStatus.classList.remove('success')
+  if (isOAuth) void updateProviderAuthStatus()
+}
+
+async function updateProviderAuthStatus(): Promise<void> {
+  const providerType = getProviderType()
+  if (!isOAuthProvider(providerType)) return
+
+  try {
+    const response = await sendMessage<ProviderAuthStatusResponse>({
+      type: 'GET_PROVIDER_AUTH_STATUS',
+      providerType,
+    } satisfies ExtensionMessage)
+    if (!response.ok || getProviderType() !== providerType) return
+    codexAuthStatus.textContent = response.signedIn ? 'Signed in' : 'Not signed in'
+    codexAuthStatus.classList.toggle('success', response.signedIn)
+  } catch {
+    codexAuthStatus.textContent = ''
+  }
 }
 
 function getSelectedModel(): string {
@@ -120,7 +155,7 @@ function updateSaveRequired(): void {
     selectionEnabledInput.checked !== currentSettings.selectionEnabled ||
     getProviderType() !== currentSettings.providerType ||
     getSelectedModel() !== savedModel ||
-    providerApiKeyInput.value.trim() !== savedApiKey
+    (!isOAuthProvider() && providerApiKeyInput.value.trim() !== savedApiKey)
   saveButton.hidden = !dirty
 }
 
@@ -130,6 +165,7 @@ function renderSettings(settings: ExtensionSettings): void {
   selectionEnabledInput.checked = settings.selectionEnabled
   renderProviderTypes(settings.providerType)
   renderModelPresets(settings.providerType)
+  syncProviderAuth()
 }
 
 function renderProviderConfig(response: ProviderConfigResponse): void {
@@ -137,6 +173,7 @@ function renderProviderConfig(response: ProviderConfigResponse): void {
   savedModel = response.config.model
   renderProviderTypes(response.config.type)
   renderModelPresets(response.config.type, response.config.model)
+  syncProviderAuth()
   updateSaveRequired() // called once, after model is known
 }
 
@@ -157,6 +194,37 @@ async function loadSettings(): Promise<void> {
   )
 }
 
+function getFormSettings(providerType: ProviderType): ExtensionSettings {
+  return {
+    ...currentSettings,
+    targetLanguage: targetLanguageInput.value,
+    selectionEnabled: selectionEnabledInput.checked,
+    providerType,
+  }
+}
+
+async function persistProviderSettings(
+  settings: ExtensionSettings,
+  config: ProviderConfig,
+): Promise<boolean> {
+  const settingsResponse = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings })
+  if (!settingsResponse.ok) {
+    setStatus(settingsResponse.error, 'error')
+    return false
+  }
+
+  const configResponse = await sendMessage({
+    type: 'SET_PROVIDER_CONFIG',
+    config,
+  })
+  if (!configResponse.ok) {
+    setStatus(configResponse.error, 'error')
+    return false
+  }
+
+  return true
+}
+
 async function saveSettings(): Promise<void> {
   saveButton.hidden = true
   setStatus('Testing provider...')
@@ -164,9 +232,10 @@ async function saveSettings(): Promise<void> {
   // snapshot form values so in-flight edits don't leak into saves
   const providerType = getProviderType()
   const model = getSelectedModel()
-  const apiKey = providerApiKeyInput.value.trim()
+  const isOAuth = isOAuthProvider(providerType)
+  const apiKey = isOAuth ? '' : providerApiKeyInput.value.trim()
   const config: ProviderConfig = { type: providerType, model }
-  const secret: ProviderSecret = { apiKey: apiKey || undefined }
+  const secret: ProviderSecret = isOAuth ? {} : { apiKey: apiKey || undefined }
 
   try {
     const testResponse = await sendMessage<ProviderTestResponse>({
@@ -180,29 +249,10 @@ async function saveSettings(): Promise<void> {
       return
     }
 
-    const settings: ExtensionSettings = {
-      ...currentSettings,
-      targetLanguage: targetLanguageInput.value,
-      selectionEnabled: selectionEnabledInput.checked,
-      providerType,
-    }
+    const settings = getFormSettings(providerType)
+    if (!(await persistProviderSettings(settings, config))) return
 
-    const settingsResponse = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings })
-    if (!settingsResponse.ok) {
-      setStatus(settingsResponse.error, 'error')
-      return
-    }
-
-    const configResponse = await sendMessage({
-      type: 'SET_PROVIDER_CONFIG',
-      config,
-    })
-    if (!configResponse.ok) {
-      setStatus(configResponse.error, 'error')
-      return
-    }
-
-    if (secret.apiKey) {
+    if (!isOAuth && secret.apiKey) {
       const secretResponse = await sendMessage({
         type: 'SET_PROVIDER_SECRET',
         providerType,
@@ -228,6 +278,7 @@ async function saveSettings(): Promise<void> {
 
 providerTypeInput.addEventListener('change', () => {
   renderModelPresets(getProviderType())
+  syncProviderAuth()
   updateSaveRequired()
 })
 
@@ -244,6 +295,32 @@ selectionEnabledInput.addEventListener('change', updateSaveRequired)
 
 saveButton.addEventListener('click', () => {
   void saveSettings()
+})
+
+async function signInWithChatGPT(): Promise<void> {
+  codexSignInButton.disabled = true
+
+  try {
+    const providerType = getProviderType()
+    const model = getSelectedModel()
+    const config: ProviderConfig = { type: providerType, model }
+    const settings = getFormSettings(providerType)
+
+    if (!(await persistProviderSettings(settings, config))) return
+    currentSettings = settings
+    savedModel = model
+    savedApiKey = ''
+    updateSaveRequired()
+    await chrome.tabs.create({ url: chrome.runtime.getURL('codex-auth.html') })
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    codexSignInButton.disabled = false
+  }
+}
+
+codexSignInButton.addEventListener('click', () => {
+  void signInWithChatGPT()
 })
 
 enhanceSelect(providerTypeInput)

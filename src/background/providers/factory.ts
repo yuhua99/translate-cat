@@ -1,12 +1,22 @@
 import { AnthropicProvider } from './anthropic'
+import { CodexProvider } from './codex'
 import { GeminiProvider } from './gemini'
 import { OpenAiProvider } from './openai'
 import { OpencodeZenProvider } from './opencode-zen'
+import type { ProviderStorageArea } from './storage'
 import type { AiProvider, ProviderConfig, ProviderSecret } from './types'
 
-export function createProvider(config: ProviderConfig, secret: ProviderSecret): AiProvider {
+export function createProvider(
+  config: ProviderConfig,
+  secret: ProviderSecret,
+  secretStorage: ProviderStorageArea,
+): AiProvider {
   if (config.type === 'openai') {
     return new OpenAiProvider(config, secret)
+  }
+
+  if (config.type === 'codex') {
+    return new CodexProvider(config, secret, secretStorage)
   }
 
   if (config.type === 'anthropic') {

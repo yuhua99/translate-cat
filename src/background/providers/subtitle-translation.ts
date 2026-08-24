@@ -188,7 +188,7 @@ function hashString(input: string): string {
 async function resolveProvider(providerType: ProviderType, stores: ProviderStores) {
   const config = await getProviderConfig(stores.sync, providerType)
   const secret = await getProviderSecret(stores.local, providerType)
-  return createProvider(config, secret)
+  return createProvider(config, secret, stores.local)
 }
 
 export async function translateTextMessage(

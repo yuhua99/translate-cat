@@ -2,6 +2,7 @@ import { createProvider } from './providers/factory'
 import {
   getProviderConfig,
   getProviderSecret,
+  hasCredentials,
   setProviderConfig,
   setProviderSecret,
 } from './providers/storage'
@@ -66,6 +67,13 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         return
       }
 
+      if (message.type === 'GET_PROVIDER_AUTH_STATUS') {
+        const secret = await getProviderSecret(chrome.storage.local, message.providerType)
+        const signedIn = hasCredentials(message.providerType, secret)
+        sendResponse({ ok: true, signedIn } satisfies ExtensionResponse)
+        return
+      }
+
       if (message.type === 'TEST_PROVIDER') {
         const secret = message.secret.apiKey
           ? message.secret
@@ -74,6 +82,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           (await createProvider(
             message.config,
             secret,
+            chrome.storage.local,
           ).testConnection()) satisfies ExtensionResponse,
         )
         return
@@ -83,10 +92,13 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         const settings = await getSettings(chrome.storage.sync)
         const config = await getProviderConfig(chrome.storage.sync, settings.providerType)
         const secret = await getProviderSecret(chrome.storage.local, settings.providerType)
-        if (!secret.apiKey) {
+        if (!hasCredentials(settings.providerType, secret)) {
           sendResponse({
             ok: false,
-            error: `Missing API key for ${settings.providerType}`,
+            error:
+              settings.providerType === 'codex'
+                ? 'Not signed in to OpenAI Codex'
+                : `Missing API key for ${settings.providerType}`,
           } satisfies ExtensionResponse)
           return
         }

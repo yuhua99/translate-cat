@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in with ChatGPT</title>
+    <link rel="stylesheet" href="codex-auth.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Sign in with ChatGPT</h1>
+
+      <section id="auth-loading">
+        <p>Requesting code...</p>
+      </section>
+
+      <section id="auth-code" hidden>
+        <p id="user-code" class="user-code"></p>
+        <div class="actions">
+          <button id="copy-code" type="button">Copy</button>
+          <a id="verification-link" target="_blank" rel="noopener"> Open verification page </a>
+        </div>
+        <p>Enter this code on the verification page. Waiting for approval…</p>
+        <p class="note">Keep this page open while you sign in.</p>
+      </section>
+
+      <section id="auth-success" hidden>
+        <p class="success">Signed in. You can close this tab.</p>
+      </section>
+
+      <section id="auth-error" hidden>
+        <p id="error-message" class="error"></p>
+        <button id="retry" type="button">Retry</button>
+      </section>
+    </main>
+    <script type="module" src="codex-auth.js"></script>
+  </body>
+</html>

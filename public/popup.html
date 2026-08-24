@@ -18,7 +18,7 @@
           Active provider
           <select id="provider-type"></select>
         </label>
-        <label>
+        <label id="provider-api-key-row">
           API key
           <input
             id="provider-api-key"
@@ -27,6 +27,10 @@
             placeholder="Enter to change key"
           />
         </label>
+        <div id="codex-auth-row" hidden>
+          <button id="codex-sign-in" type="button">Sign in with ChatGPT</button>
+          <p id="codex-auth-status"></p>
+        </div>
         <label>
           Model
           <select id="provider-model-preset"></select>

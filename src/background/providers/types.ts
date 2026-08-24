@@ -1,7 +1,8 @@
+import type { CodexTokens } from '../../shared/codex-oauth'
 import type { ManualTranslationItem } from '../../youtube/translation-validation'
 import type { ContextCue } from '../../shared/messages'
 
-export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini'
+export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini' | 'codex'
 
 export interface ProviderConfig {
   type: ProviderType
@@ -10,6 +11,7 @@ export interface ProviderConfig {
 
 export interface ProviderSecret {
   apiKey?: string
+  codexAuth?: CodexTokens
 }
 
 export interface ManualTranslateInput {

@@ -45,6 +45,8 @@
   "permissions": ["storage", "contextMenus"],
   "host_permissions": [
     "https://api.openai.com/*",
+    "https://auth.openai.com/*",
+    "https://chatgpt.com/*",
     "https://api.anthropic.com/*",
     "https://opencode.ai/*",
     "https://generativelanguage.googleapis.com/*"

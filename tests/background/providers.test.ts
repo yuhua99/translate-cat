@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { AnthropicProvider } from '../../src/background/providers/anthropic'
+import { CodexProvider } from '../../src/background/providers/codex'
 import {
   ProviderHttpError,
   ProviderJsonParseError,
@@ -7,6 +8,7 @@ import {
 } from '../../src/background/providers/errors'
 import { GeminiProvider } from '../../src/background/providers/gemini'
 import { parseJsonObject } from '../../src/background/providers/json'
+import { TOKEN_URL } from '../../src/shared/codex-oauth'
 import { OpenAiProvider } from '../../src/background/providers/openai'
 import { OpencodeZenProvider } from '../../src/background/providers/opencode-zen'
 import {
@@ -22,6 +24,28 @@ const originalFetch = globalThis.fetch
 afterEach(() => {
   globalThis.fetch = originalFetch
 })
+
+function createCodexAccessToken(accountId = 'account-123'): string {
+  const payload = btoa(
+    JSON.stringify({ 'https://api.openai.com/auth': { chatgpt_account_id: accountId } }),
+  )
+  return `header.${payload}.signature`
+}
+
+function createCodexAuth(expiresAt = Date.now() + 60 * 60 * 1_000) {
+  return {
+    accessToken: createCodexAccessToken(),
+    refreshToken: 'refresh-token',
+    expiresAt,
+    accountId: 'account-123',
+  }
+}
+
+function sse(events: unknown[]): Response {
+  return new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''), {
+    headers: { 'content-type': 'text/event-stream' },
+  })
+}
 
 function createMemoryStorage(
   initial: Record<string, unknown> = {},
@@ -61,6 +85,311 @@ describe('provider storage', () => {
     })
     await expect(getProviderSecret(local, 'openai')).resolves.toEqual({ apiKey: 'secret-key' })
     expect(JSON.stringify(sync.data)).not.toContain('secret-key')
+  })
+})
+
+describe('CodexProvider', () => {
+  test('sends a streamed Responses API request and parses translation deltas', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return sse([
+        { type: 'response.output_text.delta', delta: '{"translations":[{"id":"a",' },
+        { type: 'response.output_text.delta', delta: '"text":"你好"}]}' },
+        { type: 'response.completed' },
+      ])
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+    const result = await provider.translateManual({
+      targetLanguage: 'Traditional Chinese',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    expect(request?.url).toBe('https://chatgpt.com/backend-api/codex/responses')
+    expect(request?.headers.get('authorization')).toBe(`Bearer ${createCodexAuth().accessToken}`)
+    expect(request?.headers.get('chatgpt-account-id')).toBe('account-123')
+    expect(request?.headers.get('originator')).toBe('translate-cat')
+    expect(request?.headers.get('openai-beta')).toBe('responses=experimental')
+    expect(request?.headers.get('accept')).toBe('text/event-stream')
+    expect(await request?.json()).toMatchObject({
+      model: 'gpt-5.4-mini',
+      store: false,
+      stream: true,
+      input: [{ type: 'message', role: 'user' }],
+    })
+    expect(result).toEqual({ translations: [{ id: 'a', text: '你好' }] })
+  })
+
+  test('classifies rate-limited SSE failures as ProviderHttpError 429', async () => {
+    globalThis.fetch = async () =>
+      sse([
+        {
+          type: 'response.failed',
+          error: { code: 'rate_limit_exceeded', message: 'Rate limit exceeded' },
+        },
+      ])
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+
+    const promise = provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+    await expect(promise).rejects.toBeInstanceOf(ProviderHttpError)
+    await expect(promise).rejects.toMatchObject({ status: 429 })
+  })
+
+  test('classifies deterministic SSE failures as plain Error', async () => {
+    globalThis.fetch = async () =>
+      sse([
+        {
+          type: 'response.failed',
+          error: { code: 'invalid_model', message: 'Model is unavailable' },
+        },
+      ])
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+
+    let caught: unknown
+    try {
+      await provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      })
+    } catch (error) {
+      caught = error
+    }
+
+    expect(caught).toBeInstanceOf(Error)
+    expect(caught).not.toBeInstanceOf(ProviderHttpError)
+    expect(caught).not.toBeInstanceOf(ProviderNetworkError)
+    expect(caught).not.toBeInstanceOf(ProviderJsonParseError)
+    expect((caught as Error).message).toContain('invalid_model')
+  })
+
+  test('throws ProviderHttpError on HTTP failures', async () => {
+    globalThis.fetch = async () => new Response('server error', { status: 500 })
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+
+    const promise = provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+    await expect(promise).rejects.toMatchObject({ status: 500 })
+  })
+
+  test('throws ProviderNetworkError on fetch rejection', async () => {
+    globalThis.fetch = async () => {
+      throw new TypeError('network down')
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+
+    await expect(
+      provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      }),
+    ).rejects.toBeInstanceOf(ProviderNetworkError)
+  })
+
+  test('refreshes expired credentials and persists them through injected storage', async () => {
+    const storage = createMemoryStorage()
+    const auth = createCodexAuth(Date.now())
+    await setProviderSecret(storage, 'codex', { codexAuth: auth })
+    globalThis.fetch = async (input) => {
+      if (String(input) === TOKEN_URL) {
+        return Response.json({
+          access_token: createCodexAccessToken(),
+          refresh_token: 'new-refresh-token',
+          expires_in: 3600,
+        })
+      }
+      return sse([
+        {
+          type: 'response.output_text.delta',
+          delta: '{"translations":[{"id":"a","text":"你好"}]}',
+        },
+        { type: 'response.completed' },
+      ])
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      storage,
+    )
+    await provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    await expect(getProviderSecret(storage, 'codex')).resolves.toMatchObject({
+      codexAuth: { refreshToken: 'new-refresh-token', accountId: 'account-123' },
+    })
+  })
+
+  test('serializes concurrent expired-token refreshes', async () => {
+    const storage = createMemoryStorage()
+    const auth = createCodexAuth(Date.now())
+    await setProviderSecret(storage, 'codex', { codexAuth: auth })
+    let refreshCalls = 0
+    globalThis.fetch = async (input) => {
+      if (String(input) === TOKEN_URL) {
+        refreshCalls += 1
+        return Response.json({
+          access_token: createCodexAccessToken(),
+          refresh_token: 'new-refresh-token',
+          expires_in: 3600,
+        })
+      }
+      return sse([
+        {
+          type: 'response.output_text.delta',
+          delta: '{"translations":[{"id":"a","text":"你好"}]}',
+        },
+        { type: 'response.completed' },
+      ])
+    }
+
+    const input = {
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    }
+    await Promise.all([
+      new CodexProvider(
+        { type: 'codex', model: 'gpt-5.4-mini' },
+        { codexAuth: auth },
+        storage,
+      ).translateManual(input),
+      new CodexProvider(
+        { type: 'codex', model: 'gpt-5.4-mini' },
+        { codexAuth: auth },
+        storage,
+      ).translateManual(input),
+    ])
+
+    expect(refreshCalls).toBe(1)
+  })
+
+  test('converts refresh HTTP failures to ProviderHttpError', async () => {
+    const auth = createCodexAuth(Date.now())
+    globalThis.fetch = async () => new Response('invalid grant', { status: 400 })
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      createMemoryStorage(),
+    )
+
+    const promise = provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+    await expect(promise).rejects.toBeInstanceOf(ProviderHttpError)
+    await expect(promise).rejects.toMatchObject({ status: 400 })
+  })
+
+  test('converts refresh network failures to ProviderNetworkError', async () => {
+    const auth = createCodexAuth(Date.now())
+    globalThis.fetch = async () => {
+      throw new TypeError('network down')
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      createMemoryStorage(),
+    )
+
+    await expect(
+      provider.translateManual({
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+      }),
+    ).rejects.toBeInstanceOf(ProviderNetworkError)
+  })
+
+  test('refreshes once and retries after a 401 response', async () => {
+    const auth = createCodexAuth()
+    let responseCalls = 0
+    let refreshCalls = 0
+    globalThis.fetch = async (input) => {
+      if (String(input) === TOKEN_URL) {
+        refreshCalls += 1
+        return Response.json({
+          access_token: createCodexAccessToken(),
+          refresh_token: 'new-refresh-token',
+          expires_in: 3600,
+        })
+      }
+      responseCalls += 1
+      if (responseCalls === 1) return new Response('unauthorized', { status: 401 })
+      return sse([
+        {
+          type: 'response.output_text.delta',
+          delta: '{"translations":[{"id":"a","text":"你好"}]}',
+        },
+        { type: 'response.completed' },
+      ])
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      createMemoryStorage(),
+    )
+    await provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    expect(responseCalls).toBe(2)
+    expect(refreshCalls).toBe(1)
+  })
+
+  test('propagates aborts', async () => {
+    const controller = new AbortController()
+    const reason = new DOMException('aborted', 'AbortError')
+    controller.abort(reason)
+    globalThis.fetch = async () => {
+      throw reason
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: createCodexAuth() },
+      createMemoryStorage(),
+    )
+
+    await expect(
+      provider.translateManual(
+        { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+        controller.signal,
+      ),
+    ).rejects.toBe(reason)
   })
 })
 

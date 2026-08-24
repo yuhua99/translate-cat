@@ -33,6 +33,10 @@ export async function getProviderSecret(
   return secrets[providerType] ?? {}
 }
 
+export function hasCredentials(providerType: ProviderType, secret: ProviderSecret): boolean {
+  return providerType === 'codex' ? Boolean(secret.codexAuth) : Boolean(secret.apiKey)
+}
+
 export async function setProviderConfig(
   storage: ProviderStorageArea,
   config: ProviderConfig,

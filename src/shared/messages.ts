@@ -55,6 +55,7 @@ export type ExtensionMessage =
   | { type: 'GET_PROVIDER_CONFIG'; providerType: ProviderType }
   | { type: 'SET_PROVIDER_CONFIG'; config: ProviderConfig }
   | { type: 'SET_PROVIDER_SECRET'; providerType: ProviderType; secret: ProviderSecret }
+  | { type: 'GET_PROVIDER_AUTH_STATUS'; providerType: ProviderType }
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
   | { type: 'TRANSLATE_TEXT'; text: string }
@@ -70,6 +71,9 @@ export type ProviderConfigResponse =
   | { ok: true; config: ProviderConfig }
   | { ok: false; error: string }
 export type ProviderTestResponse = ProviderTestOutput | { ok: false; error: string }
+export type ProviderAuthStatusResponse =
+  | { ok: true; signedIn: boolean }
+  | { ok: false; error: string }
 export interface TranslationError {
   ok: false
   error: string
@@ -83,6 +87,7 @@ export type ExtensionResponse =
   | MessageResponse
   | ProviderConfigResponse
   | ProviderTestResponse
+  | ProviderAuthStatusResponse
   | TranslationResponse
   | TranslateTextResponse
 
