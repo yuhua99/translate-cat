@@ -20,7 +20,15 @@ const BUTTON_ID = 'simple-translator-toggle'
 const SYNC_DEBOUNCE_MS = 150
 const CAPTION_CONTROL_SELECTOR = '.html5-video-player, .ytp-chrome-controls, .ytp-subtitles-button'
 type ToggleState = { kind: 'active' | 'inactive' } | { kind: 'unavailable'; reason: string }
-let enabled = false
+type TranslateToggleOptions = {
+  isActive: () => boolean
+  onActivateRequest: () => Promise<boolean> | void
+  onDeactivateRequest: () => void
+}
+
+let isActive = () => false
+let onActivateRequest: () => Promise<boolean> | void = () => {}
+let onDeactivateRequest = () => {}
 let syncSequence = 0
 let syncTimeoutId: number | undefined
 
@@ -65,7 +73,7 @@ async function resolveToggleState(captionButton = findCaptionButton()): Promise<
   const validation = await sendMessage<MessageResponse>({ type: 'VALIDATE_ACTIVE_PROVIDER' })
   if (!validation.ok) return { kind: 'unavailable', reason: validation.error }
 
-  return { kind: enabled ? 'active' : 'inactive' }
+  return { kind: isActive() ? 'active' : 'inactive' }
 }
 
 function applyToggleState(button: HTMLButtonElement, state: ToggleState): void {
@@ -120,12 +128,30 @@ async function toggleEnabled(): Promise<void> {
   if (button?.disabled) return
 
   const settings = await loadSettings()
-  const next = { ...settings, enabled: !settings.enabled }
+  if (isActive()) {
+    const response = await sendMessage<SettingsResponse>({
+      type: 'SET_SETTINGS',
+      settings: { ...settings, enabled: false },
+    })
+    if (!response.ok) return
 
-  const response = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings: next })
+    onDeactivateRequest()
+    await syncTranslateToggle()
+    return
+  }
+
+  if (settings.enabled) {
+    await onActivateRequest()
+    await syncTranslateToggle()
+    return
+  }
+
+  const response = await sendMessage<SettingsResponse>({
+    type: 'SET_SETTINGS',
+    settings: { ...settings, enabled: true },
+  })
   if (!response.ok) return
 
-  enabled = next.enabled
   await syncTranslateToggle()
 }
 
@@ -134,8 +160,7 @@ async function loadSettings(): Promise<ExtensionSettings> {
   return response.ok ? response.settings : DEFAULT_SETTINGS
 }
 
-function updateButtonFromSettings(settings: ExtensionSettings): void {
-  enabled = settings.enabled
+function updateButtonFromSettings(): void {
   void syncTranslateToggle()
 }
 
@@ -175,11 +200,15 @@ function listenForSettingsChanges(): void {
   })
 }
 
-export function injectTranslateToggle(): void {
-  void loadSettings().then((settings) => {
+export function injectTranslateToggle(options: TranslateToggleOptions): void {
+  isActive = options.isActive
+  onActivateRequest = options.onActivateRequest
+  onDeactivateRequest = options.onDeactivateRequest
+
+  void loadSettings().then(() => {
     observeCaptionButton()
     void syncTranslateToggle()
     listenForSettingsChanges()
-    updateButtonFromSettings(settings)
+    updateButtonFromSettings()
   })
 }

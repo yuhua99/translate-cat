@@ -179,10 +179,12 @@ async function activateAiTranslate(
   armCaptionCapture()
   startRenderLoop()
   startNavigationPoll()
+  void syncTranslateToggle()
   return true
 }
 
 function teardownAiTranslate(): void {
+  const wasActive = aiModeActive
   cancelActivationRetry()
   aiModeActive = false
   waitingForInitialCaptions = false
@@ -193,6 +195,7 @@ function teardownAiTranslate(): void {
   renderer?.clear()
   stopRenderLoop()
   stopNavigationPoll()
+  if (wasActive) void syncTranslateToggle()
 }
 
 function deactivateAiTranslate(): void {
@@ -384,7 +387,11 @@ function boot(): void {
     if (!aiModeActive) void applyStoredEnabledState()
   })
   listenForSettingsChanges()
-  injectTranslateToggle()
+  injectTranslateToggle({
+    isActive: () => aiModeActive,
+    onActivateRequest: activateAiTranslate,
+    onDeactivateRequest: deactivateAiTranslate,
+  })
   void applyStoredEnabledState()
 
   window.addEventListener('pagehide', () => {
