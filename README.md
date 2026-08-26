@@ -14,7 +14,13 @@
 - **YouTube subtitles** — translates captions in real time
 - **Selection translation** — select text on any page, click the cat icon
 
-Providers: OpenAI, Anthropic, Google Gemini, [opencode Zen](https://opencode.ai), or a ChatGPT subscription.
+| Provider             | Type         |
+| -------------------- | ------------ |
+| OpenAI               | apikey       |
+| Anthropic            | apikey       |
+| Google Gemini        | apikey       |
+| [opencode Zen](https://opencode.ai) | apikey       |
+| ChatGPT subscription | subscription |
 
 ## Install
 
