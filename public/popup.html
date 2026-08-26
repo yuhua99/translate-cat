@@ -4,61 +4,87 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>translate cat</title>
+    <link rel="stylesheet" href="lcd.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <main>
-      <p class="logo">
-        <img src="icons/icon-128.png" alt="translate cat" width="64" />
-      </p>
+    <!-- THESIS: the popup is a pocket electronic dictionary, ancestor of the translator; it refuses the generic dark settings panel. OWN-WORLD: one LCD green-gray screen (#a8b39a), pixel ink (#1e241c), charcoal bezel, monospace caps, states expressed only by inversion; pixel-art cat logo lives on-screen, store icon untouched. STORY: the user sets provider, key, model, language once; the device confirms with an inverted SAVED block. FIRST VIEWPORT: bezel device, screen header with pixel logo + wordmark, five LCD rows, SAVE bezel key. FORM: retro electronic dictionary LCD, candidate 5 of the grounded list, seed 08173047. FINISH: unreviewed is unfinished; this build ends with the finish review and the verdict. -->
+    <main class="popup lcd-bezel-surface">
+      <p class="popup__mark">TRANSLATE CAT TC-128</p>
+      <section class="popup__screen lcd-screen-surface" aria-label="Translate cat settings">
+        <header class="popup__header">
+          <svg
+            class="popup__logo"
+            viewBox="0 0 16 16"
+            role="img"
+            aria-label="translate cat pixel logo"
+          >
+            <rect x="2" width="12" height="1" fill="var(--lcd-ink)" />
+            <rect x="1" y="1" width="14" height="1" fill="var(--lcd-ink)" />
+            <rect y="2" width="16" height="13" fill="var(--lcd-ink)" />
+            <rect x="1" y="15" width="14" height="1" fill="var(--lcd-ink)" />
+            <g fill="var(--lcd-screen)">
+              <rect x="3" y="6" width="2" height="2" />
+              <rect x="11" y="6" width="2" height="2" />
+              <rect x="2" y="8" width="12" height="7" />
+              <rect x="1" y="11" width="14" height="3" />
+            </g>
+            <g fill="var(--lcd-ink)">
+              <rect x="4" y="10" width="2" height="1" />
+              <rect x="10" y="10" width="2" height="1" />
+              <rect x="3" y="11" width="3" height="1" />
+              <rect x="10" y="11" width="3" height="1" />
+              <rect x="7" y="12" width="2" height="1" />
+              <rect x="1" y="12" width="2" height="1" />
+              <rect x="13" y="12" width="2" height="1" />
+              <rect x="1" y="14" width="3" height="1" />
+              <rect x="12" y="14" width="3" height="1" />
+            </g>
+          </svg>
+          <span>TRANSLATE CAT</span>
+          <span class="popup__header-mode">SETUP</span>
+        </header>
 
-      <section>
-        <h2>Provider</h2>
-        <label>
-          Active provider
-          <select id="provider-type"></select>
-        </label>
-        <label id="provider-api-key-row">
-          API key
-          <input
-            id="provider-api-key"
-            type="password"
-            autocomplete="off"
-            placeholder="Enter to change key"
-          />
-        </label>
-        <div id="codex-auth-row" hidden>
-          <button id="codex-sign-in" type="button">Sign in with ChatGPT</button>
-          <p id="codex-auth-status"></p>
-        </div>
-        <label>
-          Model
-          <select id="provider-model-preset"></select>
-        </label>
-        <label id="custom-model-row" hidden>
-          Custom model
-          <input id="provider-model" type="text" placeholder="Model id" />
-        </label>
+        <section class="popup__settings" aria-label="Settings">
+          <label class="lcd-row">
+            <span class="lcd-row__label">PROVIDER</span>
+            <select id="provider-type"></select>
+          </label>
+          <label class="lcd-row" id="provider-api-key-row">
+            <span class="lcd-row__label">API KEY</span>
+            <input
+              id="provider-api-key"
+              type="password"
+              autocomplete="off"
+              placeholder="ENTER TO CHANGE"
+            />
+          </label>
+          <div class="popup__auth-row" id="codex-auth-row" hidden>
+            <button class="lcd-bezel-key" id="codex-sign-in" type="button">
+              SIGN IN WITH CHATGPT
+            </button>
+            <p class="lcd-row__value" id="codex-auth-status"></p>
+          </div>
+          <label class="lcd-row">
+            <span class="lcd-row__label">MODEL</span>
+            <select id="provider-model-preset"></select>
+          </label>
+          <label class="lcd-row" id="custom-model-row" hidden>
+            <span class="lcd-row__label">CUSTOM MODEL</span>
+            <input id="provider-model" type="text" placeholder="MODEL ID" />
+          </label>
+          <label class="lcd-row popup__toggle">
+            <span class="lcd-row__label">SELECTION</span>
+            <input id="selection-enabled" type="checkbox" />
+          </label>
+          <label class="lcd-row">
+            <span class="lcd-row__label">LANGUAGE</span>
+            <select id="target-language"></select>
+          </label>
+        </section>
+        <p id="status" role="status"></p>
       </section>
-
-      <section>
-        <h2>Selection</h2>
-        <label class="toggle">
-          <input id="selection-enabled" type="checkbox" />
-          Enable selection translation
-        </label>
-      </section>
-
-      <section>
-        <h2>Translation</h2>
-        <label>
-          Target language
-          <select id="target-language"></select>
-        </label>
-      </section>
-
-      <button id="save" type="button">Save</button>
-      <p id="status" role="status"></p>
+      <button class="lcd-bezel-key" id="save" type="button">SAVE</button>
     </main>
     <script type="module" src="popup.js"></script>
   </body>

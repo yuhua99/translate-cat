@@ -1,0 +1,110 @@
+:root {
+  --lcd-screen: #a8b39a;
+  --lcd-screen-raised: #b7c1a9;
+  --lcd-screen-recessed: #929d86;
+  --lcd-ink: #1e241c;
+  --lcd-bezel: #2a2a28;
+  --lcd-bezel-raised: #3a3a37;
+  --lcd-bezel-ink: #d1d5ca;
+  --lcd-bezel-edge: #171817;
+  --lcd-grid: rgb(30 36 28 / 6%);
+  --lcd-space: 4px;
+  --lcd-hairline: 1px;
+  --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.lcd-bezel-surface {
+  padding: calc(var(--lcd-space) * 2);
+  color: var(--lcd-bezel-ink);
+  background: var(--lcd-bezel);
+  border: var(--lcd-hairline) solid var(--lcd-bezel-edge);
+  border-radius: 3px;
+}
+
+.lcd-screen-surface {
+  position: relative;
+  color: var(--lcd-ink);
+  background-color: var(--lcd-screen);
+  background-image: repeating-linear-gradient(90deg, var(--lcd-grid) 0 1px, transparent 1px 4px);
+  border: 2px solid var(--lcd-bezel-edge);
+}
+
+.lcd-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+  align-items: center;
+  min-height: 28px;
+  padding: var(--lcd-space);
+  color: var(--lcd-ink);
+  font: 700 10px/1.15 var(--lcd-font);
+  letter-spacing: 0.04em;
+}
+
+.lcd-row__label {
+  min-width: 0;
+}
+
+.lcd-row__value {
+  min-width: 0;
+  padding: 0 0 2px calc(var(--lcd-space) * 2);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-bottom: var(--lcd-hairline) dotted currentColor;
+}
+
+.lcd-inverted {
+  color: var(--lcd-screen);
+  background: var(--lcd-ink);
+}
+
+.lcd-bezel-key {
+  min-height: 27px;
+  padding: 5px 9px;
+  color: var(--lcd-bezel-ink);
+  background: var(--lcd-bezel);
+  border: var(--lcd-hairline) solid var(--lcd-bezel-edge);
+  border-radius: 2px;
+  box-shadow: 0 1px 0 var(--lcd-bezel-edge);
+  cursor: pointer;
+  font: 700 9px/1.2 var(--lcd-font);
+  letter-spacing: 0.07em;
+  text-align: center;
+}
+
+.lcd-bezel-key:hover:not(:disabled) {
+  background: var(--lcd-bezel-raised);
+}
+
+.lcd-bezel-key:active {
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+.lcd-bezel-key:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.lcd-cursor {
+  display: inline-block;
+  width: 0.7em;
+  animation: lcd-blink 1s steps(1, end) infinite;
+}
+
+@keyframes lcd-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lcd-cursor {
+    animation: none;
+  }
+}

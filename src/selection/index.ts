@@ -13,75 +13,101 @@ const STYLE_ID = 'translate-cat-selection-style'
 const MAX_LEN = 2000
 const Z = 2147483647
 
+// See public/lcd.css for the canonical LCD tokens.
 const STYLE = `
+#${ROOT_ID},
+#${ROOT_ID} * {
+  box-sizing: border-box;
+}
 #${ROOT_ID} {
-  --tc-bg: #111827;
-  --tc-surface: #0f172a;
-  --tc-fg: #f4f4f5;
-  --tc-fg-muted: #cbd5e1;
-  --tc-fg-subtle: #94a3b8;
-  --tc-border: #1f2937;
-  --tc-accent: #3b82f6;
-  --tc-radius: 10px;
-  --tc-radius-md: 8px;
-  --tc-radius-sm: 6px;
-  --tc-font: 13px/1.4 system-ui, sans-serif;
-  --tc-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  --tc-error: #f87171;
+  --tc-screen: #a8b39a;
+  --tc-ink: #1e241c;
+  --tc-bezel: #2a2a28;
   position: fixed;
   z-index: ${Z};
-  font: var(--tc-font);
-  color: var(--tc-fg);
+  color: var(--tc-ink);
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 #${ROOT_ID} .tc-trigger {
   all: unset;
   box-sizing: border-box;
-  cursor: pointer;
   display: block;
-  width: 24px;
-  height: 24px;
-  background: transparent;
-  border: 0;
+  width: 28px;
+  height: 28px;
   padding: 0;
+  color: var(--tc-ink);
+  cursor: pointer;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  line-height: 1;
 }
-#${ROOT_ID} .tc-trigger img {
-  width: 24px;
-  height: 24px;
+#${ROOT_ID} .tc-trigger svg {
   display: block;
+  width: 28px;
+  height: 28px;
   pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+  shape-rendering: crispEdges;
 }
 #${ROOT_ID} .tc-bubble {
-  background: var(--tc-bg);
-  border: 1px solid var(--tc-border);
-  border-radius: var(--tc-radius);
-  box-shadow: var(--tc-shadow);
   max-width: 360px;
   overflow: hidden;
+  color: var(--tc-ink);
+  background-color: var(--tc-screen);
+  background-image: repeating-linear-gradient(90deg, rgba(30, 36, 28, 0.06) 0 1px, transparent 1px 4px);
+  border: 1px solid var(--tc-ink);
+  border-radius: 2px;
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 #${ROOT_ID} .tc-handle {
-  height: 10px;
-  background: var(--tc-surface);
-  border-bottom: 1px solid var(--tc-border);
-  border-top-left-radius: var(--tc-radius);
-  border-top-right-radius: var(--tc-radius);
+  height: 8px;
+  border-bottom: 1px dotted var(--tc-ink);
+  background-image: radial-gradient(circle, var(--tc-ink) 1px, transparent 1.25px);
+  background-position: center;
+  background-size: 4px 4px;
   cursor: move;
-  user-select: none;
   touch-action: none;
+  user-select: none;
 }
 #${ROOT_ID} .tc-body {
-  padding: 10px 12px;
   max-height: 40vh;
+  padding: 10px 12px;
   overflow: auto;
+  color: var(--tc-ink);
+  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
   user-select: text;
-  color: var(--tc-fg);
+}
+#${ROOT_ID} .tc-body.tc-loading::after {
+  display: inline-block;
+  margin-left: 4px;
+  content: '█';
+  animation: tc-cursor-blink 1s steps(1, end) infinite;
 }
 #${ROOT_ID} .tc-body.tc-error {
-  color: var(--tc-error);
+  color: var(--tc-screen);
+  background: var(--tc-ink);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+@keyframes tc-cursor-blink {
+  50% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #${ROOT_ID} .tc-body.tc-loading::after { animation: none; }
 }
 `
+
+const PIXEL_LOGO = `<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="2" width="12" height="1" fill="#1e241c"/><rect x="1" y="1" width="14" height="1" fill="#1e241c"/><rect y="2" width="16" height="13" fill="#1e241c"/><rect x="1" y="15" width="14" height="1" fill="#1e241c"/><g fill="#d1d5ca"><rect x="3" y="6" width="2" height="2"/><rect x="11" y="6" width="2" height="2"/><rect x="2" y="8" width="12" height="7"/><rect x="1" y="11" width="14" height="3"/></g><g fill="#1e241c"><rect x="4" y="10" width="2" height="1"/><rect x="10" y="10" width="2" height="1"/><rect x="3" y="11" width="3" height="1"/><rect x="10" y="11" width="3" height="1"/><rect x="7" y="12" width="2" height="1"/><rect x="1" y="12" width="2" height="1"/><rect x="13" y="12" width="2" height="1"/><rect x="1" y="14" width="3" height="1"/><rect x="12" y="14" width="3" height="1"/></g></svg>`
 
 function ensureStyle(): void {
   if (document.getElementById(STYLE_ID)) return
@@ -126,7 +152,7 @@ function dismiss(): void {
   showingIcon = false
 }
 
-const ICON_SIZE = 24
+const ICON_SIZE = 28
 const BUBBLE_WIDTH = 368
 const EDGE_MARGIN = 8
 
@@ -162,10 +188,7 @@ function renderIcon(x: number, y: number, text: string): void {
   btn.type = 'button'
   btn.className = 'tc-trigger'
   btn.setAttribute('aria-label', 'Translate selection')
-  const img = document.createElement('img')
-  img.src = chrome.runtime.getURL('icons/icon-32.png')
-  img.alt = ''
-  btn.appendChild(img)
+  btn.innerHTML = PIXEL_LOGO
   btn.addEventListener('mousedown', (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -179,7 +202,13 @@ function renderIcon(x: number, y: number, text: string): void {
   document.body.appendChild(root)
 }
 
-function renderBubble(x: number, y: number, content: string, isError: boolean): void {
+function renderBubble(
+  x: number,
+  y: number,
+  content: string,
+  isError: boolean,
+  isLoading = false,
+): void {
   dismiss()
   const pos = clampPosition(x, y, BUBBLE_WIDTH)
   root = makeRoot(pos.x, pos.y)
@@ -189,7 +218,7 @@ function renderBubble(x: number, y: number, content: string, isError: boolean): 
   handle.className = 'tc-handle'
   handle.setAttribute('aria-label', 'Drag')
   const body = document.createElement('div')
-  body.className = isError ? 'tc-body tc-error' : 'tc-body'
+  body.className = isError ? 'tc-body tc-error' : isLoading ? 'tc-body tc-loading' : 'tc-body'
   body.textContent = content
   bubble.appendChild(handle)
   bubble.appendChild(body)
@@ -234,7 +263,7 @@ function attachDrag(handle: HTMLElement): void {
 }
 
 async function translate(x: number, y: number, text: string): Promise<void> {
-  renderBubble(x, y, 'Translating…', false)
+  renderBubble(x, y, 'TRANSLATING', false, true)
   const token = root
   try {
     const response = await sendMessage<TranslateTextResponse>({

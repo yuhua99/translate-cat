@@ -4,33 +4,72 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign in with ChatGPT</title>
+    <link rel="stylesheet" href="lcd.css" />
     <link rel="stylesheet" href="codex-auth.css" />
   </head>
   <body>
-    <main>
-      <h1>Sign in with ChatGPT</h1>
+    <!-- Direction contract lives in popup.html (seed 08173047); this page shares the LCD world via lcd.css. -->
+    <main class="auth lcd-bezel-surface">
+      <section class="auth__screen lcd-screen-surface" aria-label="ChatGPT device code sign in">
+        <header class="auth__header">
+          <svg
+            class="auth__logo"
+            viewBox="0 0 16 16"
+            role="img"
+            aria-label="translate cat pixel logo"
+          >
+            <rect x="2" width="12" height="1" fill="var(--lcd-ink)" />
+            <rect x="1" y="1" width="14" height="1" fill="var(--lcd-ink)" />
+            <rect y="2" width="16" height="13" fill="var(--lcd-ink)" />
+            <rect x="1" y="15" width="14" height="1" fill="var(--lcd-ink)" />
+            <g fill="var(--lcd-screen)">
+              <rect x="3" y="6" width="2" height="2" />
+              <rect x="11" y="6" width="2" height="2" />
+              <rect x="2" y="8" width="12" height="7" />
+              <rect x="1" y="11" width="14" height="3" />
+            </g>
+            <g fill="var(--lcd-ink)">
+              <rect x="4" y="10" width="2" height="1" />
+              <rect x="10" y="10" width="2" height="1" />
+              <rect x="3" y="11" width="3" height="1" />
+              <rect x="10" y="11" width="3" height="1" />
+              <rect x="7" y="12" width="2" height="1" />
+              <rect x="1" y="12" width="2" height="1" />
+              <rect x="13" y="12" width="2" height="1" />
+              <rect x="1" y="14" width="3" height="1" />
+              <rect x="12" y="14" width="3" height="1" />
+            </g>
+          </svg>
+          <h1>Sign in with ChatGPT</h1>
+        </header>
 
-      <section id="auth-loading">
-        <p>Requesting code...</p>
-      </section>
+        <section id="auth-loading">
+          <p>Requesting code... <span class="lcd-cursor" aria-hidden="true">█</span></p>
+        </section>
 
-      <section id="auth-code" hidden>
-        <p id="user-code" class="user-code"></p>
-        <div class="actions">
-          <button id="copy-code" type="button">Copy</button>
-          <a id="verification-link" target="_blank" rel="noopener"> Open verification page </a>
-        </div>
-        <p>Enter this code on the verification page. Waiting for approval…</p>
-        <p class="note">Keep this page open while you sign in.</p>
-      </section>
+        <section id="auth-code" hidden>
+          <p id="user-code" class="user-code"></p>
+          <div class="actions">
+            <button id="copy-code" class="lcd-bezel-key" type="button">Copy</button>
+            <a id="verification-link" class="lcd-bezel-key" target="_blank" rel="noopener">
+              Open verification page
+            </a>
+          </div>
+          <p class="auth__waiting">
+            Enter this code on the verification page. Waiting for approval…
+            <span class="lcd-cursor" aria-hidden="true">█</span>
+          </p>
+          <p class="note">Keep this page open while you sign in.</p>
+        </section>
 
-      <section id="auth-success" hidden>
-        <p class="success">Signed in. You can close this tab.</p>
-      </section>
+        <section id="auth-success" hidden>
+          <p class="success lcd-inverted">Signed in. You can close this tab.</p>
+        </section>
 
-      <section id="auth-error" hidden>
-        <p id="error-message" class="error"></p>
-        <button id="retry" type="button">Retry</button>
+        <section id="auth-error" hidden>
+          <p id="error-message" class="error lcd-inverted"></p>
+          <button id="retry" class="lcd-bezel-key" type="button">Retry</button>
+        </section>
       </section>
     </main>
     <script type="module" src="codex-auth.js"></script>
