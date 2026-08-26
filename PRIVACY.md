@@ -1,6 +1,6 @@
 # Privacy Policy — translate cat
 
-_Last updated: 2026-07-04_
+_Last updated: 2026-08-27_
 
 translate cat ("the extension") is a browser extension that translates YouTube
 subtitles and selected text using third-party AI providers. This policy
@@ -22,6 +22,13 @@ explains what data the extension handles and how.
 - **Your API keys.** API keys are stored locally in `chrome.storage.local` on
   your device only. They are never synced and never sent anywhere except, as an
   authorization header, to the corresponding provider's official API endpoint.
+- **ChatGPT sign-in tokens.** If you choose the ChatGPT subscription provider,
+  the extension uses OpenAI's device-code sign-in. Access and refresh tokens
+  are stored locally in `chrome.storage.local` on your device only. They are
+  never synced. They are sent only to OpenAI: `auth.openai.com` to sign in and
+  refresh tokens, and `chatgpt.com` to request translations. The extension
+  does not read your ChatGPT cookies or browsing session. Signing out deletes
+  the stored tokens.
 
 ## What we do NOT do
 
@@ -35,7 +42,7 @@ explains what data the extension handles and how.
 Translation requests are sent directly from your browser to the provider you
 choose. Your use of these services is governed by their own privacy policies:
 
-- OpenAI — https://openai.com/policies/privacy-policy
+- OpenAI / ChatGPT — https://openai.com/policies/privacy-policy
 - Anthropic — https://www.anthropic.com/legal/privacy
 - Google Gemini — https://generativelanguage.googleapis.com
 - opencode Zen — https://opencode.ai
@@ -43,8 +50,9 @@ choose. Your use of these services is governed by their own privacy policies:
 ## Data retention
 
 The extension keeps translation results only in an in-browser cache to avoid
-re-translating the same content, and settings/keys in browser storage as
-described above. Removing the extension deletes this local data.
+re-translating the same content, and settings, API keys, and ChatGPT tokens in
+browser storage as described above. Removing the extension deletes this local
+data.
 
 ## Contact
 
