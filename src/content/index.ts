@@ -1,5 +1,9 @@
 import { CAPTION_EVENT, type CaptionsCapturedEventDetail } from '../youtube/caption-capture-event'
-import { findCaptionButton, hasAvailableCaptions } from '../youtube/caption-availability'
+import {
+  findCaptionButton,
+  getCaptionAvailability,
+  type CaptionAvailability,
+} from '../youtube/caption-availability'
 import { hideNativeCaptions, showNativeCaptions } from '../youtube/native-caption-hider'
 
 import { YoutubeSubtitleSession } from '../youtube/session'
@@ -24,6 +28,8 @@ let lastVideoId = readVideoId()
 let animationFrameId: number | undefined
 let navigationPollId: number | undefined
 let captionRetryTimeoutId: number | undefined
+let activationRetryTimeoutId: number | undefined
+let activationRetryGeneration = 0
 let suppressCcOffUntil = 0
 let autoCcToggled = false
 let waitingForInitialCaptions = false
@@ -141,11 +147,16 @@ function armCaptionCapture(): void {
 async function activateAiTranslate(
   settingsOverride?: ExtensionSettings,
   showUnavailableStatus = true,
+  availabilityOverride?: CaptionAvailability,
+  isCurrent?: () => boolean,
 ): Promise<boolean> {
   const settings = settingsOverride ?? (await loadSettingsForActivation())
-  if (!settings) return false
+  if (!settings || isCurrent?.() === false) return false
 
-  if (!(await canUseCurrentCaptions())) {
+  const availability = availabilityOverride ?? (await getCurrentCaptionAvailability())
+  if (isCurrent?.() === false) return false
+
+  if (availability !== 'available') {
     deactivateAiTranslate()
     void syncTranslateToggle()
     if (showUnavailableStatus) {
@@ -161,6 +172,7 @@ async function activateAiTranslate(
     showStatusOverlay(`AI Translate: ${validation.error}`)
     return false
   }
+  if (isCurrent?.() === false) return false
 
   aiModeActive = true
   createSession({ ...settings, enabled: true })
@@ -171,6 +183,7 @@ async function activateAiTranslate(
 }
 
 function teardownAiTranslate(): void {
+  cancelActivationRetry()
   aiModeActive = false
   waitingForInitialCaptions = false
   window.clearTimeout(captionRetryTimeoutId)
@@ -264,11 +277,11 @@ function isCcEnabled(): boolean {
   return button !== null && button.getAttribute('aria-pressed') !== 'false'
 }
 
-async function canUseCurrentCaptions(): Promise<boolean> {
+async function getCurrentCaptionAvailability(): Promise<CaptionAvailability> {
   try {
-    return await hasAvailableCaptions()
+    return await getCaptionAvailability()
   } catch {
-    return false
+    return 'unavailable'
   }
 }
 
@@ -307,14 +320,58 @@ async function loadSettingsForActivation(): Promise<ExtensionSettings | undefine
   return response.settings
 }
 
+const ACTIVATION_RETRY_DELAY_MS = 500
+const ACTIVATION_RETRY_MAX_ATTEMPTS = 20
+
+function cancelActivationRetry(): void {
+  window.clearTimeout(activationRetryTimeoutId)
+  activationRetryTimeoutId = undefined
+  activationRetryGeneration += 1
+}
+
+function startStoredStateActivation(settings: ExtensionSettings): void {
+  cancelActivationRetry()
+  const retryGeneration = activationRetryGeneration
+  void retryStoredStateActivation(settings, retryGeneration)
+}
+
+async function retryStoredStateActivation(
+  settings: ExtensionSettings,
+  retryGeneration: number,
+  attempt = 0,
+): Promise<void> {
+  const isCurrent = () => retryGeneration === activationRetryGeneration
+  const availability = await getCurrentCaptionAvailability()
+  if (!isCurrent()) return
+
+  if (availability === 'available') {
+    if (await activateAiTranslate(settings, false, availability, isCurrent)) {
+      cancelActivationRetry()
+    }
+    return
+  }
+
+  if (availability === 'unavailable' || attempt === ACTIVATION_RETRY_MAX_ATTEMPTS) {
+    deactivateAiTranslate()
+    void syncTranslateToggle()
+    return
+  }
+
+  activationRetryTimeoutId = window.setTimeout(() => {
+    activationRetryTimeoutId = undefined
+    void retryStoredStateActivation(settings, retryGeneration, attempt + 1)
+  }, ACTIVATION_RETRY_DELAY_MS)
+}
+
 async function applyStoredEnabledState(): Promise<void> {
+  const retryGeneration = activationRetryGeneration
   const response = await sendMessage<SettingsResponse>({
     type: 'GET_SETTINGS',
   })
-  if (!response.ok) return
+  if (!response.ok || retryGeneration !== activationRetryGeneration) return
 
   if (response.settings.enabled) {
-    await activateAiTranslate(response.settings, false)
+    startStoredStateActivation(response.settings)
   }
 }
 

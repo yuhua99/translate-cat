@@ -18,8 +18,12 @@ export function findCaptionButton(): HTMLButtonElement | null {
   return document.querySelector('.ytp-subtitles-button')
 }
 
-export async function hasAvailableCaptions(button = findCaptionButton()): Promise<boolean> {
-  if (!button) return false
+export type CaptionAvailability = 'available' | 'unavailable' | 'not-ready'
+
+export async function getCaptionAvailability(
+  button = findCaptionButton(),
+): Promise<CaptionAvailability> {
+  if (!button) return 'not-ready'
 
   let response
   try {
@@ -28,7 +32,13 @@ export async function hasAvailableCaptions(button = findCaptionButton()): Promis
     console.warn('Caption availability request failed, retrying', error)
     response = await requestCaptionAvailability()
   }
-  return response.hasPlayerResponse && response.hasClosedCaptions
+
+  if (!response.hasPlayerResponse) return 'not-ready'
+  return response.hasClosedCaptions ? 'available' : 'unavailable'
+}
+
+export async function hasAvailableCaptions(button = findCaptionButton()): Promise<boolean> {
+  return (await getCaptionAvailability(button)) === 'available'
 }
 
 function requestCaptionAvailability(): Promise<
