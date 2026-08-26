@@ -1,12 +1,13 @@
 <p align="center">
-  <img src="icon.png" alt="translate cat" width="128" />
+  <img src="public/icons/icon.svg" alt="translate cat" width="128" />
 </p>
 
-# translate cat
+<h1 align="center">translate cat</h1>
 
-Chrome extension for AI translation.
-
-[Install from Chrome Web Store](https://chromewebstore.google.com/detail/translate-cat/aibehclppnalahklmeiccpcgikeibogh)
+<p align="center">
+  Chrome extension for AI translation ·
+  <a href="https://chromewebstore.google.com/detail/translate-cat/aibehclppnalahklmeiccpcgikeibogh">Install from Chrome Web Store</a>
+</p>
 
 ## Features
 
