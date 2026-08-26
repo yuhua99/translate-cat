@@ -1,8 +1,10 @@
 :root {
   --lcd-screen: #a8b39a;
+  --lcd-screen-dim: #99a48c;
   --lcd-screen-raised: #b7c1a9;
   --lcd-screen-recessed: #929d86;
   --lcd-ink: #1e241c;
+  --lcd-ink-soft: #32392f;
   --lcd-bezel: #2a2a28;
   --lcd-bezel-raised: #3a3a37;
   --lcd-bezel-ink: #d1d5ca;
@@ -11,6 +13,10 @@
   --lcd-space: 4px;
   --lcd-hairline: 1px;
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
+  --lcd-size-ui: 12px;
+  --lcd-size-meta: 11px;
+  --lcd-size-read: 13px;
+  --lcd-size-hero: clamp(25px, 7vw, 32px);
 }
 
 * {
@@ -37,10 +43,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
   align-items: center;
-  min-height: 28px;
+  min-height: 32px;
   padding: var(--lcd-space);
   color: var(--lcd-ink);
-  font: 700 10px/1.15 var(--lcd-font);
+  font: 700 var(--lcd-size-ui)/1.15 var(--lcd-font);
   letter-spacing: 0.04em;
 }
 
@@ -63,6 +69,66 @@
   background: var(--lcd-ink);
 }
 
+.lcd-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 3px 4px;
+  color: var(--lcd-ink);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: 700 var(--lcd-size-ui)/1.15 var(--lcd-font);
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lcd-chip::before {
+  content: '[';
+}
+
+.lcd-chip::after {
+  content: ']';
+}
+
+.lcd-chip.is-active,
+.lcd-chip.is-signed-in,
+.lcd-chip:checked {
+  color: var(--lcd-screen);
+  background: var(--lcd-ink);
+}
+
+.lcd-chip:hover:not(:disabled) {
+  background: var(--lcd-screen-dim);
+}
+
+.lcd-chip:is(.is-active, .is-signed-in, :checked):hover:not(:disabled) {
+  background: var(--lcd-ink-soft);
+}
+
+.lcd-chip:focus-visible {
+  outline: var(--lcd-hairline) solid var(--lcd-ink);
+  outline-offset: 1px;
+}
+
+.lcd-chip:active {
+  color: var(--lcd-screen);
+  background: var(--lcd-ink);
+}
+
+.lcd-chip:is(.is-active, .is-signed-in, :checked):active {
+  color: var(--lcd-ink);
+  background: transparent;
+}
+
+.lcd-chip:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .lcd-bezel-key {
   min-height: 27px;
   padding: 5px 9px;
@@ -72,7 +138,7 @@
   border-radius: 2px;
   box-shadow: 0 1px 0 var(--lcd-bezel-edge);
   cursor: pointer;
-  font: 700 9px/1.2 var(--lcd-font);
+  font: 700 var(--lcd-size-meta)/1.2 var(--lcd-font);
   letter-spacing: 0.07em;
   text-align: center;
 }

@@ -41,12 +41,15 @@ const providerApiKeyRow = requiredElement<HTMLElement>('#provider-api-key-row')
 const providerApiKeyInput = requiredElement<HTMLInputElement>('#provider-api-key')
 const codexAuthRow = requiredElement<HTMLElement>('#codex-auth-row')
 const codexSignInButton = requiredElement<HTMLButtonElement>('#codex-sign-in')
+const codexSignInLabel = codexSignInButton.querySelector<HTMLSpanElement>('.codex-chip__label')
 const codexAuthStatus = requiredElement<HTMLParagraphElement>('#codex-auth-status')
 const saveButton = requiredElement<HTMLButtonElement>('#save')
 const status = requiredElement<HTMLParagraphElement>('#status')
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
 let savedModel = ''
 let savedApiKey = ''
+let codexSignedIn = false
+let statusClearTimeout: number | undefined
 
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
@@ -55,9 +58,22 @@ function sendMessage<TResponse extends ExtensionResponse>(
 }
 
 function setStatus(text: string, kind: 'success' | 'error' | 'neutral' = 'neutral'): void {
+  if (statusClearTimeout !== undefined) {
+    window.clearTimeout(statusClearTimeout)
+    statusClearTimeout = undefined
+  }
+
   status.textContent = text
   status.classList.toggle('success', kind === 'success')
   status.classList.toggle('error', kind === 'error')
+
+  if (kind === 'success') {
+    statusClearTimeout = window.setTimeout(() => {
+      status.textContent = ''
+      status.classList.remove('success', 'error')
+      statusClearTimeout = undefined
+    }, 5000)
+  }
 }
 
 function getProviderType(): ProviderType {
@@ -68,12 +84,25 @@ function isOAuthProvider(providerType = getProviderType()): boolean {
   return providerType === 'codex'
 }
 
+function setCodexSignInButton(signedIn: boolean): void {
+  codexSignedIn = signedIn
+  codexSignInButton.classList.toggle('is-signed-in', signedIn)
+  codexSignInButton.setAttribute('aria-label', signedIn ? 'Sign out' : 'Sign in')
+  const label = signedIn ? 'Signed in' : 'Sign in'
+  if (codexSignInLabel) {
+    codexSignInLabel.textContent = label
+  } else {
+    codexSignInButton.textContent = label
+  }
+}
+
 function syncProviderAuth(): void {
   const isOAuth = isOAuthProvider()
   providerApiKeyRow.hidden = isOAuth
   codexAuthRow.hidden = !isOAuth
   codexAuthStatus.textContent = ''
   codexAuthStatus.classList.remove('success')
+  setCodexSignInButton(false)
   if (isOAuth) void updateProviderAuthStatus()
 }
 
@@ -87,6 +116,7 @@ async function updateProviderAuthStatus(): Promise<void> {
       providerType,
     } satisfies ExtensionMessage)
     if (!response.ok || getProviderType() !== providerType) return
+    setCodexSignInButton(response.signedIn)
     codexAuthStatus.textContent = response.signedIn ? 'Signed in' : 'Not signed in'
     codexAuthStatus.classList.toggle('success', response.signedIn)
   } catch {
@@ -319,8 +349,33 @@ async function signInWithChatGPT(): Promise<void> {
   }
 }
 
+async function signOutOfChatGPT(): Promise<void> {
+  codexSignInButton.disabled = true
+
+  try {
+    const response = await sendMessage({
+      type: 'SET_PROVIDER_SECRET',
+      providerType: 'codex',
+      secret: {},
+    })
+    if (!response.ok) {
+      setStatus(response.error, 'error')
+      return
+    }
+    await updateProviderAuthStatus()
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error')
+  } finally {
+    codexSignInButton.disabled = false
+  }
+}
+
 codexSignInButton.addEventListener('click', () => {
-  void signInWithChatGPT()
+  void (codexSignedIn ? signOutOfChatGPT() : signInWithChatGPT())
+})
+
+window.addEventListener('focus', () => {
+  void updateProviderAuthStatus()
 })
 
 enhanceSelect(providerTypeInput)

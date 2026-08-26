@@ -13,7 +13,7 @@ const STYLE_ID = 'translate-cat-selection-style'
 const MAX_LEN = 2000
 const Z = 2147483647
 
-// See public/lcd.css for the canonical LCD tokens.
+// Mirror public/lcd.css type tokens; this stylesheet is injected into host pages.
 const STYLE = `
 #${ROOT_ID},
 #${ROOT_ID} * {
@@ -23,11 +23,13 @@ const STYLE = `
   --tc-screen: #a8b39a;
   --tc-ink: #1e241c;
   --tc-bezel: #2a2a28;
+  --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
+  --lcd-size-read: 13px;
   position: fixed;
   z-index: ${Z};
   color: var(--tc-ink);
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  font-size: 13px;
+  font-family: var(--lcd-font);
+  font-size: var(--lcd-size-read);
   font-weight: 700;
   line-height: 1.45;
 }
@@ -40,9 +42,7 @@ const STYLE = `
   padding: 0;
   color: var(--tc-ink);
   cursor: pointer;
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  font-size: 13px;
-  line-height: 1;
+  font: 700 var(--lcd-size-read)/1 var(--lcd-font);
 }
 #${ROOT_ID} .tc-trigger svg {
   display: block;
@@ -59,10 +59,7 @@ const STYLE = `
   background-image: repeating-linear-gradient(90deg, rgba(30, 36, 28, 0.06) 0 1px, transparent 1px 4px);
   border: 1px solid var(--tc-ink);
   border-radius: 2px;
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
+  font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
 }
 #${ROOT_ID} .tc-handle {
   height: 8px;
@@ -79,10 +76,7 @@ const STYLE = `
   padding: 10px 12px;
   overflow: auto;
   color: var(--tc-ink);
-  font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.45;
+  font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
   white-space: pre-wrap;
   word-break: break-word;
   user-select: text;

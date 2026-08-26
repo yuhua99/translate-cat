@@ -9,28 +9,20 @@ export interface ProviderEntry {
 export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
   openai: {
     label: 'OpenAI',
-    defaultModel: 'gpt-5.4-mini',
+    defaultModel: 'gpt-5.6-luna',
     models: [
-      'gpt-5.6-terra',
-      'gpt-5.6-luna',
+      'gpt-4o-mini',
+      'gpt-5-mini',
       'gpt-5.4-mini',
       'gpt-5.4-nano',
-      'gpt-5-mini',
-      'gpt-4o-mini',
+      'gpt-5.6-terra',
+      'gpt-5.6-luna',
     ],
   },
   codex: {
     label: 'OpenAI Codex (ChatGPT subscription)',
-    defaultModel: 'gpt-5.4-mini',
-    models: [
-      'gpt-5.3-codex-spark',
-      'gpt-5.4',
-      'gpt-5.4-mini',
-      'gpt-5.5',
-      'gpt-5.6-luna',
-      'gpt-5.6-sol',
-      'gpt-5.6-terra',
-    ],
+    defaultModel: 'gpt-5.6-luna',
+    models: ['gpt-5.4-mini', 'gpt-5.5', 'gpt-5.6-luna', 'gpt-5.6-terra'],
   },
   anthropic: {
     label: 'Anthropic Claude',
@@ -46,7 +38,7 @@ export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
   },
   opencodeZen: {
     label: 'opencode Zen',
-    defaultModel: 'deepseek-v4-flash',
+    defaultModel: 'mimo-v2.5',
     models: [
       'glm-5.2',
       'minimax-m3',
@@ -58,16 +50,17 @@ export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
       'mimo-v2.5',
       'deepseek-v4-pro',
       'deepseek-v4-flash',
+      'gpt-5.6-luna',
     ],
   },
   gemini: {
     label: 'Google Gemini',
-    defaultModel: 'gemini-3.1-flash-lite',
+    defaultModel: 'gemini-3.5-flash-lite',
     models: [
       'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
       'gemini-3.5-flash',
-      'gemini-3.1-pro-preview',
-      'gemini-3-flash-preview',
+      'gemini-3.7-flash',
     ],
   },
 }

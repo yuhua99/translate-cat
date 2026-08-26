@@ -10,7 +10,6 @@
   <body>
     <!-- THESIS: the popup is a pocket electronic dictionary, ancestor of the translator; it refuses the generic dark settings panel. OWN-WORLD: one LCD green-gray screen (#a8b39a), pixel ink (#1e241c), charcoal bezel, monospace caps, states expressed only by inversion; pixel-art cat logo lives on-screen, store icon untouched. STORY: the user sets provider, key, model, language once; the device confirms with an inverted SAVED block. FIRST VIEWPORT: bezel device, screen header with pixel logo + wordmark, five LCD rows, SAVE bezel key. FORM: retro electronic dictionary LCD, candidate 5 of the grounded list, seed 08173047. FINISH: unreviewed is unfinished; this build ends with the finish review and the verdict. -->
     <main class="popup lcd-bezel-surface">
-      <p class="popup__mark">TRANSLATE CAT TC-128</p>
       <section class="popup__screen lcd-screen-surface" aria-label="Translate cat settings">
         <header class="popup__header">
           <svg
@@ -42,7 +41,6 @@
             </g>
           </svg>
           <span>TRANSLATE CAT</span>
-          <span class="popup__header-mode">SETUP</span>
         </header>
 
         <section class="popup__settings" aria-label="Settings">
@@ -59,9 +57,10 @@
               placeholder="ENTER TO CHANGE"
             />
           </label>
-          <div class="popup__auth-row" id="codex-auth-row" hidden>
-            <button class="lcd-bezel-key" id="codex-sign-in" type="button">
-              SIGN IN WITH CHATGPT
+          <div class="popup__auth-row lcd-row" id="codex-auth-row" hidden>
+            <span class="lcd-row__label">ACCOUNT</span>
+            <button class="lcd-chip" id="codex-sign-in" type="button">
+              <span class="codex-chip__label">Sign in</span>
             </button>
             <p class="lcd-row__value" id="codex-auth-status"></p>
           </div>
@@ -76,15 +75,20 @@
           <label class="lcd-row popup__toggle">
             <span class="lcd-row__label">SELECTION</span>
             <input id="selection-enabled" type="checkbox" />
+            <span class="lcd-chip popup__toggle-chip" aria-hidden="true">
+              <span class="popup__toggle-label"></span>
+            </span>
           </label>
           <label class="lcd-row">
             <span class="lcd-row__label">LANGUAGE</span>
             <select id="target-language"></select>
           </label>
+          <div class="popup__save-row lcd-row">
+            <button class="lcd-chip" id="save" type="button">Save</button>
+            <p id="status" role="status"></p>
+          </div>
         </section>
-        <p id="status" role="status"></p>
       </section>
-      <button class="lcd-bezel-key" id="save" type="button">SAVE</button>
     </main>
     <script type="module" src="popup.js"></script>
   </body>
