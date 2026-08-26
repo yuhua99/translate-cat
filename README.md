@@ -14,13 +14,13 @@
 - **YouTube subtitles** — translates captions in real time
 - **Selection translation** — select text on any page, click the cat icon
 
-| Provider             | Type         |
-| -------------------- | ------------ |
-| OpenAI               | apikey       |
-| Anthropic            | apikey       |
-| Google Gemini        | apikey       |
+| Provider                            | Type         |
+| ----------------------------------- | ------------ |
+| OpenAI                              | apikey       |
+| Anthropic                           | apikey       |
+| Google Gemini                       | apikey       |
 | [opencode Zen](https://opencode.ai) | apikey       |
-| ChatGPT subscription | subscription |
+| ChatGPT subscription                | subscription |
 
 ## Install
 
