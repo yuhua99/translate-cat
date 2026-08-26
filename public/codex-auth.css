@@ -90,8 +90,6 @@ h1 {
 .user-code {
   padding: calc(var(--lcd-space) * 3) var(--lcd-space);
   color: var(--lcd-ink);
-  border-top: var(--lcd-hairline) solid var(--lcd-ink);
-  border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
   font: 700 var(--lcd-size-hero)/1 var(--lcd-font);
   letter-spacing: 0.055em;
   text-align: center;
@@ -116,9 +114,7 @@ h1 {
 
 .auth__waiting {
   min-height: 28px;
-  padding: 6px var(--lcd-space);
-  border-top: var(--lcd-hairline) solid var(--lcd-ink);
-  border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
+  padding: 20px var(--lcd-space) 6px;
   font: 700 var(--lcd-size-meta)/1.3 var(--lcd-font);
   letter-spacing: 0.04em;
   text-align: center;
