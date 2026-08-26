@@ -3,7 +3,10 @@ import {
   CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_AVAILABILITY_REQUEST_EVENT,
 } from '../../src/youtube/caption-capture-event'
-import { hasAvailableCaptions } from '../../src/youtube/caption-availability'
+import {
+  getCaptionAvailability,
+  hasAvailableCaptions,
+} from '../../src/youtube/caption-availability'
 
 const originalWindow = globalThis.window
 const originalDocument = globalThis.document
@@ -25,6 +28,41 @@ afterEach(() => {
   } else {
     globalThis.document = originalDocument
   }
+})
+
+describe('getCaptionAvailability', () => {
+  test('returns not-ready when caption button is missing', async () => {
+    installDomMock(null, { hasClosedCaptions: true, hasPlayerResponse: true })
+
+    await expect(getCaptionAvailability()).resolves.toBe('not-ready')
+  })
+
+  test('returns not-ready when player response is missing', async () => {
+    installDomMock({} as HTMLButtonElement, {
+      hasClosedCaptions: false,
+      hasPlayerResponse: false,
+    })
+
+    await expect(getCaptionAvailability()).resolves.toBe('not-ready')
+  })
+
+  test('returns unavailable when player response has no caption tracks', async () => {
+    installDomMock({} as HTMLButtonElement, {
+      hasClosedCaptions: false,
+      hasPlayerResponse: true,
+    })
+
+    await expect(getCaptionAvailability()).resolves.toBe('unavailable')
+  })
+
+  test('returns available when player response has caption tracks', async () => {
+    installDomMock({} as HTMLButtonElement, {
+      hasClosedCaptions: true,
+      hasPlayerResponse: true,
+    })
+
+    await expect(getCaptionAvailability()).resolves.toBe('available')
+  })
 })
 
 describe('hasAvailableCaptions', () => {

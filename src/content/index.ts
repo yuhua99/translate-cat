@@ -174,6 +174,7 @@ async function activateAiTranslate(
   }
   if (isCurrent?.() === false) return false
 
+  cancelActivationRetry()
   aiModeActive = true
   createSession({ ...settings, enabled: true })
   armCaptionCapture()
@@ -284,7 +285,7 @@ async function getCurrentCaptionAvailability(): Promise<CaptionAvailability> {
   try {
     return await getCaptionAvailability()
   } catch {
-    return 'unavailable'
+    return 'not-ready'
   }
 }
 
