@@ -17,6 +17,7 @@ function sendMessage<TResponse extends ExtensionResponse>(
 }
 
 const BUTTON_ID = 'simple-translator-toggle'
+const TOOLTIP_ID = 'simple-translator-toggle-tooltip'
 const SYNC_DEBOUNCE_MS = 150
 const CAPTION_CONTROL_SELECTOR = '.html5-video-player, .ytp-chrome-controls, .ytp-subtitles-button'
 type ToggleState = { kind: 'active' | 'inactive' } | { kind: 'unavailable'; reason: string }
@@ -52,13 +53,17 @@ function createToggleButton(): HTMLButtonElement {
   button.className = 'ytp-button'
   button.type = 'button'
   button.setAttribute('aria-pressed', 'false')
-  button.title = 'Toggle AI Translate'
 
   const iconWrapper = document.createElement('div')
   iconWrapper.innerHTML = svgMarkup({ kind: 'inactive' })
   button.append(iconWrapper)
 
+  button.addEventListener('pointerenter', () => {
+    showTooltip(button)
+  })
+  button.addEventListener('pointerleave', hideTooltip)
   button.addEventListener('click', () => {
+    hideTooltip()
     void toggleEnabled()
   })
 
@@ -76,23 +81,75 @@ async function resolveToggleState(captionButton = findCaptionButton()): Promise<
   return { kind: isActive() ? 'active' : 'inactive' }
 }
 
+function stateText(state: ToggleState): string {
+  return state.kind === 'unavailable'
+    ? `AI Translate: unavailable (${state.reason})`
+    : state.kind === 'active'
+      ? 'AI Translate: ON (click to disable)'
+      : 'AI Translate: OFF (click to enable)'
+}
+
 function applyToggleState(button: HTMLButtonElement, state: ToggleState): void {
   const stateId = state.kind === 'unavailable' ? `${state.kind}:${state.reason}` : state.kind
   if (button.dataset.state === stateId) return
 
+  const text = stateText(state)
   button.dataset.state = stateId
-  button.disabled = state.kind === 'unavailable'
   button.setAttribute('aria-disabled', String(state.kind === 'unavailable'))
   button.setAttribute('aria-pressed', String(state.kind === 'active'))
-  button.title =
-    state.kind === 'unavailable'
-      ? `AI Translate: unavailable (${state.reason})`
-      : state.kind === 'active'
-        ? 'AI Translate: ON (click to disable)'
-        : 'AI Translate: OFF (click to enable)'
+  button.setAttribute('aria-label', text)
+  const tooltipText = document.querySelector(`#${TOOLTIP_ID} .ytp-tooltip-text`)
+  if (tooltipText) tooltipText.textContent = text
 
   const iconWrapper = button.querySelector('div')
   if (iconWrapper) iconWrapper.innerHTML = svgMarkup(state)
+}
+
+function getTooltip(button: HTMLButtonElement): HTMLDivElement {
+  const existing = document.getElementById(TOOLTIP_ID) as HTMLDivElement | null
+  if (existing) return existing
+
+  const tooltip = document.createElement('div')
+  tooltip.id = TOOLTIP_ID
+  tooltip.className = 'ytp-tooltip ytp-bottom'
+  tooltip.style.display = 'none'
+
+  const wrapper = document.createElement('div')
+  wrapper.className = 'ytp-tooltip-text-wrapper'
+  const text = document.createElement('span')
+  text.className = 'ytp-tooltip-text'
+  wrapper.append(text)
+  tooltip.append(wrapper)
+
+  const player = document.querySelector('.html5-video-player')
+  const parent = player ?? button.offsetParent ?? document.body
+  parent.append(tooltip)
+  return tooltip
+}
+
+function positionTooltip(button: HTMLButtonElement, tooltip: HTMLDivElement): void {
+  const buttonRect = button.getBoundingClientRect()
+  const parentRect = (tooltip.offsetParent ?? document.body).getBoundingClientRect()
+  const progressBar =
+    button.closest('.html5-video-player')?.querySelector('.ytp-progress-bar-container') ??
+    document.querySelector('.ytp-progress-bar-container')
+  const anchorTop = progressBar?.getBoundingClientRect().top ?? buttonRect.top
+  tooltip.style.left = `${buttonRect.left - parentRect.left + buttonRect.width / 2}px`
+  tooltip.style.bottom = `${parentRect.bottom - anchorTop + 8}px`
+  tooltip.style.transform = 'translateX(-50%)'
+}
+
+function showTooltip(button: HTMLButtonElement): void {
+  const tooltip = getTooltip(button)
+  const text = tooltip.querySelector('.ytp-tooltip-text')
+  if (text) text.textContent = button.getAttribute('aria-label') ?? ''
+  tooltip.style.display = 'block'
+  positionTooltip(button, tooltip)
+}
+
+function hideTooltip(): void {
+  const tooltip = document.getElementById(TOOLTIP_ID) as HTMLDivElement | null
+  if (tooltip) tooltip.style.display = 'none'
 }
 
 export async function syncTranslateToggle(): Promise<void> {
@@ -102,6 +159,7 @@ export async function syncTranslateToggle(): Promise<void> {
     const captionButton = findCaptionButton()
     if (!captionButton) {
       document.getElementById(BUTTON_ID)?.remove()
+      document.getElementById(TOOLTIP_ID)?.remove()
       return
     }
 
@@ -125,7 +183,7 @@ export async function syncTranslateToggle(): Promise<void> {
 
 async function toggleEnabled(): Promise<void> {
   const button = document.getElementById(BUTTON_ID) as HTMLButtonElement | null
-  if (button?.disabled) return
+  if (!button || button.dataset.state?.startsWith('unavailable')) return
 
   const settings = await loadSettings()
   if (isActive()) {
