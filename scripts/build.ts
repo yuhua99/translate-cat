@@ -30,7 +30,7 @@ async function buildOnce(): Promise<void> {
     ],
     outdir: OUT_DIR,
     target: 'browser',
-    format: 'esm',
+    format: 'iife',
     minify: false,
     sourcemap: 'external',
     naming: {
