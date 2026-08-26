@@ -62,8 +62,7 @@ select {
 }
 
 input,
-select,
-.tc-dropdown__trigger {
+select {
   min-width: 0;
   width: 100%;
   padding: 0 0 2px calc(var(--lcd-space) * 2);
@@ -82,78 +81,62 @@ input::placeholder {
   opacity: 0.8;
 }
 
-input:focus-visible,
-select:focus-visible,
-.tc-dropdown__trigger:focus-visible,
-.lcd-bezel-key:focus-visible {
-  outline: var(--lcd-hairline) solid currentColor;
-  outline-offset: 2px;
+select,
+::picker(select) {
+  appearance: base-select;
 }
 
-.tc-dropdown {
-  position: relative;
-  min-width: 0;
-}
-
-.tc-dropdown__native {
-  display: none;
-}
-
-.tc-dropdown__trigger {
-  display: flex;
-  align-items: center;
+select {
+  min-block-size: 0;
   justify-content: flex-end;
-  gap: var(--lcd-space);
   cursor: pointer;
 }
 
-.tc-dropdown__label {
+select > button {
+  all: unset;
+  min-width: 0;
+  overflow: hidden;
+}
+
+selectedcontent {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tc-dropdown__chevron {
-  flex: 0 0 auto;
-  font-size: var(--lcd-size-ui);
-  line-height: 1;
+select::picker-icon {
+  margin-left: var(--lcd-space);
+  content: '▾';
 }
 
-.tc-dropdown__list {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + var(--lcd-space));
-  right: 0;
-  left: 0;
-  max-height: 230px;
-  padding: var(--lcd-space);
+::picker(select) {
+  margin-block: var(--lcd-space) calc(var(--lcd-space) * 3);
+  max-block-size: 230px;
   overflow-y: auto;
+  padding: var(--lcd-space);
   color: var(--lcd-ink);
   background: var(--lcd-screen-raised);
   border: var(--lcd-hairline) solid var(--lcd-ink);
-  box-shadow: 0 2px 0 var(--lcd-ink);
+  border-radius: 0;
 }
 
-.tc-dropdown__list.is-up {
-  top: auto;
-  bottom: calc(100% + var(--lcd-space));
-}
-
-.tc-dropdown__option {
+option {
   min-height: 28px;
-  padding: 5px var(--lcd-space);
   cursor: pointer;
+  padding: 5px var(--lcd-space);
   font: 700 var(--lcd-size-ui)/1.2 var(--lcd-font);
   letter-spacing: 0.04em;
 }
 
-.tc-dropdown__option.is-active {
+option:hover,
+option:focus {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
 }
 
-.tc-dropdown__option.is-selected::before {
+option::checkmark {
   margin-right: var(--lcd-space);
   content: '■';
 }
@@ -242,7 +225,8 @@ select:focus-visible,
 }
 
 .popup__save-row {
-  min-height: 32px;
+  min-height: 0;
+  padding-block: 0;
 }
 
 #save,

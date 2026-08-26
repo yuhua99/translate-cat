@@ -20,7 +20,7 @@ export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
     ],
   },
   codex: {
-    label: 'OpenAI Codex (ChatGPT subscription)',
+    label: 'ChatGPT subscription',
     defaultModel: 'gpt-5.6-luna',
     models: ['gpt-5.4-mini', 'gpt-5.5', 'gpt-5.6-luna', 'gpt-5.6-terra'],
   },

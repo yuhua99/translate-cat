@@ -11,7 +11,7 @@
   --lcd-bezel-edge: #171817;
   --lcd-grid: rgb(30 36 28 / 6%);
   --lcd-space: 4px;
-  --lcd-hairline: 1px;
+  --lcd-hairline: 2px;
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
   --lcd-size-ui: 12px;
   --lcd-size-meta: 11px;
@@ -27,7 +27,6 @@
   padding: calc(var(--lcd-space) * 2);
   color: var(--lcd-bezel-ink);
   background: var(--lcd-bezel);
-  border: var(--lcd-hairline) solid var(--lcd-bezel-edge);
   border-radius: 3px;
 }
 
@@ -36,7 +35,6 @@
   color: var(--lcd-ink);
   background-color: var(--lcd-screen);
   background-image: repeating-linear-gradient(90deg, var(--lcd-grid) 0 1px, transparent 1px 4px);
-  border: 2px solid var(--lcd-bezel-edge);
 }
 
 .lcd-row {
@@ -134,9 +132,8 @@
   padding: 5px 9px;
   color: var(--lcd-bezel-ink);
   background: var(--lcd-bezel);
-  border: var(--lcd-hairline) solid var(--lcd-bezel-edge);
+  border: 0;
   border-radius: 2px;
-  box-shadow: 0 1px 0 var(--lcd-bezel-edge);
   cursor: pointer;
   font: 700 var(--lcd-size-meta)/1.2 var(--lcd-font);
   letter-spacing: 0.07em;
@@ -145,11 +142,6 @@
 
 .lcd-bezel-key:hover:not(:disabled) {
   background: var(--lcd-bezel-raised);
-}
-
-.lcd-bezel-key:active {
-  box-shadow: none;
-  transform: translateY(1px);
 }
 
 .lcd-bezel-key:disabled {

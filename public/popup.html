@@ -19,7 +19,9 @@
         <section class="popup__settings" aria-label="Settings">
           <label class="lcd-row">
             <span class="lcd-row__label">PROVIDER</span>
-            <select id="provider-type"></select>
+            <select id="provider-type">
+              <button><selectedcontent></selectedcontent></button>
+            </select>
           </label>
           <label class="lcd-row" id="provider-api-key-row">
             <span class="lcd-row__label">API KEY</span>
@@ -39,7 +41,9 @@
           </div>
           <label class="lcd-row">
             <span class="lcd-row__label">MODEL</span>
-            <select id="provider-model-preset"></select>
+            <select id="provider-model-preset">
+              <button><selectedcontent></selectedcontent></button>
+            </select>
           </label>
           <label class="lcd-row" id="custom-model-row" hidden>
             <span class="lcd-row__label">CUSTOM MODEL</span>
@@ -54,7 +58,9 @@
           </label>
           <label class="lcd-row">
             <span class="lcd-row__label">LANGUAGE</span>
-            <select id="target-language"></select>
+            <select id="target-language">
+              <button><selectedcontent></selectedcontent></button>
+            </select>
           </label>
           <div class="popup__save-row lcd-row">
             <button class="lcd-chip" id="save" type="button">Save</button>

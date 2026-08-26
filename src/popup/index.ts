@@ -10,7 +10,6 @@ import {
 } from '../shared/messages'
 import type { ProviderConfig, ProviderSecret, ProviderType } from '../background/providers/types'
 import { ALL_PROVIDER_TYPES, getProviderLabel, getProviderModels } from '../shared/providers'
-import { enhanceSelect } from './dropdown'
 
 const TARGET_LANGUAGES: Array<{ value: string; label: string }> = [
   { value: 'zh-TW', label: '繁體中文' },
@@ -377,9 +376,5 @@ codexSignInButton.addEventListener('click', () => {
 window.addEventListener('focus', () => {
   void updateProviderAuthStatus()
 })
-
-enhanceSelect(providerTypeInput)
-enhanceSelect(providerModelPresetInput)
-enhanceSelect(targetLanguageInput)
 
 void loadSettings()
