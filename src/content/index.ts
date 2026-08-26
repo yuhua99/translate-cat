@@ -159,7 +159,6 @@ async function activateAiTranslate(
   })
   if (!validation.ok) {
     showStatusOverlay(`AI Translate: ${validation.error}`)
-    void setEnabledSetting(false)
     return false
   }
 
@@ -289,18 +288,6 @@ function createSession(settings: ExtensionSettings): void {
 
 function readVideoId(): string {
   return new URL(location.href).searchParams.get('v') ?? ''
-}
-
-async function setEnabledSetting(enabled: boolean): Promise<void> {
-  const response = await sendMessage<SettingsResponse>({
-    type: 'GET_SETTINGS',
-  })
-  if (!response.ok || response.settings.enabled === enabled) return
-
-  await sendMessage<SettingsResponse>({
-    type: 'SET_SETTINGS',
-    settings: { ...response.settings, enabled },
-  })
 }
 
 async function loadSettingsForActivation(): Promise<ExtensionSettings | undefined> {

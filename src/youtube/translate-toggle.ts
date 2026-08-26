@@ -1,9 +1,11 @@
 import {
   DEFAULT_SETTINGS,
+  watchProviderChanges,
   watchSettings,
   type ExtensionMessage,
   type ExtensionResponse,
   type ExtensionSettings,
+  type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
 import { findCaptionButton, hasAvailableCaptions } from './caption-availability'
@@ -17,14 +19,14 @@ function sendMessage<TResponse extends ExtensionResponse>(
 const BUTTON_ID = 'simple-translator-toggle'
 const SYNC_DEBOUNCE_MS = 150
 const CAPTION_CONTROL_SELECTOR = '.html5-video-player, .ytp-chrome-controls, .ytp-subtitles-button'
-type ToggleState = 'active' | 'inactive' | 'unavailable'
+type ToggleState = { kind: 'active' | 'inactive' } | { kind: 'unavailable'; reason: string }
 let enabled = false
 let syncSequence = 0
 let syncTimeoutId: number | undefined
 
 function svgMarkup(state: ToggleState): string {
-  const active = state === 'active'
-  const opacity = state === 'unavailable' ? '0.3' : '1'
+  const active = state.kind === 'active'
+  const opacity = state.kind === 'unavailable' ? '0.3' : '1'
   const bgFill = active ? 'fill="white"' : 'fill="none" stroke="white" stroke-width="1.8"'
   const lineStroke = active ? 'black' : 'white'
   return `<svg fill="none" fill-opacity="${opacity}" stroke-opacity="${opacity}" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
@@ -45,7 +47,7 @@ function createToggleButton(): HTMLButtonElement {
   button.title = 'Toggle AI Translate'
 
   const iconWrapper = document.createElement('div')
-  iconWrapper.innerHTML = svgMarkup('inactive')
+  iconWrapper.innerHTML = svgMarkup({ kind: 'inactive' })
   button.append(iconWrapper)
 
   button.addEventListener('click', () => {
@@ -56,22 +58,28 @@ function createToggleButton(): HTMLButtonElement {
 }
 
 async function resolveToggleState(captionButton = findCaptionButton()): Promise<ToggleState> {
-  if (!(await hasAvailableCaptions(captionButton))) return 'unavailable'
+  if (!(await hasAvailableCaptions(captionButton))) {
+    return { kind: 'unavailable', reason: 'YouTube captions not provided' }
+  }
 
-  return enabled ? 'active' : 'inactive'
+  const validation = await sendMessage<MessageResponse>({ type: 'VALIDATE_ACTIVE_PROVIDER' })
+  if (!validation.ok) return { kind: 'unavailable', reason: validation.error }
+
+  return { kind: enabled ? 'active' : 'inactive' }
 }
 
 function applyToggleState(button: HTMLButtonElement, state: ToggleState): void {
-  if (button.dataset.state === state) return
+  const stateId = state.kind === 'unavailable' ? `${state.kind}:${state.reason}` : state.kind
+  if (button.dataset.state === stateId) return
 
-  button.dataset.state = state
-  button.disabled = state === 'unavailable'
-  button.setAttribute('aria-disabled', String(state === 'unavailable'))
-  button.setAttribute('aria-pressed', String(state === 'active'))
+  button.dataset.state = stateId
+  button.disabled = state.kind === 'unavailable'
+  button.setAttribute('aria-disabled', String(state.kind === 'unavailable'))
+  button.setAttribute('aria-pressed', String(state.kind === 'active'))
   button.title =
-    state === 'unavailable'
-      ? 'AI Translate: unavailable (YouTube captions not provided)'
-      : state === 'active'
+    state.kind === 'unavailable'
+      ? `AI Translate: unavailable (${state.reason})`
+      : state.kind === 'active'
         ? 'AI Translate: ON (click to disable)'
         : 'AI Translate: OFF (click to enable)'
 
@@ -162,6 +170,9 @@ function observeCaptionButton(): void {
 
 function listenForSettingsChanges(): void {
   watchSettings(updateButtonFromSettings)
+  watchProviderChanges(() => {
+    void syncTranslateToggle()
+  })
 }
 
 export function injectTranslateToggle(): void {

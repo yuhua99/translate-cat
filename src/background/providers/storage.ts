@@ -1,4 +1,5 @@
 import type { ProviderConfig, ProviderSecret, ProviderType } from './types'
+import { PROVIDER_CONFIGS_KEY, PROVIDER_SECRETS_KEY } from '../../shared/messages'
 import { getDefaultProviderConfig } from '../../shared/providers'
 
 export interface ProviderStorageArea {
@@ -10,9 +11,6 @@ export interface ProviderStores {
   sync: ProviderStorageArea
   local: ProviderStorageArea
 }
-
-const PROVIDER_CONFIGS_KEY = 'providerConfigs'
-const PROVIDER_SECRETS_KEY = 'providerSecrets'
 
 export async function getProviderConfig(
   storage: ProviderStorageArea,

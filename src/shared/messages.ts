@@ -7,6 +7,8 @@ import type {
 import type { ManualTranslationItem } from '../youtube/translation-validation'
 
 export const SETTINGS_KEY = 'settings'
+export const PROVIDER_CONFIGS_KEY = 'providerConfigs'
+export const PROVIDER_SECRETS_KEY = 'providerSecrets'
 
 export interface ExtensionSettings {
   enabled: boolean
@@ -90,6 +92,17 @@ export type ExtensionResponse =
   | ProviderAuthStatusResponse
   | TranslationResponse
   | TranslateTextResponse
+
+export function watchProviderChanges(callback: () => void): void {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (
+      (areaName === 'local' && changes[PROVIDER_SECRETS_KEY]) ||
+      (areaName === 'sync' && changes[PROVIDER_CONFIGS_KEY])
+    ) {
+      callback()
+    }
+  })
+}
 
 export function watchSettings(callback: (settings: ExtensionSettings) => void): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {

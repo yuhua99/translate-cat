@@ -5,7 +5,7 @@ Chrome MV3 extension (TypeScript + Bun, no framework) that overlays AI-translate
 ## Invariants
 
 - `src/youtube/main-world-capture.ts` runs in the page's MAIN world: no `chrome.*` APIs, no imports with chrome types at runtime; talk to the extension only via `postMessage`/`CustomEvent` (constants in `caption-capture-event.ts`).
-- Settings are read/written only through `GET_SETTINGS`/`SET_SETTINGS` runtime messages to the background worker (it merges `DEFAULT_SETTINGS`). Never call `chrome.storage` for settings from content/YouTube code; the one exception is read-only change observation via `watchSettings` in `src/shared/messages.ts` — never add ad-hoc `chrome.storage.onChanged` listeners.
+- Settings are read/written only through `GET_SETTINGS`/`SET_SETTINGS` runtime messages to the background worker (it merges `DEFAULT_SETTINGS`). Never call `chrome.storage` for settings from content/YouTube code. Observe setting and provider changes only through `watchSettings` and `watchProviderChanges` in `src/shared/messages.ts` — never add ad-hoc `chrome.storage.onChanged` listeners.
 - API keys live in `chrome.storage.local` (`providerSecrets`); configs and settings in `chrome.storage.sync`. Never log secrets or move them to sync.
 - Never persist `enabled: false` from inferred player state (CC button off, timeouts). Only an explicit user action (toggle button, popup) may change the stored setting; transient failures deactivate locally and self-heal on the next video load.
 - Provider fetch/parse failures must throw the typed errors in `src/background/providers/errors.ts`; `subtitle-translation.ts` classifies them (401/403 fatal, 408/429/5xx/network/parse retryable). A plain `Error` means non-retryable — don't "upgrade" it.
