@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-27
+
+### Added
+
+- ChatGPT subscription as a translation provider: sign in with a device code instead of an API key.
+- Localized Chrome Web Store name and description.
+
+### Changed
+
+- Redesigned the popup and ChatGPT sign-in page as a retro LCD device, with a unified pixel cat icon.
+
+### Fixed
+
+- Disabled the YouTube AI translation toggle when the selected provider has no credentials.
+
+### Docs
+
+- Documented ChatGPT sign-in tokens and related OpenAI host access in the privacy policy.
+
 ## [0.2.5] - 2026-08-20
 
 ### Docs
