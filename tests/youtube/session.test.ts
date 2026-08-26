@@ -56,6 +56,34 @@ describe('YoutubeSubtitleSession', () => {
     ])
   })
 
+  test('returns pending segments only for in-flight windows', () => {
+    const session = new YoutubeSubtitleSession(settings, createTranslatorClient())
+
+    session.handleCapturedCaptions({
+      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+      responseText: JSON.stringify({
+        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
+      }),
+    })
+
+    session.windowsInFlight.add('0-30000')
+    expect(session.pendingSegmentAt(1500)?.text).toBe('Hello')
+
+    session.windowsCompleted.add('0-30000')
+    expect(session.pendingSegmentAt(1500)).toBeUndefined()
+
+    session.windowsCompleted.clear()
+    session.windowsFailed.set('0-30000', Date.now())
+    expect(session.pendingSegmentAt(1500)).toBeUndefined()
+
+    session.windowsFailed.clear()
+    session.windowsInFlight.clear()
+    expect(session.pendingSegmentAt(1500)).toBeUndefined()
+
+    session.windowsInFlight.add('0-30000')
+    expect(session.pendingSegmentAt(2500)).toBeUndefined()
+  })
+
   test('does not translate when CC off or already completed', async () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)

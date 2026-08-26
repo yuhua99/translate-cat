@@ -240,7 +240,12 @@ function startRenderLoop(): void {
   const render = () => {
     const video = document.querySelector('video')
     if (aiModeActive && session && video) {
-      renderer?.render(session.translatedCues, video.currentTime * 1000)
+      const currentTimeMs = video.currentTime * 1000
+      renderer?.render(
+        session.translatedCues,
+        currentTimeMs,
+        session.pendingSegmentAt(currentTimeMs)?.text,
+      )
     }
     animationFrameId = window.requestAnimationFrame(render)
   }

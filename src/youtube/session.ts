@@ -6,7 +6,7 @@ import type {
   CapturedCaptionResponse,
   TranslatedCue,
 } from './caption-types'
-import { planTranslationWindows, type TranslationWindow } from './scheduler'
+import { planTranslationWindows, windowFor, type TranslationWindow } from './scheduler'
 import type { TranslatorClient } from './translator-client'
 import type { ExtensionSettings } from '../shared/messages'
 
@@ -72,6 +72,24 @@ export class YoutubeSubtitleSession {
     this.windowsInFlight.clear()
     this.windowsCompleted.clear()
     this.windowsFailed.clear()
+  }
+
+  pendingSegmentAt(currentTimeMs: number): CaptionSegment | undefined {
+    const window = windowFor(currentTimeMs)
+    if (
+      !this.windowsInFlight.has(window.id) ||
+      this.windowsCompleted.has(window.id) ||
+      this.windowsFailed.has(window.id)
+    ) {
+      return undefined
+    }
+
+    return this.segments.find(
+      (segment) =>
+        currentTimeMs >= segment.startMs &&
+        segment.endMs !== undefined &&
+        currentTimeMs < segment.endMs,
+    )
   }
 
   async ensureTranslations(currentTimeMs: number, ccEnabled: boolean): Promise<void> {

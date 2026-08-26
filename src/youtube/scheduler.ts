@@ -18,10 +18,14 @@ const WINDOW_SIZE_MS = 30_000
 const LOOKAHEAD_WINDOWS = 2
 const MAX_PLANNED_WINDOWS = 2
 
+export function windowFor(timeMs: number): TranslationWindow {
+  return createWindow(windowStart(timeMs))
+}
+
 export function planTranslationWindows(input: ScheduleInput): TranslationWindow[] {
   if (!input.ccEnabled) return []
 
-  const currentStartMs = windowStart(input.currentTimeMs)
+  const currentStartMs = windowFor(input.currentTimeMs).startMs
   const windows: TranslationWindow[] = []
 
   for (let offset = 0; offset <= LOOKAHEAD_WINDOWS; offset += 1) {

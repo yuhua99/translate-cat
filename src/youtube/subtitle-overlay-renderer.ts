@@ -21,11 +21,24 @@ export function findActiveCue(
 export class SubtitleOverlayRenderer {
   private resizeObserver: ResizeObserver | null = null
 
-  render(cues: readonly TranslatedCue[], currentTimeMs: number): void {
+  render(cues: readonly TranslatedCue[], currentTimeMs: number, pendingText?: string): void {
     const cue = findActiveCue(cues, currentTimeMs)
     const overlay = this.ensureOverlay()
-    overlay.textContent = cue?.translatedText ?? ''
-    overlay.hidden = !cue
+
+    if (cue) {
+      overlay.textContent = cue.translatedText
+      overlay.style.opacity = '1'
+      overlay.style.fontStyle = 'normal'
+      overlay.hidden = false
+    } else if (pendingText !== undefined) {
+      overlay.textContent = `${pendingText}…`
+      overlay.style.opacity = '0.65'
+      overlay.style.fontStyle = 'italic'
+      overlay.hidden = false
+    } else {
+      overlay.textContent = ''
+      overlay.hidden = true
+    }
   }
 
   clear(): void {
