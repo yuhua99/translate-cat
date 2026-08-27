@@ -37,7 +37,9 @@ function dispatchCaptionCapture(detail: CaptionsCapturedEventDetail): void {
 }
 
 function installXhrCapture(): void {
+  // oxlint-disable-next-line typescript-eslint/unbound-method -- invoked via Reflect.apply with explicit this
   const originalOpen = XMLHttpRequest.prototype.open
+  // oxlint-disable-next-line typescript-eslint/unbound-method -- invoked via Reflect.apply with explicit this
   const originalSend = XMLHttpRequest.prototype.send
 
   function patchedOpen(this: XMLHttpRequest, method: string, url: string | URL): void
