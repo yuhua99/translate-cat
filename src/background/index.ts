@@ -15,7 +15,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'translate-cat-selection',
-      title: 'Translate with translate cat',
+      title: chrome.i18n.getMessage('bgTranslateWithTranslateCat'),
       contexts: ['selection'],
     })
   })
@@ -97,15 +97,15 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
             ok: false,
             error:
               settings.providerType === 'codex'
-                ? 'Not signed in to OpenAI Codex'
-                : `Missing API key for ${settings.providerType}`,
+                ? chrome.i18n.getMessage('bgNotSignedInCodex')
+                : chrome.i18n.getMessage('bgMissingApiKey', settings.providerType),
           } satisfies ExtensionResponse)
           return
         }
         if (!config.model) {
           sendResponse({
             ok: false,
-            error: `Missing model for ${settings.providerType}`,
+            error: chrome.i18n.getMessage('bgMissingModel', settings.providerType),
           } satisfies ExtensionResponse)
           return
         }

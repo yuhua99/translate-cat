@@ -72,7 +72,7 @@ function createToggleButton(): HTMLButtonElement {
 
 async function resolveToggleState(captionButton = findCaptionButton()): Promise<ToggleState> {
   if ((await getCaptionAvailability(captionButton)) !== 'available') {
-    return { kind: 'unavailable', reason: 'YouTube captions not provided' }
+    return { kind: 'unavailable', reason: chrome.i18n.getMessage('captionsNotProvided') }
   }
 
   const validation = await sendMessage<MessageResponse>({ type: 'VALIDATE_ACTIVE_PROVIDER' })
@@ -83,10 +83,10 @@ async function resolveToggleState(captionButton = findCaptionButton()): Promise<
 
 function stateText(state: ToggleState): string {
   return state.kind === 'unavailable'
-    ? `AI Translate: unavailable (${state.reason})`
+    ? chrome.i18n.getMessage('toggleUnavailable', state.reason)
     : state.kind === 'active'
-      ? 'AI Translate: ON (click to disable)'
-      : 'AI Translate: OFF (click to enable)'
+      ? chrome.i18n.getMessage('toggleOn')
+      : chrome.i18n.getMessage('toggleOff')
 }
 
 function applyToggleState(button: HTMLButtonElement, state: ToggleState): void {

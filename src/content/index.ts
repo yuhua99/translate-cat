@@ -160,7 +160,9 @@ async function activateAiTranslate(
     deactivateAiTranslate()
     void syncTranslateToggle()
     if (showUnavailableStatus) {
-      showStatusOverlay('AI Translate: YouTube captions not provided')
+      showStatusOverlay(
+        chrome.i18n.getMessage('aiTranslateDetail', chrome.i18n.getMessage('captionsNotProvided')),
+      )
     }
     return false
   }
@@ -169,7 +171,7 @@ async function activateAiTranslate(
     type: 'VALIDATE_ACTIVE_PROVIDER',
   })
   if (!validation.ok) {
-    showStatusOverlay(`AI Translate: ${validation.error}`)
+    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', validation.error))
     return false
   }
   if (isCurrent?.() === false) return false
@@ -228,7 +230,7 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
 async function forceSubtitleReload(): Promise<void> {
   const button = findCaptionButton()
   if (!button) {
-    showStatusOverlay('AI Translate: CC button not found')
+    showStatusOverlay(chrome.i18n.getMessage('contentCcButtonNotFound'))
     return
   }
 
@@ -295,13 +297,13 @@ function createSession(settings: ExtensionSettings): void {
   session = new YoutubeSubtitleSession(settings, createRuntimeTranslatorClient())
 
   session.fatalErrorHandler = (error: string) => {
-    showStatusOverlay(`AI Translate error: ${error}`)
+    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
     // Per spec: do not restore native captions on fatal error
     teardownAiTranslate()
   }
 
   session.windowFailedHandler = (error: string) => {
-    showStatusOverlay(`AI Translate: ${error}`)
+    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
   }
 
   renderer = new SubtitleOverlayRenderer()
@@ -316,7 +318,7 @@ async function loadSettingsForActivation(): Promise<ExtensionSettings | undefine
     type: 'GET_SETTINGS',
   })
   if (!response.ok) {
-    showStatusOverlay(`AI Translate: ${response.error}`)
+    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', response.error))
     return undefined
   }
 

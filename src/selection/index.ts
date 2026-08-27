@@ -180,7 +180,7 @@ function renderIcon(x: number, y: number, text: string): void {
   const btn = document.createElement('button')
   btn.type = 'button'
   btn.className = 'tc-trigger'
-  btn.setAttribute('aria-label', 'Translate selection')
+  btn.setAttribute('aria-label', chrome.i18n.getMessage('selectionTranslate'))
   btn.innerHTML = PIXEL_LOGO
   btn.addEventListener('mousedown', (e) => {
     e.preventDefault()
@@ -209,7 +209,7 @@ function renderBubble(
   bubble.className = 'tc-bubble'
   const handle = document.createElement('div')
   handle.className = 'tc-handle'
-  handle.setAttribute('aria-label', 'Drag')
+  handle.setAttribute('aria-label', chrome.i18n.getMessage('selectionDrag'))
   const body = document.createElement('div')
   body.className = isError ? 'tc-body tc-error' : isLoading ? 'tc-body tc-loading' : 'tc-body'
   body.textContent = content
@@ -256,7 +256,7 @@ function attachDrag(handle: HTMLElement): void {
 }
 
 async function translate(x: number, y: number, text: string): Promise<void> {
-  renderBubble(x, y, 'TRANSLATING', false, true)
+  renderBubble(x, y, chrome.i18n.getMessage('selectionTranslating'), false, true)
   const token = root
   try {
     const response = await sendMessage<TranslateTextResponse>({
@@ -319,7 +319,12 @@ function onContextMenu(event: MouseEvent): void {
 function onContextMenuTranslate(message: ExtensionMessage): void {
   if (message.type !== 'CONTEXT_MENU_TRANSLATE' || !contextMenuSelection) return
   if (contextMenuSelection.oversized) {
-    renderBubble(contextMenuSelection.x, contextMenuSelection.y, 'Selection too long', true)
+    renderBubble(
+      contextMenuSelection.x,
+      contextMenuSelection.y,
+      chrome.i18n.getMessage('selectionTooLong'),
+      true,
+    )
     return
   }
   void translate(contextMenuSelection.x, contextMenuSelection.y, contextMenuSelection.text)

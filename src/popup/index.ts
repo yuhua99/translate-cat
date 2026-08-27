@@ -10,7 +10,10 @@ import {
   type SettingsResponse,
 } from '../shared/messages'
 import type { ProviderConfig, ProviderSecret, ProviderType } from '../background/providers/types'
+import { localizePage } from '../shared/i18n'
 import { ALL_PROVIDER_TYPES, getProviderLabel, getProviderModels } from '../shared/providers'
+
+localizePage()
 
 const TARGET_LANGUAGES: Array<{ value: string; label: string }> = [
   { value: 'zh-TW', label: '繁體中文' },
@@ -87,8 +90,11 @@ function isOAuthProvider(providerType = getProviderType()): boolean {
 function setCodexSignInButton(signedIn: boolean): void {
   codexSignedIn = signedIn
   codexSignInButton.classList.toggle('is-signed-in', signedIn)
-  codexSignInButton.setAttribute('aria-label', signedIn ? 'Sign out' : 'Sign in')
-  const label = signedIn ? 'Signed in' : 'Sign in'
+  codexSignInButton.setAttribute(
+    'aria-label',
+    chrome.i18n.getMessage(signedIn ? 'signOut' : 'signIn'),
+  )
+  const label = chrome.i18n.getMessage(signedIn ? 'popupSignedIn' : 'signIn')
   if (codexSignInLabel) {
     codexSignInLabel.textContent = label
   } else {
@@ -117,7 +123,9 @@ async function updateProviderAuthStatus(): Promise<void> {
     } satisfies ExtensionMessage)
     if (!response.ok || getProviderType() !== providerType) return
     setCodexSignInButton(response.signedIn)
-    codexAuthStatus.textContent = response.signedIn ? 'Signed in' : 'Not signed in'
+    codexAuthStatus.textContent = chrome.i18n.getMessage(
+      response.signedIn ? 'popupSignedIn' : 'popupNotSignedIn',
+    )
     codexAuthStatus.classList.toggle('success', response.signedIn)
   } catch {
     codexAuthStatus.textContent = ''
@@ -143,7 +151,7 @@ function renderModelPresets(providerType: ProviderType, selected?: string): void
   })
   const customOption = document.createElement('option')
   customOption.value = CUSTOM_MODEL_VALUE
-  customOption.textContent = 'Custom model'
+  customOption.textContent = chrome.i18n.getMessage('popupCustomModelOption')
   customOption.selected = isCustom
 
   providerModelPresetInput.replaceChildren(...options, customOption)
@@ -257,7 +265,7 @@ async function persistProviderSettings(
 
 async function saveSettings(): Promise<void> {
   saveButton.hidden = true
-  setStatus('Testing provider...')
+  setStatus(chrome.i18n.getMessage('popupTestingProvider'))
 
   // snapshot form values so in-flight edits don't leak into saves
   const providerType = getProviderType()
@@ -297,7 +305,7 @@ async function saveSettings(): Promise<void> {
     currentSettings = settings
     savedModel = model
     savedApiKey = apiKey
-    setStatus('Saved', 'success')
+    setStatus(chrome.i18n.getMessage('popupSaved'), 'success')
     updateSaveRequired()
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), 'error')

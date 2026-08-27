@@ -10,60 +10,75 @@
   <body>
     <!-- THESIS: the popup is a pocket electronic dictionary, ancestor of the translator; it refuses the generic dark settings panel. OWN-WORLD: one LCD green-gray screen (#a8b39a), pixel ink (#1e241c), charcoal bezel, monospace caps, states expressed only by inversion; pixel-art cat logo lives on-screen, store icon untouched. STORY: the user sets provider, key, model, language once; the device confirms with an inverted SAVED block. FIRST VIEWPORT: bezel device, screen header with pixel logo + wordmark, five LCD rows, SAVE bezel key. FORM: retro electronic dictionary LCD, candidate 5 of the grounded list, seed 08173047. FINISH: unreviewed is unfinished; this build ends with the finish review and the verdict. -->
     <main class="popup lcd-bezel-surface">
-      <section class="popup__screen lcd-screen-surface" aria-label="Translate cat settings">
+      <section
+        class="popup__screen lcd-screen-surface"
+        aria-label="Translate cat settings"
+        data-i18n-aria-label="popupTranslateCatSettings"
+      >
         <header class="popup__header">
-          <img class="popup__logo" src="icons/icon.svg" alt="translate cat pixel logo" />
+          <img
+            class="popup__logo"
+            src="icons/icon.svg"
+            alt="translate cat pixel logo"
+            data-i18n-alt="pixelLogoAlt"
+          />
           <span>TRANSLATE CAT</span>
         </header>
 
-        <section class="popup__settings" aria-label="Settings">
+        <section class="popup__settings" aria-label="Settings" data-i18n-aria-label="popupSettings">
           <label class="lcd-row">
-            <span class="lcd-row__label">PROVIDER</span>
+            <span class="lcd-row__label" data-i18n="popupProvider">PROVIDER</span>
             <select id="provider-type">
               <button><selectedcontent></selectedcontent></button>
             </select>
           </label>
           <label class="lcd-row" id="provider-api-key-row">
-            <span class="lcd-row__label">API KEY</span>
+            <span class="lcd-row__label" data-i18n="popupApiKey">API KEY</span>
             <input
               id="provider-api-key"
               type="password"
               autocomplete="off"
               placeholder="ENTER TO CHANGE"
+              data-i18n-placeholder="popupEnterToChange"
             />
           </label>
           <div class="popup__auth-row lcd-row" id="codex-auth-row" hidden>
-            <span class="lcd-row__label">ACCOUNT</span>
+            <span class="lcd-row__label" data-i18n="popupAccount">ACCOUNT</span>
             <button class="lcd-chip" id="codex-sign-in" type="button">
-              <span class="codex-chip__label">Sign in</span>
+              <span class="codex-chip__label" data-i18n="signIn">Sign in</span>
             </button>
             <p class="lcd-row__value" id="codex-auth-status"></p>
           </div>
           <label class="lcd-row">
-            <span class="lcd-row__label">MODEL</span>
+            <span class="lcd-row__label" data-i18n="popupModel">MODEL</span>
             <select id="provider-model-preset">
               <button><selectedcontent></selectedcontent></button>
             </select>
           </label>
           <label class="lcd-row" id="custom-model-row" hidden>
-            <span class="lcd-row__label">CUSTOM MODEL</span>
-            <input id="provider-model" type="text" placeholder="MODEL ID" />
+            <span class="lcd-row__label" data-i18n="popupCustomModelLabel">CUSTOM MODEL</span>
+            <input
+              id="provider-model"
+              type="text"
+              placeholder="MODEL ID"
+              data-i18n-placeholder="popupModelId"
+            />
           </label>
           <label class="lcd-row popup__toggle">
-            <span class="lcd-row__label">SELECTION</span>
+            <span class="lcd-row__label" data-i18n="popupSelection">SELECTION</span>
             <input id="selection-enabled" type="checkbox" />
             <span class="lcd-chip popup__toggle-chip" aria-hidden="true">
               <span class="popup__toggle-label"></span>
             </span>
           </label>
           <label class="lcd-row">
-            <span class="lcd-row__label">LANGUAGE</span>
+            <span class="lcd-row__label" data-i18n="popupLanguage">LANGUAGE</span>
             <select id="target-language">
               <button><selectedcontent></selectedcontent></button>
             </select>
           </label>
           <div class="popup__save-row lcd-row">
-            <button class="lcd-chip" id="save" type="button">Save</button>
+            <button class="lcd-chip" id="save" type="button" data-i18n="popupSave">Save</button>
             <p id="status" role="status"></p>
           </div>
         </section>

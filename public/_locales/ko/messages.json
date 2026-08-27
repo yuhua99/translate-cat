@@ -1,4 +1,64 @@
 {
   "extName": { "message": "translate cat" },
-  "extDesc": { "message": "내 AI 서비스로 YouTube 자막과 선택한 텍스트를 실시간으로 번역하세요." }
+  "extDesc": { "message": "내 AI 서비스로 YouTube 자막과 선택한 텍스트를 실시간으로 번역하세요." },
+  "popupTranslateCatSettings": { "message": "translate cat 설정" },
+  "pixelLogoAlt": { "message": "translate cat 픽셀 로고" },
+  "popupSettings": { "message": "설정" },
+  "popupProvider": { "message": "공급업체" },
+  "popupApiKey": { "message": "API 키" },
+  "popupEnterToChange": { "message": "Enter를 눌러 변경" },
+  "popupAccount": { "message": "계정" },
+  "signIn": { "message": "로그인" },
+  "popupModel": { "message": "모델" },
+  "popupCustomModelLabel": { "message": "사용자 지정 모델" },
+  "popupModelId": { "message": "모델 ID" },
+  "popupSelection": { "message": "선택" },
+  "popupLanguage": { "message": "언어" },
+  "popupSave": { "message": "저장" },
+  "signOut": { "message": "로그아웃" },
+  "popupSignedIn": { "message": "로그인됨" },
+  "popupNotSignedIn": { "message": "로그인하지 않음" },
+  "popupCustomModelOption": { "message": "사용자 지정 모델" },
+  "popupTestingProvider": { "message": "공급업체 테스트 중..." },
+  "popupSaved": { "message": "저장됨" },
+  "codexAuthTitle": { "message": "ChatGPT로 로그인" },
+  "codexAuthDeviceCodeSignIn": { "message": "ChatGPT 기기 코드로 로그인" },
+  "codexAuthRequestingCode": { "message": "코드 요청 중..." },
+  "copy": { "message": "복사" },
+  "codexAuthOpenVerificationPage": { "message": "인증 페이지 열기" },
+  "codexAuthEnterCode": {
+    "message": "인증 페이지에서 이 코드를 입력하세요. 승인 대기 중…"
+  },
+  "codexAuthKeepPageOpen": { "message": "로그인하는 동안 이 페이지를 열어 두세요." },
+  "codexAuthSignedIn": { "message": "로그인되었습니다. 이 탭을 닫아도 됩니다." },
+  "codexAuthRetry": { "message": "다시 시도" },
+  "codexAuthCopied": { "message": "복사됨" },
+  "codexAuthCouldNotReadAccount": { "message": "토큰에서 계정을 읽을 수 없습니다" },
+  "captionsNotProvided": { "message": "YouTube 자막이 제공되지 않음" },
+  "toggleUnavailable": {
+    "message": "AI Translate: 사용할 수 없음 ($REASON$)",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "toggleOn": { "message": "AI Translate: 켜짐 (클릭하여 끄기)" },
+  "toggleOff": { "message": "AI Translate: 꺼짐 (클릭하여 켜기)" },
+  "close": { "message": "닫기" },
+  "aiTranslateDetail": {
+    "message": "AI Translate: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1" } }
+  },
+  "contentCcButtonNotFound": { "message": "AI Translate: CC 버튼을 찾을 수 없음" },
+  "selectionTranslate": { "message": "선택 영역 번역" },
+  "selectionDrag": { "message": "드래그" },
+  "selectionTranslating": { "message": "번역 중" },
+  "selectionTooLong": { "message": "선택 영역이 너무 깁니다" },
+  "bgTranslateWithTranslateCat": { "message": "translate cat으로 번역" },
+  "bgNotSignedInCodex": { "message": "OpenAI Codex에 로그인하지 않음" },
+  "bgMissingApiKey": {
+    "message": "$PROVIDER$의 API 키가 없음",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
+  "bgMissingModel": {
+    "message": "$PROVIDER$의 모델이 없음",
+    "placeholders": { "provider": { "content": "$1" } }
+  }
 }

@@ -43,7 +43,7 @@ function ensureStatusOverlay(): HTMLElement {
   const close = document.createElement('button')
   close.type = 'button'
   close.textContent = '×'
-  close.setAttribute('aria-label', 'Close')
+  close.setAttribute('aria-label', chrome.i18n.getMessage('close'))
   close.style.border = '0'
   close.style.background = 'transparent'
   close.style.color = 'inherit'

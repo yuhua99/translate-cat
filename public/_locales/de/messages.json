@@ -2,5 +2,65 @@
   "extName": { "message": "translate cat" },
   "extDesc": {
     "message": "Übersetze YouTube-Untertitel und markierten Text in Echtzeit mit deinem eigenen KI-Anbieter."
+  },
+  "popupTranslateCatSettings": { "message": "translate cat-Einstellungen" },
+  "pixelLogoAlt": { "message": "translate cat-Pixellogo" },
+  "popupSettings": { "message": "EINSTELLUNGEN" },
+  "popupProvider": { "message": "ANBIETER" },
+  "popupApiKey": { "message": "API-SCHLÜSSEL" },
+  "popupEnterToChange": { "message": "EINGABE ZUM ÄNDERN" },
+  "popupAccount": { "message": "KONTO" },
+  "signIn": { "message": "Anmelden" },
+  "popupModel": { "message": "MODELL" },
+  "popupCustomModelLabel": { "message": "BENUTZERDEFINIERTES MODELL" },
+  "popupModelId": { "message": "MODELL-ID" },
+  "popupSelection": { "message": "AUSWAHL" },
+  "popupLanguage": { "message": "SPRACHE" },
+  "popupSave": { "message": "Speichern" },
+  "signOut": { "message": "Abmelden" },
+  "popupSignedIn": { "message": "Angemeldet" },
+  "popupNotSignedIn": { "message": "Nicht angemeldet" },
+  "popupCustomModelOption": { "message": "Benutzerdefiniertes Modell" },
+  "popupTestingProvider": { "message": "Anbieter wird getestet..." },
+  "popupSaved": { "message": "Gespeichert" },
+  "codexAuthTitle": { "message": "Mit ChatGPT anmelden" },
+  "codexAuthDeviceCodeSignIn": { "message": "ChatGPT-Gerätecode-Anmeldung" },
+  "codexAuthRequestingCode": { "message": "Code wird angefordert..." },
+  "copy": { "message": "Kopieren" },
+  "codexAuthOpenVerificationPage": { "message": "Bestätigungsseite öffnen" },
+  "codexAuthEnterCode": {
+    "message": "Gib diesen Code auf der Bestätigungsseite ein. Warte auf Freigabe…"
+  },
+  "codexAuthKeepPageOpen": { "message": "Lass diese Seite während der Anmeldung geöffnet." },
+  "codexAuthSignedIn": { "message": "Angemeldet. Du kannst diesen Tab schließen." },
+  "codexAuthRetry": { "message": "Erneut versuchen" },
+  "codexAuthCopied": { "message": "Kopiert" },
+  "codexAuthCouldNotReadAccount": { "message": "Konto konnte nicht aus dem Token gelesen werden" },
+  "captionsNotProvided": { "message": "YouTube-Untertitel nicht verfügbar" },
+  "toggleUnavailable": {
+    "message": "AI Translate: nicht verfügbar ($REASON$)",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "toggleOn": { "message": "AI Translate: EIN (zum Deaktivieren klicken)" },
+  "toggleOff": { "message": "AI Translate: AUS (zum Aktivieren klicken)" },
+  "close": { "message": "Schließen" },
+  "aiTranslateDetail": {
+    "message": "AI Translate: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1" } }
+  },
+  "contentCcButtonNotFound": { "message": "AI Translate: CC-Schaltfläche nicht gefunden" },
+  "selectionTranslate": { "message": "Auswahl übersetzen" },
+  "selectionDrag": { "message": "Ziehen" },
+  "selectionTranslating": { "message": "WIRD ÜBERSETZT" },
+  "selectionTooLong": { "message": "Auswahl zu lang" },
+  "bgTranslateWithTranslateCat": { "message": "Mit translate cat übersetzen" },
+  "bgNotSignedInCodex": { "message": "Nicht bei OpenAI Codex angemeldet" },
+  "bgMissingApiKey": {
+    "message": "API-Schlüssel für $PROVIDER$ fehlt",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
+  "bgMissingModel": {
+    "message": "Modell für $PROVIDER$ fehlt",
+    "placeholders": { "provider": { "content": "$1" } }
   }
 }

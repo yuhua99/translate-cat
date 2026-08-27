@@ -2,5 +2,65 @@
   "extName": { "message": "translate cat" },
   "extDesc": {
     "message": "Translate YouTube subtitles and any selected text with your own AI provider."
+  },
+  "popupTranslateCatSettings": { "message": "Translate cat settings" },
+  "pixelLogoAlt": { "message": "translate cat pixel logo" },
+  "popupSettings": { "message": "Settings" },
+  "popupProvider": { "message": "PROVIDER" },
+  "popupApiKey": { "message": "API KEY" },
+  "popupEnterToChange": { "message": "ENTER TO CHANGE" },
+  "popupAccount": { "message": "ACCOUNT" },
+  "signIn": { "message": "Sign in" },
+  "popupModel": { "message": "MODEL" },
+  "popupCustomModelLabel": { "message": "CUSTOM MODEL" },
+  "popupModelId": { "message": "MODEL ID" },
+  "popupSelection": { "message": "SELECTION" },
+  "popupLanguage": { "message": "LANGUAGE" },
+  "popupSave": { "message": "Save" },
+  "signOut": { "message": "Sign out" },
+  "popupSignedIn": { "message": "Signed in" },
+  "popupNotSignedIn": { "message": "Not signed in" },
+  "popupCustomModelOption": { "message": "Custom model" },
+  "popupTestingProvider": { "message": "Testing provider..." },
+  "popupSaved": { "message": "Saved" },
+  "codexAuthTitle": { "message": "Sign in with ChatGPT" },
+  "codexAuthDeviceCodeSignIn": { "message": "ChatGPT device code sign in" },
+  "codexAuthRequestingCode": { "message": "Requesting code..." },
+  "copy": { "message": "Copy" },
+  "codexAuthOpenVerificationPage": { "message": "Open verification page" },
+  "codexAuthEnterCode": {
+    "message": "Enter this code on the verification page. Waiting for approval…"
+  },
+  "codexAuthKeepPageOpen": { "message": "Keep this page open while you sign in." },
+  "codexAuthSignedIn": { "message": "Signed in. You can close this tab." },
+  "codexAuthRetry": { "message": "Retry" },
+  "codexAuthCopied": { "message": "Copied" },
+  "codexAuthCouldNotReadAccount": { "message": "Could not read account from token" },
+  "captionsNotProvided": { "message": "YouTube captions not provided" },
+  "toggleUnavailable": {
+    "message": "AI Translate: unavailable ($REASON$)",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "toggleOn": { "message": "AI Translate: ON (click to disable)" },
+  "toggleOff": { "message": "AI Translate: OFF (click to enable)" },
+  "close": { "message": "Close" },
+  "aiTranslateDetail": {
+    "message": "AI Translate: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1" } }
+  },
+  "contentCcButtonNotFound": { "message": "AI Translate: CC button not found" },
+  "selectionTranslate": { "message": "Translate selection" },
+  "selectionDrag": { "message": "Drag" },
+  "selectionTranslating": { "message": "TRANSLATING" },
+  "selectionTooLong": { "message": "Selection too long" },
+  "bgTranslateWithTranslateCat": { "message": "Translate with translate cat" },
+  "bgNotSignedInCodex": { "message": "Not signed in to OpenAI Codex" },
+  "bgMissingApiKey": {
+    "message": "Missing API key for $PROVIDER$",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
+  "bgMissingModel": {
+    "message": "Missing model for $PROVIDER$",
+    "placeholders": { "provider": { "content": "$1" } }
   }
 }

@@ -4,6 +4,7 @@ import {
   pollDeviceAuthorization,
   requestDeviceCode,
 } from '../shared/codex-oauth'
+import { localizePage } from '../shared/i18n'
 import type { ExtensionMessage, MessageResponse } from '../shared/messages'
 
 function requiredElement<T extends Element>(selector: string): T {
@@ -21,6 +22,8 @@ function sendMessage(message: ExtensionMessage): Promise<MessageResponse> {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  localizePage()
+
   const loading = requiredElement<HTMLElement>('#auth-loading')
   const code = requiredElement<HTMLElement>('#auth-code')
   const success = requiredElement<HTMLElement>('#auth-success')
@@ -48,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const deviceCode = await requestDeviceCode(nextController.signal)
       if (nextController.signal.aborted) return
       userCode.textContent = deviceCode.userCode
-      copyButton.textContent = 'Copy'
+      copyButton.textContent = chrome.i18n.getMessage('copy')
       show('code')
 
       const authorization = await pollDeviceAuthorization(deviceCode, nextController.signal)
@@ -57,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         authorization.codeVerifier,
         nextController.signal,
       )
-      if (!tokens.accountId) throw new Error('Could not read account from token')
+      if (!tokens.accountId) throw new Error(chrome.i18n.getMessage('codexAuthCouldNotReadAccount'))
 
       const response = await sendMessage({
         type: 'SET_PROVIDER_SECRET',
@@ -76,9 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   copyButton.addEventListener('click', () => {
     void navigator.clipboard.writeText(userCode.textContent ?? '').then(() => {
-      copyButton.textContent = 'Copied'
+      copyButton.textContent = chrome.i18n.getMessage('codexAuthCopied')
       setTimeout(() => {
-        copyButton.textContent = 'Copy'
+        copyButton.textContent = chrome.i18n.getMessage('copy')
       }, 1_500)
     })
   })

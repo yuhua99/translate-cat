@@ -2,5 +2,65 @@
   "extName": { "message": "translate cat" },
   "extDesc": {
     "message": "自分の AI サービスで、YouTube の字幕や選択したテキストをリアルタイムに翻訳。"
+  },
+  "popupTranslateCatSettings": { "message": "translate cat の設定" },
+  "pixelLogoAlt": { "message": "translate cat のピクセルロゴ" },
+  "popupSettings": { "message": "設定" },
+  "popupProvider": { "message": "プロバイダー" },
+  "popupApiKey": { "message": "API キー" },
+  "popupEnterToChange": { "message": "Enter で変更" },
+  "popupAccount": { "message": "アカウント" },
+  "signIn": { "message": "サインイン" },
+  "popupModel": { "message": "モデル" },
+  "popupCustomModelLabel": { "message": "カスタムモデル" },
+  "popupModelId": { "message": "モデル ID" },
+  "popupSelection": { "message": "選択" },
+  "popupLanguage": { "message": "言語" },
+  "popupSave": { "message": "保存" },
+  "signOut": { "message": "サインアウト" },
+  "popupSignedIn": { "message": "サインイン済み" },
+  "popupNotSignedIn": { "message": "未サインイン" },
+  "popupCustomModelOption": { "message": "カスタムモデル" },
+  "popupTestingProvider": { "message": "プロバイダーをテスト中..." },
+  "popupSaved": { "message": "保存しました" },
+  "codexAuthTitle": { "message": "ChatGPT でサインイン" },
+  "codexAuthDeviceCodeSignIn": { "message": "ChatGPT デバイスコードでサインイン" },
+  "codexAuthRequestingCode": { "message": "コードをリクエスト中..." },
+  "copy": { "message": "コピー" },
+  "codexAuthOpenVerificationPage": { "message": "確認ページを開く" },
+  "codexAuthEnterCode": {
+    "message": "確認ページでこのコードを入力してください。承認を待っています…"
+  },
+  "codexAuthKeepPageOpen": { "message": "サインイン中はこのページを開いたままにしてください。" },
+  "codexAuthSignedIn": { "message": "サインイン済みです。このタブは閉じてかまいません。" },
+  "codexAuthRetry": { "message": "再試行" },
+  "codexAuthCopied": { "message": "コピーしました" },
+  "codexAuthCouldNotReadAccount": { "message": "トークンからアカウントを読み取れませんでした" },
+  "captionsNotProvided": { "message": "YouTube の字幕は提供されていません" },
+  "toggleUnavailable": {
+    "message": "AI Translate: 利用できません（$REASON$）",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "toggleOn": { "message": "AI Translate: オン（クリックして無効化）" },
+  "toggleOff": { "message": "AI Translate: オフ（クリックして有効化）" },
+  "close": { "message": "閉じる" },
+  "aiTranslateDetail": {
+    "message": "AI Translate: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1" } }
+  },
+  "contentCcButtonNotFound": { "message": "AI Translate: CC ボタンが見つかりません" },
+  "selectionTranslate": { "message": "選択範囲を翻訳" },
+  "selectionDrag": { "message": "ドラッグ" },
+  "selectionTranslating": { "message": "翻訳中" },
+  "selectionTooLong": { "message": "選択範囲が長すぎます" },
+  "bgTranslateWithTranslateCat": { "message": "translate cat で翻訳" },
+  "bgNotSignedInCodex": { "message": "OpenAI Codex にサインインしていません" },
+  "bgMissingApiKey": {
+    "message": "$PROVIDER$ の API キーがありません",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
+  "bgMissingModel": {
+    "message": "$PROVIDER$ のモデルがありません",
+    "placeholders": { "provider": { "content": "$1" } }
   }
 }

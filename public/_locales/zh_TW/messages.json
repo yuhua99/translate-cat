@@ -1,4 +1,64 @@
 {
   "extName": { "message": "translate cat 翻譯貓" },
-  "extDesc": { "message": "用你自己的 AI 服務，即時翻譯 YouTube 字幕或任何文字。" }
+  "extDesc": { "message": "用你自己的 AI 服務，即時翻譯 YouTube 字幕或任何文字。" },
+  "popupTranslateCatSettings": { "message": "translate cat 設定" },
+  "pixelLogoAlt": { "message": "translate cat 像素標誌" },
+  "popupSettings": { "message": "設定" },
+  "popupProvider": { "message": "供應商" },
+  "popupApiKey": { "message": "API 金鑰" },
+  "popupEnterToChange": { "message": "按 Enter 變更" },
+  "popupAccount": { "message": "帳號" },
+  "signIn": { "message": "登入" },
+  "popupModel": { "message": "模型" },
+  "popupCustomModelLabel": { "message": "自訂模型" },
+  "popupModelId": { "message": "模型 ID" },
+  "popupSelection": { "message": "選取內容" },
+  "popupLanguage": { "message": "語言" },
+  "popupSave": { "message": "儲存" },
+  "signOut": { "message": "登出" },
+  "popupSignedIn": { "message": "已登入" },
+  "popupNotSignedIn": { "message": "未登入" },
+  "popupCustomModelOption": { "message": "自訂模型" },
+  "popupTestingProvider": { "message": "正在測試供應商..." },
+  "popupSaved": { "message": "已儲存" },
+  "codexAuthTitle": { "message": "使用 ChatGPT 登入" },
+  "codexAuthDeviceCodeSignIn": { "message": "使用 ChatGPT 裝置代碼登入" },
+  "codexAuthRequestingCode": { "message": "正在要求代碼..." },
+  "copy": { "message": "複製" },
+  "codexAuthOpenVerificationPage": { "message": "開啟驗證頁面" },
+  "codexAuthEnterCode": {
+    "message": "在驗證頁面輸入此代碼，等待核准…"
+  },
+  "codexAuthKeepPageOpen": { "message": "登入時請保持此頁面開啟。" },
+  "codexAuthSignedIn": { "message": "已登入。可以關閉這個分頁。" },
+  "codexAuthRetry": { "message": "重試" },
+  "codexAuthCopied": { "message": "已複製" },
+  "codexAuthCouldNotReadAccount": { "message": "無法從權杖讀取帳號" },
+  "captionsNotProvided": { "message": "YouTube 未提供字幕" },
+  "toggleUnavailable": {
+    "message": "AI Translate: 無法使用（$REASON$）",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "toggleOn": { "message": "AI Translate: 已開啟（點擊停用）" },
+  "toggleOff": { "message": "AI Translate: 已關閉（點擊啟用）" },
+  "close": { "message": "關閉" },
+  "aiTranslateDetail": {
+    "message": "AI Translate: $DETAIL$",
+    "placeholders": { "detail": { "content": "$1" } }
+  },
+  "contentCcButtonNotFound": { "message": "AI Translate: 找不到 CC 按鈕" },
+  "selectionTranslate": { "message": "翻譯選取內容" },
+  "selectionDrag": { "message": "拖曳" },
+  "selectionTranslating": { "message": "翻譯中" },
+  "selectionTooLong": { "message": "選取內容過長" },
+  "bgTranslateWithTranslateCat": { "message": "使用 translate cat 翻譯" },
+  "bgNotSignedInCodex": { "message": "未登入 OpenAI Codex" },
+  "bgMissingApiKey": {
+    "message": "$PROVIDER$ 缺少 API 金鑰",
+    "placeholders": { "provider": { "content": "$1" } }
+  },
+  "bgMissingModel": {
+    "message": "$PROVIDER$ 缺少模型",
+    "placeholders": { "provider": { "content": "$1" } }
+  }
 }
