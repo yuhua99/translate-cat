@@ -57,10 +57,6 @@ select {
   padding-left: 0;
 }
 
-.popup .lcd-row:has(> select) {
-  padding-inline-end: calc(var(--lcd-space) * 2);
-}
-
 .popup .lcd-row__label {
   padding-left: var(--lcd-space);
 }
