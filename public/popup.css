@@ -64,16 +64,20 @@ select {
 input,
 select {
   min-width: 0;
-  width: 100%;
-  padding: 0 0 2px calc(var(--lcd-space) * 2);
   color: var(--lcd-ink);
   background: transparent;
   border: 0;
   border-radius: 0;
-  border-bottom: var(--lcd-hairline) dotted var(--lcd-ink);
   font: 700 var(--lcd-size-ui)/1.15 var(--lcd-font);
   letter-spacing: 0.04em;
   text-align: right;
+}
+
+input[type='text'],
+input[type='password'] {
+  flex: 1;
+  padding: 0 0 2px calc(var(--lcd-space) * 2);
+  border-bottom: var(--lcd-hairline) dotted var(--lcd-ink);
 }
 
 input::placeholder {
@@ -92,6 +96,11 @@ select {
   cursor: pointer;
 }
 
+select:hover {
+  color: var(--lcd-screen);
+  background: var(--lcd-ink);
+}
+
 select > button {
   all: unset;
   min-width: 0;
@@ -107,7 +116,6 @@ selectedcontent {
 }
 
 select::picker-icon {
-  margin-left: var(--lcd-space);
   content: '▾';
 }
 
@@ -131,7 +139,7 @@ option {
 }
 
 option:hover,
-option:focus {
+option:focus-visible {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
 }
@@ -155,7 +163,6 @@ option::checkmark {
 }
 
 .popup__toggle-chip {
-  justify-self: end;
   min-width: 56px;
 }
 
@@ -163,17 +170,8 @@ option::checkmark {
   content: 'OFF';
 }
 
-#selection-enabled:checked + .popup__toggle-chip {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
-}
-
 #selection-enabled:checked + .popup__toggle-chip .popup__toggle-label::before {
   content: 'ON';
-}
-
-#selection-enabled:checked + .popup__toggle-chip:hover {
-  background: var(--lcd-ink-soft);
 }
 
 #selection-enabled:focus-visible + .popup__toggle-chip {
@@ -181,14 +179,14 @@ option::checkmark {
   outline-offset: 1px;
 }
 
-.popup__toggle:active .popup__toggle-chip {
+.popup__toggle:hover .popup__toggle-chip {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
 }
 
-.popup__toggle:active #selection-enabled:checked + .popup__toggle-chip {
-  color: var(--lcd-ink);
-  background: transparent;
+.popup__toggle:active .popup__toggle-chip {
+  color: var(--lcd-screen);
+  background: var(--lcd-ink-soft);
 }
 
 #selection-enabled:disabled + .popup__toggle-chip {
@@ -197,7 +195,6 @@ option::checkmark {
 }
 
 #codex-sign-in {
-  justify-self: end;
   min-width: 92px;
 }
 
@@ -224,7 +221,19 @@ option::checkmark {
   display: none;
 }
 
+#provider-api-key-row .lcd-row__label,
+#custom-model-row .lcd-row__label {
+  flex: none;
+}
+
+#provider-api-key-row .lcd-row__label::after,
+#custom-model-row .lcd-row__label::after {
+  content: none;
+}
+
 .popup__save-row {
+  display: grid;
+  grid-template-columns: 1fr;
   min-height: 0;
   padding-block: 0;
 }

@@ -36,8 +36,7 @@
 }
 
 .lcd-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+  display: flex;
   align-items: center;
   min-height: 32px;
   padding: var(--lcd-space);
@@ -47,17 +46,34 @@
 }
 
 .lcd-row__label {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
   min-width: 0;
 }
 
+.lcd-row__label::after {
+  flex: 1;
+  min-width: calc(var(--lcd-space) * 4);
+  height: var(--lcd-hairline);
+  margin-inline: calc(var(--lcd-space) * 2);
+  content: '';
+  opacity: 0.4;
+  background: repeating-linear-gradient(
+    90deg,
+    currentColor 0 var(--lcd-hairline),
+    transparent var(--lcd-hairline) calc(var(--lcd-hairline) * 3)
+  );
+}
+
 .lcd-row__value {
+  flex: none;
   min-width: 0;
-  padding: 0 0 2px calc(var(--lcd-space) * 2);
+  padding: 0 0 0 calc(var(--lcd-space) * 2);
   overflow: hidden;
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
-  border-bottom: var(--lcd-hairline) dotted currentColor;
 }
 
 .lcd-inverted {
@@ -90,19 +106,9 @@
   content: ']';
 }
 
-.lcd-chip.is-active,
-.lcd-chip.is-signed-in,
-.lcd-chip:checked {
+.lcd-chip:hover:not(:disabled) {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
-}
-
-.lcd-chip:hover:not(:disabled) {
-  background: var(--lcd-screen-dim);
-}
-
-.lcd-chip:is(.is-active, .is-signed-in, :checked):hover:not(:disabled) {
-  background: var(--lcd-ink-soft);
 }
 
 .lcd-chip:focus-visible {
@@ -110,14 +116,9 @@
   outline-offset: 1px;
 }
 
-.lcd-chip:active {
+.lcd-chip:active:not(:disabled) {
   color: var(--lcd-screen);
-  background: var(--lcd-ink);
-}
-
-.lcd-chip:is(.is-active, .is-signed-in, :checked):active {
-  color: var(--lcd-ink);
-  background: transparent;
+  background: var(--lcd-ink-soft);
 }
 
 .lcd-chip:disabled {
@@ -156,11 +157,5 @@
 @keyframes lcd-blink {
   50% {
     opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lcd-cursor {
-    animation: none;
   }
 }
