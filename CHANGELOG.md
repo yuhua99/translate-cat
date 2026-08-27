@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-08-28
+
+### Added
+
+- Localized the UI in eight languages.
+
+### Changed
+
+- Displayed the original subtitles while translations are pending.
+- Refined popup and ChatGPT sign-in page styles.
+- Matched the tooltip styling to YouTube's native controls.
+
+### Fixed
+
+- Retried AI subtitle activation until captions are ready.
+- Kept the AI Translate toggle in sync with the active session.
+- Prevented stale AI activation and translation results.
+- Built content scripts as IIFEs for Chrome compatibility.
+
+### Docs
+
+- Clarified provider types in the README.
+
 ## [0.3.0] - 2026-08-27
 
 ### Added
