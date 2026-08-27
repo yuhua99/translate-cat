@@ -64,6 +64,8 @@ export class YoutubeSubtitleSession {
     this.videoId = parsed.track.videoId
     this.track = parsed.track
     this.segments = inferSegmentEndTimes(parsed.segments)
+    this.abortController.abort()
+    this.abortController = new AbortController()
     this.translatedCues = []
     this.windowsInFlight.clear()
     this.windowsCompleted.clear()
@@ -104,6 +106,8 @@ export class YoutubeSubtitleSession {
   }
 
   private async translateWindow(window: TranslationWindow): Promise<void> {
+    const signal = this.abortController.signal
+
     if (!this.track) {
       return
     }
@@ -132,16 +136,19 @@ export class YoutubeSubtitleSession {
         await this.translateManualSegments(
           mergeAsrSegments(segments),
           true,
+          signal,
           contextBefore,
           contextAfter,
         )
       } else {
-        await this.translateManualSegments(segments, false, contextBefore, contextAfter)
+        await this.translateManualSegments(segments, false, signal, contextBefore, contextAfter)
       }
+
+      if (this.isStale(signal)) return
 
       this.windowsCompleted.add(window.id)
     } catch (error) {
-      if (this.abortController.signal.aborted) return
+      if (this.isStale(signal)) return
 
       const message = error instanceof Error ? error.message : String(error)
       const fatal = (error as { fatal?: boolean }).fatal === true
@@ -155,8 +162,14 @@ export class YoutubeSubtitleSession {
       this.windowsFailed.set(window.id, Date.now())
       this.windowFailedHandler?.(message)
     } finally {
-      this.windowsInFlight.delete(window.id)
+      if (signal === this.abortController.signal) {
+        this.windowsInFlight.delete(window.id)
+      }
     }
+  }
+
+  private isStale(signal: AbortSignal): boolean {
+    return signal.aborted || signal !== this.abortController.signal
   }
 
   private getContextCues(
@@ -176,6 +189,7 @@ export class YoutubeSubtitleSession {
   private async translateManualSegments(
     segments: CaptionSegment[],
     extendForReading: boolean,
+    signal: AbortSignal,
     contextBefore?: Array<{ id: string; text: string }>,
     contextAfter?: Array<{ id: string; text: string }>,
   ): Promise<void> {
@@ -193,8 +207,12 @@ export class YoutubeSubtitleSession {
         contextBefore,
         contextAfter,
       },
-      this.abortController.signal,
+      signal,
     )
+
+    if (this.isStale(signal)) {
+      return
+    }
 
     if (!result.ok) {
       const error = new Error(result.error) as Error & { fatal?: boolean }
