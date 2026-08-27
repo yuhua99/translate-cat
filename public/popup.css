@@ -57,6 +57,10 @@ select {
   padding-left: 0;
 }
 
+.popup .lcd-row:has(> select) {
+  padding-inline-end: calc(var(--lcd-space) * 2);
+}
+
 .popup .lcd-row__label {
   padding-left: var(--lcd-space);
 }
@@ -96,6 +100,10 @@ select {
   cursor: pointer;
 }
 
+.popup .lcd-row > select {
+  max-inline-size: 50%;
+}
+
 select:hover {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
@@ -121,13 +129,37 @@ select::picker-icon {
 
 ::picker(select) {
   margin-block: var(--lcd-space) calc(var(--lcd-space) * 3);
-  max-block-size: 230px;
+  max-block-size: calc(6 * 28px + var(--lcd-space) * 2 + var(--lcd-hairline) * 2);
   overflow-y: auto;
   padding: var(--lcd-space);
   color: var(--lcd-ink);
   background: var(--lcd-screen-raised);
   border: var(--lcd-hairline) solid var(--lcd-ink);
   border-radius: 0;
+}
+
+.popup .lcd-row > select::picker(select) {
+  position-area: block-end span-inline-start;
+  position-try-fallbacks: flip-block;
+  max-inline-size: calc(100vw - var(--lcd-space) * 9);
+}
+
+.popup .lcd-row > select::picker(select)::-webkit-scrollbar {
+  width: 4px;
+}
+
+.popup .lcd-row > select::picker(select)::-webkit-scrollbar-track {
+  background: var(--lcd-screen);
+}
+
+.popup .lcd-row > select::picker(select)::-webkit-scrollbar-thumb {
+  background: var(--lcd-ink-soft);
+  border: 0;
+  border-radius: 0;
+}
+
+.popup .lcd-row > select::picker(select)::-webkit-scrollbar-thumb:hover {
+  background: var(--lcd-ink);
 }
 
 option {
