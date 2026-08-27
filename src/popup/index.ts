@@ -329,6 +329,10 @@ for (const input of [providerApiKeyInput, providerModelInput, targetLanguageInpu
   input.addEventListener('input', updateSaveRequired)
 }
 
+providerApiKeyInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') providerApiKeyInput.blur()
+})
+
 selectionEnabledInput.addEventListener('change', updateSaveRequired)
 
 saveButton.addEventListener('click', () => {
