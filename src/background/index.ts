@@ -43,7 +43,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
 
       if (message.type === 'SET_SETTINGS') {
         await setSettings(chrome.storage.sync, message.settings)
-        sendResponse({ ok: true, settings: message.settings } satisfies ExtensionResponse)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 

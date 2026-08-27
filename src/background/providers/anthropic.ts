@@ -47,7 +47,7 @@ export class AnthropicProvider implements AiProvider {
 
   private async complete(
     prompt: string,
-    options: { maxTokens?: number; system?: string } = {},
+    options: { maxTokens?: number; system: string },
     signal?: AbortSignal,
   ): Promise<{ content: string }> {
     const apiKey = this.secret.apiKey
@@ -70,8 +70,7 @@ export class AnthropicProvider implements AiProvider {
           model: this.config.model,
           max_tokens: options.maxTokens ?? 8192,
           temperature: 0,
-          system:
-            options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
+          system: options.system,
           messages: [{ role: 'user', content: prompt }],
         }),
       })

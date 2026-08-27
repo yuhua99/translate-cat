@@ -21,7 +21,6 @@ describe('planTranslationWindows', () => {
         ...emptyState,
         ccEnabled: true,
         currentTimeMs: 12_000,
-        translatedUpToMs: 15_000,
       }),
     ).toEqual([
       { id: '0-30000', startMs: 0, endMs: 30_000 },
@@ -35,7 +34,6 @@ describe('planTranslationWindows', () => {
         ...emptyState,
         ccEnabled: false,
         currentTimeMs: 12_000,
-        translatedUpToMs: 0,
       }),
     ).toEqual([])
   })

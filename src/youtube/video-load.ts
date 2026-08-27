@@ -1,4 +1,4 @@
-export function isWatchPage(): boolean {
+function isWatchPage(): boolean {
   return location.pathname === '/watch' && new URL(location.href).searchParams.has('v')
 }
 

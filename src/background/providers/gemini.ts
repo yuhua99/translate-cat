@@ -49,7 +49,7 @@ export class GeminiProvider implements AiProvider {
 
   private async complete(
     prompt: string,
-    options: { maxTokens?: number; system?: string } = {},
+    options: { maxTokens?: number; system: string },
     signal?: AbortSignal,
   ): Promise<{ content: string }> {
     const apiKey = this.secret.apiKey
@@ -58,8 +58,7 @@ export class GeminiProvider implements AiProvider {
       throw new Error(`Missing API key for provider: ${this.config.type}`)
     }
 
-    const system =
-      options.system ?? 'You are a subtitle translation engine. Return valid JSON only.'
+    const system = options.system
     const maxOutputTokens = options.maxTokens ?? 8192
 
     let response: Response

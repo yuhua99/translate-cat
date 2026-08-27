@@ -23,16 +23,12 @@ export class YoutubeSubtitleSession {
   /** Called when a fatal error (401/403) stops the session. */
   fatalErrorHandler?: (error: string) => void
   /** Called when a non-fatal window translation fails after all retries. */
-  windowFailedHandler?: (windowId: string, error: string) => void
+  windowFailedHandler?: (error: string) => void
 
   constructor(
     private readonly settings: ExtensionSettings,
     private readonly translatorClient: TranslatorClient,
   ) {}
-
-  start(): void {
-    this.abortController = new AbortController()
-  }
 
   stop(): void {
     this.abortController.abort()
@@ -47,7 +43,7 @@ export class YoutubeSubtitleSession {
     this.translatedCues = []
     this.windowsCompleted.clear()
     this.windowsFailed.clear()
-    this.start()
+    this.abortController = new AbortController()
   }
 
   handleCapturedCaptions(input: CapturedCaptionResponse): void {
@@ -157,7 +153,7 @@ export class YoutubeSubtitleSession {
       }
 
       this.windowsFailed.set(window.id, Date.now())
-      this.windowFailedHandler?.(window.id, message)
+      this.windowFailedHandler?.(message)
     } finally {
       this.windowsInFlight.delete(window.id)
     }

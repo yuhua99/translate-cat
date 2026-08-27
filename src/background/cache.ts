@@ -10,7 +10,6 @@ interface CacheState {
 }
 
 interface CacheEntry {
-  createdAt: number
   expiresAt: number
   sizeBytes: number
   translations: ManualTranslationItem[]
@@ -48,7 +47,6 @@ export function setCachedTranslations(
     const state = await readState(storage)
     const now = Date.now()
     const entry: CacheEntry = {
-      createdAt: now,
       expiresAt: now + TTL_MS,
       sizeBytes: byteLength(JSON.stringify(translations)),
       translations,
@@ -68,7 +66,7 @@ function rotate(state: CacheState): CacheState {
   let total = totalBytes(state)
   if (total <= MAX_BYTES) return state
 
-  const entries = Object.entries(state.entries).sort(([, a], [, b]) => a.createdAt - b.createdAt)
+  const entries = Object.entries(state.entries).sort(([, a], [, b]) => a.expiresAt - b.expiresAt)
   for (const [key, entry] of entries) {
     delete state.entries[key]
     total -= entry.sizeBytes

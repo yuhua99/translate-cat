@@ -110,7 +110,7 @@ describe('YoutubeSubtitleSession', () => {
       },
     })
 
-    session.windowFailedHandler = (_windowId, error) => {
+    session.windowFailedHandler = (error) => {
       lastError = error
     }
 

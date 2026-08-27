@@ -4,13 +4,13 @@ export interface TranslationWindow {
   endMs: number
 }
 
-export interface SchedulerState {
+interface SchedulerState {
   inFlightWindows: ReadonlySet<string>
   completedWindows: ReadonlySet<string>
   ccEnabled: boolean
 }
 
-export interface ScheduleInput extends SchedulerState {
+interface ScheduleInput extends SchedulerState {
   currentTimeMs: number
 }
 
@@ -32,7 +32,7 @@ export function planTranslationWindows(input: ScheduleInput): TranslationWindow[
     windows.push(createWindow(currentStartMs + offset * WINDOW_SIZE_MS))
   }
 
-  return dedupePlannedWindows(windows, input).slice(0, MAX_PLANNED_WINDOWS)
+  return filterPlannedWindows(windows, input).slice(0, MAX_PLANNED_WINDOWS)
 }
 
 function windowStart(timeMs: number): number {
@@ -44,23 +44,14 @@ function createWindow(startMs: number): TranslationWindow {
   return { id: `${startMs}-${endMs}`, startMs, endMs }
 }
 
-function dedupePlannedWindows(
+function filterPlannedWindows(
   windows: TranslationWindow[],
   state: SchedulerState,
 ): TranslationWindow[] {
-  const seen = new Set<string>()
-
-  return windows.filter((window) => {
-    if (
-      window.endMs <= window.startMs ||
-      seen.has(window.id) ||
-      state.completedWindows.has(window.id) ||
-      state.inFlightWindows.has(window.id)
-    ) {
-      return false
-    }
-
-    seen.add(window.id)
-    return true
-  })
+  return windows.filter(
+    (window) =>
+      window.endMs > window.startMs &&
+      !state.completedWindows.has(window.id) &&
+      !state.inFlightWindows.has(window.id),
+  )
 }

@@ -1,12 +1,12 @@
 import type { ProviderConfig, ProviderType } from '../background/providers/types'
 
-export interface ProviderEntry {
+interface ProviderEntry {
   label: string
   defaultModel: string
   models: string[]
 }
 
-export const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
+const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
   openai: {
     label: 'OpenAI',
     defaultModel: 'gpt-5.6-luna',

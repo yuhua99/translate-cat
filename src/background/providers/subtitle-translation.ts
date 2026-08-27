@@ -7,7 +7,7 @@ import {
   missingManualTranslationIds,
   validateManualTranslations,
 } from '../../youtube/translation-validation'
-import type { ProviderType } from './types'
+import type { ProviderConfig, ProviderType } from './types'
 import type {
   TranslateSubtitleMessage,
   TranslateSubtitleResult,
@@ -118,7 +118,7 @@ export async function translateSubtitleMessage(
     return { ok: true, translations: validateManualTranslations(requestedIds, cached) }
   }
 
-  const provider = await resolveProvider(message.providerType, stores)
+  const provider = await resolveProvider(message.providerType, stores, providerConfig)
   const providerItems = message.items.map((item, index) => ({ ...item, id: String(index) }))
   const providerIdToSourceId = new Map(
     providerItems.map((item, index) => [item.id, message.items[index]?.id]),
@@ -185,10 +185,14 @@ function hashString(input: string): string {
   return Math.abs(hash).toString(36)
 }
 
-async function resolveProvider(providerType: ProviderType, stores: ProviderStores) {
-  const config = await getProviderConfig(stores.sync, providerType)
+async function resolveProvider(
+  providerType: ProviderType,
+  stores: ProviderStores,
+  config?: ProviderConfig,
+) {
+  const resolvedConfig = config ?? (await getProviderConfig(stores.sync, providerType))
   const secret = await getProviderSecret(stores.local, providerType)
-  return createProvider(config, secret, stores.local)
+  return createProvider(resolvedConfig, secret, stores.local)
 }
 
 export async function translateTextMessage(

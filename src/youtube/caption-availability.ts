@@ -37,10 +37,6 @@ export async function getCaptionAvailability(
   return response.hasClosedCaptions ? 'available' : 'unavailable'
 }
 
-export async function hasAvailableCaptions(button = findCaptionButton()): Promise<boolean> {
-  return (await getCaptionAvailability(button)) === 'available'
-}
-
 function requestCaptionAvailability(): Promise<
   Required<Pick<CaptionAvailabilityResponse, 'hasClosedCaptions' | 'hasPlayerResponse'>>
 > {

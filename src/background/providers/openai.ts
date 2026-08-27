@@ -18,7 +18,7 @@ interface OpenAiResponse {
 interface CompletionOptions {
   maxTokens?: number
   json?: boolean
-  system?: string
+  system: string
 }
 
 export class OpenAiProvider implements AiProvider {
@@ -56,7 +56,7 @@ export class OpenAiProvider implements AiProvider {
 
   private async complete(
     prompt: string,
-    options: CompletionOptions = {},
+    options: CompletionOptions,
     signal?: AbortSignal,
   ): Promise<{ content: string }> {
     if (!this.secret.apiKey) {
@@ -120,8 +120,7 @@ export class OpenAiProvider implements AiProvider {
           messages: [
             {
               role: 'system',
-              content:
-                options.system ?? 'You are a subtitle translation engine. Return valid JSON only.',
+              content: options.system,
             },
             { role: 'user', content: prompt },
           ],

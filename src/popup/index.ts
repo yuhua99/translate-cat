@@ -6,6 +6,7 @@ import {
   type ProviderAuthStatusResponse,
   type ProviderConfigResponse,
   type ProviderTestResponse,
+  type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
 import type { ProviderConfig, ProviderSecret, ProviderType } from '../background/providers/types'
@@ -236,7 +237,7 @@ async function persistProviderSettings(
   settings: ExtensionSettings,
   config: ProviderConfig,
 ): Promise<boolean> {
-  const settingsResponse = await sendMessage<SettingsResponse>({ type: 'SET_SETTINGS', settings })
+  const settingsResponse = await sendMessage<MessageResponse>({ type: 'SET_SETTINGS', settings })
   if (!settingsResponse.ok) {
     setStatus(settingsResponse.error, 'error')
     return false

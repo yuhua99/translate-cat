@@ -82,7 +82,7 @@ export interface TranslationError {
   fatal?: boolean
 }
 
-export type TranslationResponse = TranslateSubtitleResult | TranslationError
+type TranslationResponse = TranslateSubtitleResult | TranslationError
 export type TranslateTextResponse = { ok: true; translation: string } | TranslationError
 export type ExtensionResponse =
   | SettingsResponse

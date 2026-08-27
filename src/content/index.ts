@@ -300,12 +300,11 @@ function createSession(settings: ExtensionSettings): void {
     teardownAiTranslate()
   }
 
-  session.windowFailedHandler = (_windowId: string, error: string) => {
+  session.windowFailedHandler = (error: string) => {
     showStatusOverlay(`AI Translate: ${error}`)
   }
 
   renderer = new SubtitleOverlayRenderer()
-  session.start()
 }
 
 function readVideoId(): string {

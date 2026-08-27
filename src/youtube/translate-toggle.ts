@@ -8,7 +8,7 @@ import {
   type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
-import { findCaptionButton, hasAvailableCaptions } from './caption-availability'
+import { findCaptionButton, getCaptionAvailability } from './caption-availability'
 
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
@@ -71,7 +71,7 @@ function createToggleButton(): HTMLButtonElement {
 }
 
 async function resolveToggleState(captionButton = findCaptionButton()): Promise<ToggleState> {
-  if (!(await hasAvailableCaptions(captionButton))) {
+  if ((await getCaptionAvailability(captionButton)) !== 'available') {
     return { kind: 'unavailable', reason: 'YouTube captions not provided' }
   }
 
@@ -187,7 +187,7 @@ async function toggleEnabled(): Promise<void> {
 
   const settings = await loadSettings()
   if (isActive()) {
-    const response = await sendMessage<SettingsResponse>({
+    const response = await sendMessage<MessageResponse>({
       type: 'SET_SETTINGS',
       settings: { ...settings, enabled: false },
     })
@@ -204,7 +204,7 @@ async function toggleEnabled(): Promise<void> {
     return
   }
 
-  const response = await sendMessage<SettingsResponse>({
+  const response = await sendMessage<MessageResponse>({
     type: 'SET_SETTINGS',
     settings: { ...settings, enabled: true },
   })

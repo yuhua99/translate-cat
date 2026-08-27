@@ -7,13 +7,13 @@ export const DEVICE_REDIRECT_URI = 'https://auth.openai.com/deviceauth/callback'
 const DEVICE_FLOW_TIMEOUT_MS = 15 * 60 * 1_000
 const DEFAULT_POLL_INTERVAL_SECONDS = 5
 
-export interface DeviceCode {
+interface DeviceCode {
   deviceAuthId: string
   userCode: string
   intervalSeconds: number
 }
 
-export interface DeviceAuthorization {
+interface DeviceAuthorization {
   authorizationCode: string
   codeVerifier: string
 }
