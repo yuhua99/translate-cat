@@ -1,3 +1,4 @@
+import { shouldDisableThinking } from '../../shared/providers'
 import { ProviderHttpError, ProviderNetworkError } from './errors'
 import { parseJsonObject } from './json'
 import { createManualPrompt, createManualSystemPrompt } from './prompts'
@@ -70,6 +71,7 @@ export class AnthropicProvider implements AiProvider {
           model: this.config.model,
           max_tokens: options.maxTokens ?? 8192,
           temperature: 0,
+          ...(shouldDisableThinking(this.config) ? { thinking: { type: 'disabled' } } : {}),
           system: options.system,
           messages: [{ role: 'user', content: prompt }],
         }),

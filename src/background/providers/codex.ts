@@ -1,3 +1,4 @@
+import { shouldDisableThinking } from '../../shared/providers'
 import {
   CodexOAuthHttpError,
   extractAccountId,
@@ -108,6 +109,7 @@ export class CodexProvider implements AiProvider {
         },
         body: JSON.stringify({
           model: this.config.model,
+          ...(shouldDisableThinking(this.config) ? { reasoning: { effort: 'none' } } : {}),
           store: false,
           stream: true,
           instructions,

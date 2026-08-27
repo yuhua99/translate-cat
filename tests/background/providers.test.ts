@@ -118,6 +118,7 @@ describe('CodexProvider', () => {
     expect(request?.headers.get('accept')).toBe('text/event-stream')
     expect(await request?.json()).toMatchObject({
       model: 'gpt-5.4-mini',
+      reasoning: { effort: 'none' },
       store: false,
       stream: true,
       input: [{ type: 'message', role: 'user' }],
@@ -411,6 +412,7 @@ describe('OpenAiProvider', () => {
     await expect(provider.testConnection()).resolves.toEqual({ ok: true })
     expect(requestBody?.max_completion_tokens).toBe(40)
     expect(requestBody).not.toHaveProperty('response_format')
+    expect(requestBody).not.toHaveProperty('reasoning_effort')
   })
 
   test('sends chat completion request and parses manual translations', async () => {
@@ -423,7 +425,7 @@ describe('OpenAiProvider', () => {
     }
 
     const provider = new OpenAiProvider(
-      { type: 'openai', model: 'gpt-4.1-mini' },
+      { type: 'openai', model: 'gpt-5.6-luna' },
       { apiKey: 'key' },
     )
     const result = await provider.translateManual({
@@ -433,7 +435,9 @@ describe('OpenAiProvider', () => {
 
     expect(request?.url).toBe('https://api.openai.com/v1/chat/completions')
     expect(request?.headers.get('authorization')).toBe('Bearer key')
-    expect(await request?.json()).not.toHaveProperty('temperature')
+    const requestBody = await request?.json()
+    expect(requestBody).toMatchObject({ reasoning_effort: 'none' })
+    expect(requestBody).not.toHaveProperty('temperature')
     expect(result).toEqual({
       translations: [{ id: 'a', text: '你好' }],
     })
@@ -473,7 +477,7 @@ describe('OpencodeZenProvider', () => {
     }
 
     const provider = new OpencodeZenProvider(
-      { type: 'opencodeZen', model: 'qwen3.6-plus' },
+      { type: 'opencodeZen', model: 'gpt-5.6-luna' },
       { apiKey: 'key' },
     )
     await provider.translateManual({
@@ -483,6 +487,27 @@ describe('OpencodeZenProvider', () => {
 
     expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
     expect(await request?.json()).toMatchObject({ thinking: { type: 'disabled' } })
+  })
+
+  test('omits thinking settings for custom models', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
+      })
+    }
+
+    const provider = new OpencodeZenProvider(
+      { type: 'opencodeZen', model: 'custom-model' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual({
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    expect(await request?.json()).not.toHaveProperty('thinking')
   })
 
   test('reports opencode Zen in request errors', async () => {
@@ -590,6 +615,7 @@ describe('GeminiProvider', () => {
     expect(request?.headers.get('x-goog-api-key')).toBe('key')
     expect(requestBody).toHaveProperty('contents')
     expect(requestBody).toHaveProperty('generationConfig')
+    expect(requestBody).not.toHaveProperty('thinkingConfig')
     expect(result).toEqual({
       translations: [{ id: 'a', text: '你好' }],
     })
@@ -698,12 +724,13 @@ describe('AnthropicProvider', () => {
     }
 
     const provider = new AnthropicProvider(
-      { type: 'anthropic', model: 'claude-sonnet-4-5' },
+      { type: 'anthropic', model: 'claude-haiku-4-5' },
       { apiKey: 'key' },
     )
 
     await expect(provider.testConnection()).resolves.toEqual({ ok: true })
     expect(requestBody?.max_tokens).toBe(40)
+    expect(requestBody).toMatchObject({ thinking: { type: 'disabled' } })
   })
 
   test('translates with 8192 max_tokens and fails clearly on truncation', async () => {

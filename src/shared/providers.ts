@@ -1,9 +1,14 @@
 import type { ProviderConfig, ProviderType } from '../background/providers/types'
 
+interface ModelPreset {
+  id: string
+  disableThinking?: true
+}
+
 interface ProviderEntry {
   label: string
   defaultModel: string
-  models: string[]
+  models: ModelPreset[]
 }
 
 const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
@@ -11,56 +16,53 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
     label: 'OpenAI',
     defaultModel: 'gpt-5.6-luna',
     models: [
-      'gpt-4o-mini',
-      'gpt-5-mini',
-      'gpt-5.4-mini',
-      'gpt-5.4-nano',
-      'gpt-5.6-terra',
-      'gpt-5.6-luna',
+      { id: 'gpt-4o-mini' },
+      { id: 'gpt-5-mini' },
+      { id: 'gpt-5.4-mini', disableThinking: true },
+      { id: 'gpt-5.4-nano', disableThinking: true },
+      { id: 'gpt-5.6-terra', disableThinking: true },
+      { id: 'gpt-5.6-luna', disableThinking: true },
     ],
   },
   codex: {
     label: 'ChatGPT subscription',
     defaultModel: 'gpt-5.6-luna',
-    models: ['gpt-5.4-mini', 'gpt-5.5', 'gpt-5.6-luna', 'gpt-5.6-terra'],
+    models: [
+      { id: 'gpt-5.4-mini', disableThinking: true },
+      { id: 'gpt-5.5', disableThinking: true },
+      { id: 'gpt-5.6-luna', disableThinking: true },
+      { id: 'gpt-5.6-terra', disableThinking: true },
+    ],
   },
   anthropic: {
     label: 'Anthropic Claude',
     defaultModel: 'claude-haiku-4-5',
     models: [
-      'claude-opus-5',
-      'claude-opus-4-8',
-      'claude-opus-4-6',
-      'claude-sonnet-5',
-      'claude-sonnet-4-6',
-      'claude-haiku-4-5',
+      { id: 'claude-opus-5', disableThinking: true },
+      { id: 'claude-opus-4-8', disableThinking: true },
+      { id: 'claude-opus-4-6', disableThinking: true },
+      { id: 'claude-sonnet-5', disableThinking: true },
+      { id: 'claude-sonnet-4-6', disableThinking: true },
+      { id: 'claude-haiku-4-5', disableThinking: true },
     ],
   },
   opencodeZen: {
     label: 'opencode Zen',
     defaultModel: 'mimo-v2.5',
     models: [
-      'glm-5.2',
-      'minimax-m3',
-      'minimax-m2.7',
-      'kimi-k2.7',
-      'qwen3.7-max',
-      'qwen3.7-plus',
-      'mimo-v2.5-pro',
-      'mimo-v2.5',
-      'deepseek-v4-pro',
-      'deepseek-v4-flash',
-      'gpt-5.6-luna',
+      { id: 'mimo-v2.5', disableThinking: true },
+      { id: 'deepseek-v4-flash', disableThinking: true },
+      { id: 'gpt-5.6-luna', disableThinking: true },
     ],
   },
   gemini: {
     label: 'Google Gemini',
     defaultModel: 'gemini-3.5-flash-lite',
     models: [
-      'gemini-3.1-flash-lite',
-      'gemini-3.5-flash-lite',
-      'gemini-3.5-flash',
-      'gemini-3.7-flash',
+      { id: 'gemini-3.1-flash-lite' },
+      { id: 'gemini-3.5-flash-lite' },
+      { id: 'gemini-3.5-flash' },
+      { id: 'gemini-3.7-flash' },
     ],
   },
 }
@@ -76,5 +78,11 @@ export function getDefaultProviderConfig(type: ProviderType): ProviderConfig {
 }
 
 export function getProviderModels(type: ProviderType): string[] {
-  return PROVIDER_REGISTRY[type].models
+  return PROVIDER_REGISTRY[type].models.map((model) => model.id)
+}
+
+export function shouldDisableThinking(config: ProviderConfig): boolean {
+  return PROVIDER_REGISTRY[config.type].models.some(
+    (model) => model.id === config.model && model.disableThinking,
+  )
 }

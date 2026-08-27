@@ -9,6 +9,6 @@ export class OpencodeZenProvider extends OpenAiProvider {
   }
 
   protected override extraChatCompletionBody(): Record<string, unknown> {
-    return { thinking: { type: 'disabled' } }
+    return this.shouldDisableThinking() ? { thinking: { type: 'disabled' } } : {}
   }
 }

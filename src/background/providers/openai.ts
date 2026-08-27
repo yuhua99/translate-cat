@@ -1,3 +1,4 @@
+import { shouldDisableThinking } from '../../shared/providers'
 import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { parseJsonObject } from './json'
 import { createManualPrompt, createManualSystemPrompt } from './prompts'
@@ -95,7 +96,11 @@ export class OpenAiProvider implements AiProvider {
   }
 
   protected extraChatCompletionBody(): Record<string, unknown> {
-    return {}
+    return this.shouldDisableThinking() ? { reasoning_effort: 'none' } : {}
+  }
+
+  protected shouldDisableThinking(): boolean {
+    return shouldDisableThinking(this.config)
   }
 
   private async fetchChatCompletion(
