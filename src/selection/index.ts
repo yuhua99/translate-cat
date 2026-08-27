@@ -20,14 +20,13 @@ const STYLE = `
   box-sizing: border-box;
 }
 #${ROOT_ID} {
-  --tc-screen: #a8b39a;
-  --tc-ink: #1e241c;
-  --tc-bezel: #2a2a28;
+  --lcd-screen: #a8b39a;
+  --lcd-ink: #1e241c;
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
   --lcd-size-read: 13px;
   position: fixed;
   z-index: ${Z};
-  color: var(--tc-ink);
+  color: var(--lcd-ink);
   font-family: var(--lcd-font);
   font-size: var(--lcd-size-read);
   font-weight: 700;
@@ -40,7 +39,7 @@ const STYLE = `
   width: 28px;
   height: 28px;
   padding: 0;
-  color: var(--tc-ink);
+  color: var(--lcd-ink);
   cursor: pointer;
   font: 700 var(--lcd-size-read)/1 var(--lcd-font);
 }
@@ -54,17 +53,17 @@ const STYLE = `
 #${ROOT_ID} .tc-bubble {
   max-width: 360px;
   overflow: hidden;
-  color: var(--tc-ink);
-  background-color: var(--tc-screen);
+  color: var(--lcd-ink);
+  background-color: var(--lcd-screen);
   background-image: repeating-linear-gradient(90deg, rgba(30, 36, 28, 0.06) 0 1px, transparent 1px 4px);
-  border: 1px solid var(--tc-ink);
+  border: 1px solid var(--lcd-ink);
   border-radius: 2px;
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
 }
 #${ROOT_ID} .tc-handle {
   height: 8px;
-  border-bottom: 1px dotted var(--tc-ink);
-  background-image: radial-gradient(circle, var(--tc-ink) 1px, transparent 1.25px);
+  border-bottom: 1px dotted var(--lcd-ink);
+  background-image: radial-gradient(circle, var(--lcd-ink) 1px, transparent 1.25px);
   background-position: center;
   background-size: 4px 4px;
   cursor: move;
@@ -75,7 +74,7 @@ const STYLE = `
   max-height: 40vh;
   padding: 10px 12px;
   overflow: auto;
-  color: var(--tc-ink);
+  color: var(--lcd-ink);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
   white-space: pre-wrap;
   word-break: break-word;
@@ -88,8 +87,8 @@ const STYLE = `
   animation: tc-cursor-blink 1s steps(1, end) infinite;
 }
 #${ROOT_ID} .tc-body.tc-error {
-  color: var(--tc-screen);
-  background: var(--tc-ink);
+  color: var(--lcd-screen);
+  background: var(--lcd-ink);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }

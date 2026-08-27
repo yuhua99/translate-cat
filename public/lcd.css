@@ -2,7 +2,6 @@
   --lcd-screen: #a8b39a;
   --lcd-screen-dim: #99a48c;
   --lcd-screen-raised: #b7c1a9;
-  --lcd-screen-recessed: #929d86;
   --lcd-ink: #1e241c;
   --lcd-ink-soft: #32392f;
   --lcd-bezel: #2a2a28;
@@ -15,7 +14,6 @@
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
   --lcd-size-ui: 12px;
   --lcd-size-meta: 11px;
-  --lcd-size-read: 13px;
   --lcd-size-hero: clamp(25px, 7vw, 32px);
 }
 
