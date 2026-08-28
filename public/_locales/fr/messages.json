@@ -53,6 +53,8 @@
   "selectionDrag": { "message": "Faire glisser" },
   "selectionTranslating": { "message": "TRADUCTION EN COURS" },
   "selectionTooLong": { "message": "Sélection trop longue" },
+  "selectionNoTranslation": { "message": "Aucune traduction reçue" },
+  "selectionDisconnected": { "message": "La traduction s'est interrompue" },
   "bgTranslateWithTranslateCat": { "message": "Traduire avec translate cat" },
   "bgNotSignedInCodex": { "message": "Non connecté à OpenAI Codex" },
   "bgMissingApiKey": {

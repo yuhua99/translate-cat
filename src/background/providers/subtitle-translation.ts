@@ -1,17 +1,22 @@
 import { getCachedTranslations, setCachedTranslations } from '../cache'
 import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { createProvider } from './factory'
-import { getProviderConfig, getProviderSecret, type ProviderStores } from './storage'
+import {
+  getProviderConfig,
+  getProviderSecret,
+  hasCredentials,
+  type ProviderStores,
+} from './storage'
 import { getSettings } from '../settings-storage'
 import {
   missingManualTranslationIds,
   validateManualTranslations,
 } from '../../youtube/translation-validation'
-import type { ProviderConfig, ProviderType } from './types'
+import type { ProviderConfig, ProviderSecret, ProviderType } from './types'
 import type {
+  SelectionTranslationRequest,
   TranslateSubtitleMessage,
   TranslateSubtitleResult,
-  TranslateTextResponse,
   TranslationError,
 } from '../../shared/messages'
 
@@ -63,6 +68,7 @@ function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
 async function withRetry<T>(
   fn: () => Promise<T>,
   signal?: AbortSignal,
+  onRetry?: () => void,
 ): Promise<{ ok: true; data: T } | TranslationError> {
   let lastError: unknown
 
@@ -92,6 +98,7 @@ async function withRetry<T>(
         }
       }
 
+      onRetry?.()
       await abortableDelay(backoffMs(attempt), signal)
       if (signal?.aborted) return abortedError()
     }
@@ -195,29 +202,107 @@ async function resolveProvider(
   return createProvider(resolvedConfig, secret, stores.local)
 }
 
-export async function translateTextMessage(
-  text: string,
+export interface SelectionTranslationErrorMessages {
+  missingApiKey: (providerType: ProviderType) => string
+  missingModel: (providerType: ProviderType) => string
+  notSignedInCodex: () => string
+  noTranslation: () => string
+}
+
+export interface SelectionTranslationStreamOptions {
+  signal?: AbortSignal
+  onDelta: (text: string) => void
+  onReset: () => void
+  errors: SelectionTranslationErrorMessages
+}
+
+export async function resolveActiveProvider(
   stores: ProviderStores,
-): Promise<TranslateTextResponse> {
+  errors?: SelectionTranslationErrorMessages,
+): Promise<
+  | { ok: true; providerType: ProviderType; config: ProviderConfig; secret: ProviderSecret }
+  | TranslationError
+> {
   const settings = await getSettings(stores.sync)
-  const provider = await resolveProvider(settings.providerType, stores)
+  const config = await getProviderConfig(stores.sync, settings.providerType)
+  const secret = await getProviderSecret(stores.local, settings.providerType)
 
-  const trimmedText = text.trim()
-  const mode = trimmedText && !/\s/u.test(trimmedText) ? 'dictionary' : 'selection'
-  const result = await withRetry(() =>
-    provider.translateManual({
-      mode,
-      items: [{ id: 'sel-0', text: trimmedText, startMs: 0 }],
-      targetLanguage: settings.targetLanguage,
-    }),
-  )
-
-  if (!result.ok) return result
-
-  const [translation] = validateManualTranslations(['sel-0'], result.data.translations)
-  if (!translation) {
-    return { ok: false, error: 'empty translation', fatal: false }
+  if (!hasCredentials(settings.providerType, secret)) {
+    return {
+      ok: false,
+      error:
+        settings.providerType === 'codex'
+          ? (errors?.notSignedInCodex() ?? 'Not signed in to OpenAI Codex')
+          : (errors?.missingApiKey(settings.providerType) ??
+            `Missing API key for ${settings.providerType}`),
+      fatal: false,
+    }
+  }
+  if (!config.model) {
+    return {
+      ok: false,
+      error:
+        errors?.missingModel(settings.providerType) ?? `Missing model for ${settings.providerType}`,
+      fatal: false,
+    }
   }
 
-  return { ok: true, translation: translation.text }
+  return { ok: true, providerType: settings.providerType, config, secret }
+}
+
+export async function translateSelectionMessage(
+  request: SelectionTranslationRequest,
+  stores: ProviderStores,
+  options: SelectionTranslationStreamOptions,
+): Promise<{ ok: true } | TranslationError> {
+  try {
+    if (options.signal?.aborted) return abortedError()
+
+    const activeProvider = await resolveActiveProvider(stores, options.errors)
+    if (!activeProvider.ok) return activeProvider
+
+    const provider = createProvider(activeProvider.config, activeProvider.secret, stores.local)
+    if (!provider.translateSelection) {
+      return {
+        ok: false,
+        error: `Selection translation is not supported by ${activeProvider.providerType}`,
+        fatal: false,
+      }
+    }
+
+    let text = ''
+    const result = await withRetry(
+      () =>
+        provider.translateSelection!(
+          { text: request.text, targetLanguage: request.targetLanguage },
+          {
+            signal: options.signal,
+            onDelta: (delta) => {
+              if (options.signal?.aborted) return
+              text += delta
+              options.onDelta(delta)
+            },
+          },
+        ),
+      options.signal,
+      () => {
+        if (!text) return
+        text = ''
+        options.onReset()
+      },
+    )
+
+    if (!result.ok) return result
+    if (!text.trim()) {
+      return { ok: false, error: options.errors.noTranslation(), fatal: false }
+    }
+    return { ok: true }
+  } catch (error) {
+    if (options.signal?.aborted) return abortedError()
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+      fatal: false,
+    }
+  }
 }

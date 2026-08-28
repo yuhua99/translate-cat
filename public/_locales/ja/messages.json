@@ -53,6 +53,8 @@
   "selectionDrag": { "message": "ドラッグ" },
   "selectionTranslating": { "message": "翻訳中" },
   "selectionTooLong": { "message": "選択範囲が長すぎます" },
+  "selectionNoTranslation": { "message": "翻訳結果がありません" },
+  "selectionDisconnected": { "message": "翻訳が予期せず停止しました" },
   "bgTranslateWithTranslateCat": { "message": "translate cat で翻訳" },
   "bgNotSignedInCodex": { "message": "OpenAI Codex にサインインしていません" },
   "bgMissingApiKey": {

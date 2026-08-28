@@ -1,7 +1,18 @@
 import { shouldDisableThinking } from '../../shared/providers'
-import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
+import {
+  ProviderHttpError,
+  ProviderJsonParseError,
+  ProviderNetworkError,
+  ProviderSseError,
+} from './errors'
 import { parseJsonObject } from './json'
-import { createManualPrompt, createManualSystemPrompt } from './prompts'
+import {
+  createManualPrompt,
+  createManualSystemPrompt,
+  createSelectionPrompt,
+  createSelectionSystemPrompt,
+} from './prompts'
+import { getSseError, isSseRateLimited, readProviderSse } from './stream'
 import type {
   AiProvider,
   ManualTranslateInput,
@@ -9,6 +20,8 @@ import type {
   ProviderConfig,
   ProviderSecret,
   ProviderTestOutput,
+  SelectionStreamOptions,
+  SelectionTranslateInput,
 } from './types'
 
 interface OpenAiResponse {
@@ -20,6 +33,14 @@ interface CompletionOptions {
   maxTokens?: number
   json?: boolean
   system: string
+}
+
+interface OpenAiStreamChunk {
+  choices?: Array<{
+    delta?: { content?: unknown }
+    finish_reason?: unknown
+  }>
+  error?: unknown
 }
 
 export class OpenAiProvider implements AiProvider {
@@ -53,6 +74,62 @@ export class OpenAiProvider implements AiProvider {
       throw new Error(`Provider test failed: expected OK, got ${text}`)
     }
     return { ok: true }
+  }
+
+  async translateSelection(
+    input: SelectionTranslateInput,
+    options: SelectionStreamOptions,
+  ): Promise<void> {
+    if (!this.secret.apiKey) {
+      throw new Error(`Missing API key for provider: ${this.config.type}`)
+    }
+
+    const response = await this.fetchChatCompletionResponse(
+      createSelectionPrompt(input),
+      { json: false, system: createSelectionSystemPrompt(input) },
+      options.signal,
+      true,
+    )
+
+    let hasText = false
+    let completed = false
+
+    await readProviderSse(response, this.providerLabel, options.signal, (message) => {
+      const chunk = parseOpenAiStreamChunk(message.data, this.providerLabel)
+      throwOpenAiStreamError(chunk.error, this.providerLabel)
+
+      const choice = chunk.choices?.[0]
+      if (!choice) return undefined
+
+      if (choice.finish_reason !== null && choice.finish_reason !== undefined) {
+        if (choice.finish_reason !== 'stop') {
+          const finishReason =
+            typeof choice.finish_reason === 'string'
+              ? choice.finish_reason
+              : JSON.stringify(choice.finish_reason)
+          throw new ProviderSseError(`${this.providerLabel} response finished with ${finishReason}`)
+        }
+        completed = true
+      }
+
+      const content = choice.delta?.content
+      if (content === undefined || content === null) return undefined
+      if (typeof content !== 'string') {
+        throw new ProviderJsonParseError(`${this.providerLabel} SSE text delta is malformed`)
+      }
+      if (!content) return undefined
+
+      hasText = true
+      options.onDelta(content)
+      return undefined
+    })
+
+    if (!hasText) {
+      throw new ProviderJsonParseError(`${this.providerLabel} SSE response did not include text`)
+    }
+    if (!completed) {
+      throw new ProviderJsonParseError(`${this.providerLabel} SSE stream ended before completion`)
+    }
   }
 
   private async complete(
@@ -108,6 +185,16 @@ export class OpenAiProvider implements AiProvider {
     options: CompletionOptions,
     signal?: AbortSignal,
   ): Promise<string> {
+    const response = await this.fetchChatCompletionResponse(prompt, options, signal)
+    return await response.text()
+  }
+
+  private async fetchChatCompletionResponse(
+    prompt: string,
+    options: CompletionOptions,
+    signal?: AbortSignal,
+    stream = false,
+  ): Promise<Response> {
     let response: Response
     try {
       response = await fetch(`${this.defaultBaseUrl}/chat/completions`, {
@@ -120,7 +207,8 @@ export class OpenAiProvider implements AiProvider {
         body: JSON.stringify({
           model: this.config.model,
           ...(options.maxTokens ? { max_completion_tokens: options.maxTokens } : {}),
-          ...(options.json === false ? {} : { response_format: { type: 'json_object' } }),
+          ...(stream ? { stream: true } : {}),
+          ...(stream || options.json === false ? {} : { response_format: { type: 'json_object' } }),
           ...this.extraChatCompletionBody(),
           messages: [
             {
@@ -137,17 +225,47 @@ export class OpenAiProvider implements AiProvider {
       })
     }
 
-    const responseText = await response.text()
-
     if (!response.ok) {
       throw new ProviderHttpError(
-        `${this.providerLabel} request failed: ${response.status} ${responseText}`,
+        `${this.providerLabel} request failed: ${response.status} ${await response.text()}`,
         response.status,
       )
     }
 
-    return responseText
+    return response
   }
+}
+
+function parseOpenAiStreamChunk(data: string, providerLabel: string): OpenAiStreamChunk {
+  let chunk: unknown
+  try {
+    chunk = JSON.parse(data)
+  } catch (error) {
+    throw new ProviderJsonParseError(
+      `${providerLabel} SSE event is invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
+
+  if (!chunk || typeof chunk !== 'object') {
+    throw new ProviderJsonParseError(`${providerLabel} SSE event is malformed`)
+  }
+
+  return chunk as OpenAiStreamChunk
+}
+
+function throwOpenAiStreamError(error: unknown, providerLabel: string): void {
+  if (error === undefined || error === null) return
+
+  const errorDetails = getSseError(error)
+  const formatted =
+    errorDetails.code && errorDetails.code !== errorDetails.message
+      ? `${errorDetails.code}: ${errorDetails.message}`
+      : errorDetails.message
+
+  if (isSseRateLimited(errorDetails)) {
+    throw new ProviderHttpError(`${providerLabel} response failed: ${formatted}`, 429)
+  }
+  throw new ProviderSseError(`${providerLabel} response failed: ${formatted}`)
 }
 
 function extractOpenAiContent(json: OpenAiResponse): string | undefined {

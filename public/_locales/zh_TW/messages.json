@@ -51,6 +51,8 @@
   "selectionDrag": { "message": "拖曳" },
   "selectionTranslating": { "message": "翻譯中" },
   "selectionTooLong": { "message": "選取內容過長" },
+  "selectionNoTranslation": { "message": "未取得翻譯內容" },
+  "selectionDisconnected": { "message": "翻譯意外中斷" },
   "bgTranslateWithTranslateCat": { "message": "使用 translate cat 翻譯" },
   "bgNotSignedInCodex": { "message": "未登入 OpenAI Codex" },
   "bgMissingApiKey": {

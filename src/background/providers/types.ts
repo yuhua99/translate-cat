@@ -31,11 +31,25 @@ export interface ManualTranslateOutput {
   translations: ManualTranslationItem[]
 }
 
+export interface SelectionTranslateInput {
+  text: string
+  targetLanguage: string
+}
+
+export interface SelectionStreamOptions {
+  signal?: AbortSignal
+  onDelta: (text: string) => void
+}
+
 export interface ProviderTestOutput {
   ok: true
 }
 
 export interface AiProvider {
   translateManual(input: ManualTranslateInput, signal?: AbortSignal): Promise<ManualTranslateOutput>
+  translateSelection?(
+    input: SelectionTranslateInput,
+    options: SelectionStreamOptions,
+  ): Promise<void>
   testConnection(): Promise<ProviderTestOutput>
 }

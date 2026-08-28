@@ -15,3 +15,7 @@ export class ProviderJsonParseError extends Error {
 export class ProviderNetworkError extends Error {
   override name = 'ProviderNetworkError'
 }
+
+export class ProviderSseError extends Error {
+  override name = 'ProviderSseError'
+}

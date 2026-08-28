@@ -5,8 +5,8 @@ import {
   type ExtensionResponse,
   type ExtensionSettings,
   type SettingsResponse,
-  type TranslateTextResponse,
 } from '../shared/messages'
+import { createSelectionStreamingClient, type SelectionTranslationHandle } from './streaming-client'
 
 const ROOT_ID = 'translate-cat-selection-root'
 const STYLE_ID = 'translate-cat-selection-style'
@@ -125,8 +125,11 @@ async function loadSettings(): Promise<ExtensionSettings> {
 
 let root: HTMLDivElement | null = null
 let bubbleBody: HTMLDivElement | null = null
+let bubbleText: Text | null = null
 let showingIcon = false
 let enabled = false
+let targetLanguage = DEFAULT_SETTINGS.targetLanguage
+let activeTranslation: SelectionTranslationHandle | null = null
 let contextMenuSelection: { x: number; y: number; text: string; oversized: boolean } | null = null
 
 function isInsideRoot(node: Node | null): boolean {
@@ -135,10 +138,18 @@ function isInsideRoot(node: Node | null): boolean {
   return !!el && !!el.closest(`#${ROOT_ID}`)
 }
 
+function cancelActiveTranslation(): void {
+  const translation = activeTranslation
+  activeTranslation = null
+  translation?.cancel()
+}
+
 function dismiss(): void {
+  cancelActiveTranslation()
   root?.remove()
   root = null
   bubbleBody = null
+  bubbleText = null
   showingIcon = false
 }
 
@@ -186,7 +197,7 @@ function renderIcon(x: number, y: number, text: string): void {
   btn.addEventListener('click', (e) => {
     e.preventDefault()
     e.stopPropagation()
-    void translate(x, y, text)
+    translate(x, y, text)
   })
   root.appendChild(btn)
   document.body.appendChild(root)
@@ -209,7 +220,8 @@ function renderBubble(
   handle.setAttribute('aria-label', chrome.i18n.getMessage('selectionDrag'))
   const body = document.createElement('div')
   body.className = isError ? 'tc-body tc-error' : isLoading ? 'tc-body tc-loading' : 'tc-body'
-  body.textContent = content
+  bubbleText = document.createTextNode(content)
+  body.appendChild(bubbleText)
   bubble.appendChild(handle)
   bubble.appendChild(body)
   root.appendChild(bubble)
@@ -219,9 +231,25 @@ function renderBubble(
 }
 
 function updateBubble(content: string, isError: boolean): void {
-  if (!bubbleBody) return
+  if (!bubbleBody || !bubbleText) return
   bubbleBody.className = isError ? 'tc-body tc-error' : 'tc-body'
-  bubbleBody.textContent = content
+  bubbleText.data = content
+}
+
+function resetBubble(): void {
+  if (!bubbleBody || !bubbleText) return
+  bubbleBody.className = 'tc-body tc-loading'
+  bubbleText.data = chrome.i18n.getMessage('selectionTranslating')
+}
+
+function appendToBubble(content: string, first: boolean): void {
+  if (!bubbleBody || !bubbleText) return
+  if (first) {
+    bubbleBody.className = 'tc-body'
+    bubbleText.data = content
+    return
+  }
+  bubbleText.data += content
 }
 
 function attachDrag(handle: HTMLElement): void {
@@ -252,23 +280,49 @@ function attachDrag(handle: HTMLElement): void {
   handle.addEventListener('pointercancel', release)
 }
 
-async function translate(x: number, y: number, text: string): Promise<void> {
+function translate(x: number, y: number, text: string): void {
+  cancelActiveTranslation()
   renderBubble(x, y, chrome.i18n.getMessage('selectionTranslating'), false, true)
   const token = root
+  let receivedDelta = false
   try {
-    const response = await sendMessage<TranslateTextResponse>({
-      type: 'TRANSLATE_TEXT',
-      text,
-    })
+    activeTranslation = createSelectionStreamingClient().translate(
+      { text, targetLanguage },
+      {
+        started: () => {
+          if (root !== token) return
+          receivedDelta = false
+          resetBubble()
+        },
+        delta: (delta) => {
+          if (root !== token) return
+          appendToBubble(delta, !receivedDelta)
+          receivedDelta = true
+        },
+        reset: () => {
+          if (root !== token) return
+          receivedDelta = false
+          resetBubble()
+        },
+        complete: () => {
+          if (root !== token) return
+          activeTranslation = null
+        },
+        error: (error) => {
+          if (root !== token) return
+          activeTranslation = null
+          updateBubble(error, true)
+        },
+        disconnected: () => {
+          if (root !== token) return
+          activeTranslation = null
+          updateBubble(chrome.i18n.getMessage('selectionDisconnected'), true)
+        },
+      },
+    )
+  } catch (error) {
     if (root !== token) return
-    if (response.ok) {
-      updateBubble(response.translation, false)
-    } else {
-      updateBubble(response.error, true)
-    }
-  } catch (err) {
-    if (root !== token) return
-    updateBubble(err instanceof Error ? err.message : String(err), true)
+    updateBubble(error instanceof Error ? error.message : String(error), true)
   }
 }
 
@@ -324,7 +378,7 @@ function onContextMenuTranslate(message: ExtensionMessage): void {
     )
     return
   }
-  void translate(contextMenuSelection.x, contextMenuSelection.y, contextMenuSelection.text)
+  translate(contextMenuSelection.x, contextMenuSelection.y, contextMenuSelection.text)
 }
 
 function onMouseDown(event: MouseEvent): void {
@@ -339,6 +393,7 @@ function onScrollOrResize(): void {
 function subscribeToSettings(): void {
   watchSettings((settings) => {
     enabled = settings.selectionEnabled
+    targetLanguage = settings.targetLanguage
     if (!enabled) dismiss()
   })
 }
@@ -355,6 +410,7 @@ async function main(): Promise<void> {
   if (!isTopFrame()) return
   const settings = await loadSettings()
   enabled = settings.selectionEnabled
+  targetLanguage = settings.targetLanguage
   subscribeToSettings()
   document.addEventListener('mouseup', onMouseUp, true)
   document.addEventListener('mousedown', onMouseDown, true)

@@ -55,6 +55,8 @@
   "selectionDrag": { "message": "Arrastrar" },
   "selectionTranslating": { "message": "TRADUCIENDO" },
   "selectionTooLong": { "message": "Selección demasiado larga" },
+  "selectionNoTranslation": { "message": "No se recibió ninguna traducción" },
+  "selectionDisconnected": { "message": "La traducción se detuvo inesperadamente" },
   "bgTranslateWithTranslateCat": { "message": "Traducir con translate cat" },
   "bgNotSignedInCodex": { "message": "Sesión no iniciada en OpenAI Codex" },
   "bgMissingApiKey": {

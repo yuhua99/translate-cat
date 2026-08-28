@@ -51,6 +51,8 @@
   "selectionDrag": { "message": "드래그" },
   "selectionTranslating": { "message": "번역 중" },
   "selectionTooLong": { "message": "선택 영역이 너무 깁니다" },
+  "selectionNoTranslation": { "message": "번역 결과가 없습니다" },
+  "selectionDisconnected": { "message": "번역이 예기치 않게 중단되었습니다" },
   "bgTranslateWithTranslateCat": { "message": "translate cat으로 번역" },
   "bgNotSignedInCodex": { "message": "OpenAI Codex에 로그인하지 않음" },
   "bgMissingApiKey": {

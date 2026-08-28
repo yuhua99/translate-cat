@@ -6,7 +6,13 @@ import {
   setProviderConfig,
   setProviderSecret,
 } from './providers/storage'
-import { translateSubtitleMessage, translateTextMessage } from './providers/subtitle-translation'
+import {
+  resolveActiveProvider,
+  translateSelectionMessage,
+  translateSubtitleMessage,
+  type SelectionTranslationErrorMessages,
+} from './providers/subtitle-translation'
+import { registerSelectionTranslationPort } from './selection-stream'
 import { getSettings, setSettings } from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
@@ -29,6 +35,24 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 })
 
 const pendingTranslations = new Map<string, AbortController>()
+
+const activeProviderErrors = {
+  missingApiKey: (providerType) => chrome.i18n.getMessage('bgMissingApiKey', providerType),
+  missingModel: (providerType) => chrome.i18n.getMessage('bgMissingModel', providerType),
+  notSignedInCodex: () => chrome.i18n.getMessage('bgNotSignedInCodex'),
+  noTranslation: () => chrome.i18n.getMessage('selectionNoTranslation'),
+} satisfies SelectionTranslationErrorMessages
+
+registerSelectionTranslationPort(chrome.runtime.onConnect, (request, lifecycle) =>
+  translateSelectionMessage(
+    request,
+    { sync: chrome.storage.sync, local: chrome.storage.local },
+    {
+      ...lifecycle,
+      errors: activeProviderErrors,
+    },
+  ),
+)
 
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
   void (async () => {
@@ -89,27 +113,15 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       }
 
       if (message.type === 'VALIDATE_ACTIVE_PROVIDER') {
-        const settings = await getSettings(chrome.storage.sync)
-        const config = await getProviderConfig(chrome.storage.sync, settings.providerType)
-        const secret = await getProviderSecret(chrome.storage.local, settings.providerType)
-        if (!hasCredentials(settings.providerType, secret)) {
-          sendResponse({
-            ok: false,
-            error:
-              settings.providerType === 'codex'
-                ? chrome.i18n.getMessage('bgNotSignedInCodex')
-                : chrome.i18n.getMessage('bgMissingApiKey', settings.providerType),
-          } satisfies ExtensionResponse)
-          return
-        }
-        if (!config.model) {
-          sendResponse({
-            ok: false,
-            error: chrome.i18n.getMessage('bgMissingModel', settings.providerType),
-          } satisfies ExtensionResponse)
-          return
-        }
-        sendResponse({ ok: true } satisfies ExtensionResponse)
+        const result = await resolveActiveProvider(
+          { sync: chrome.storage.sync, local: chrome.storage.local },
+          activeProviderErrors,
+        )
+        sendResponse(
+          result.ok
+            ? ({ ok: true } satisfies ExtensionResponse)
+            : ({ ok: false, error: result.error } satisfies ExtensionResponse),
+        )
         return
       }
 
@@ -140,16 +152,6 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         } else {
           sendResponse({ ok: true } satisfies ExtensionResponse)
         }
-        return
-      }
-
-      if (message.type === 'TRANSLATE_TEXT') {
-        sendResponse(
-          (await translateTextMessage(message.text, {
-            sync: chrome.storage.sync,
-            local: chrome.storage.local,
-          })) satisfies ExtensionResponse,
-        )
         return
       }
 

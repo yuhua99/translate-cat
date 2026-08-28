@@ -9,6 +9,7 @@ import type { ManualTranslationItem } from '../youtube/translation-validation'
 export const SETTINGS_KEY = 'settings'
 export const PROVIDER_CONFIGS_KEY = 'providerConfigs'
 export const PROVIDER_SECRETS_KEY = 'providerSecrets'
+export const SELECTION_TRANSLATION_PORT = 'translate-cat-selection-translation'
 
 export interface ExtensionSettings {
   enabled: boolean
@@ -28,6 +29,20 @@ export interface ContextCue {
   id: string
   text: string
 }
+
+export interface SelectionTranslationRequest {
+  type: 'translate'
+  requestId: string
+  text: string
+  targetLanguage: string
+}
+
+export type SelectionTranslationEvent =
+  | { type: 'started'; requestId: string }
+  | { type: 'delta'; requestId: string; text: string }
+  | { type: 'reset'; requestId: string }
+  | { type: 'complete'; requestId: string }
+  | { type: 'error'; requestId: string; error: string }
 
 export interface TranslateSubtitleMessage {
   type: 'TRANSLATE_SUBTITLE_AI_PROVIDER'
@@ -60,7 +75,6 @@ export type ExtensionMessage =
   | { type: 'GET_PROVIDER_AUTH_STATUS'; providerType: ProviderType }
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }
   | { type: 'VALIDATE_ACTIVE_PROVIDER' }
-  | { type: 'TRANSLATE_TEXT'; text: string }
   | { type: 'CONTEXT_MENU_TRANSLATE' }
   | { type: 'CANCEL_TRANSLATION'; requestId: string }
   | TranslateSubtitleMessage
@@ -83,7 +97,6 @@ export interface TranslationError {
 }
 
 type TranslationResponse = TranslateSubtitleResult | TranslationError
-export type TranslateTextResponse = { ok: true; translation: string } | TranslationError
 export type ExtensionResponse =
   | SettingsResponse
   | MessageResponse
@@ -91,7 +104,6 @@ export type ExtensionResponse =
   | ProviderTestResponse
   | ProviderAuthStatusResponse
   | TranslationResponse
-  | TranslateTextResponse
 
 export function watchProviderChanges(callback: () => void): void {
   chrome.storage.onChanged.addListener((changes, areaName) => {

@@ -5,9 +5,20 @@ import {
   refreshCodexToken,
   type CodexTokens,
 } from '../../shared/codex-oauth'
-import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
+import {
+  ProviderHttpError,
+  ProviderJsonParseError,
+  ProviderNetworkError,
+  ProviderSseError,
+} from './errors'
 import { parseJsonObject } from './json'
-import { createManualPrompt, createManualSystemPrompt } from './prompts'
+import {
+  createManualPrompt,
+  createManualSystemPrompt,
+  createSelectionPrompt,
+  createSelectionSystemPrompt,
+} from './prompts'
+import { getSseError, isSseRateLimited, readProviderSse } from './stream'
 import { getProviderSecret, setProviderSecret, type ProviderStorageArea } from './storage'
 import type {
   AiProvider,
@@ -16,6 +27,8 @@ import type {
   ProviderConfig,
   ProviderSecret,
   ProviderTestOutput,
+  SelectionStreamOptions,
+  SelectionTranslateInput,
 } from './types'
 
 const RESPONSES_URL = 'https://chatgpt.com/backend-api/codex/responses'
@@ -60,6 +73,23 @@ export class CodexProvider implements AiProvider {
     }
   }
 
+  async translateSelection(
+    input: SelectionTranslateInput,
+    options: SelectionStreamOptions,
+  ): Promise<void> {
+    let emittedDelta = false
+    const content = await this.complete(
+      createSelectionPrompt(input),
+      createSelectionSystemPrompt(input),
+      options.signal,
+      (delta) => {
+        if (delta) emittedDelta = true
+        options.onDelta(delta)
+      },
+    )
+    if (!emittedDelta) options.onDelta(content)
+  }
+
   async testConnection(): Promise<ProviderTestOutput> {
     const content = await this.complete('Reply exactly: OK', 'Reply exactly: OK')
     const text = content.trim()
@@ -73,11 +103,12 @@ export class CodexProvider implements AiProvider {
     prompt: string,
     instructions: string,
     signal?: AbortSignal,
+    onDelta?: (delta: string) => void,
   ): Promise<string> {
     await this.refreshIfNeeded(signal)
 
     try {
-      return await this.request(prompt, instructions, signal)
+      return await this.request(prompt, instructions, signal, onDelta)
     } catch (error) {
       if (!(error instanceof ProviderHttpError) || error.status !== 401) {
         throw error
@@ -85,13 +116,14 @@ export class CodexProvider implements AiProvider {
     }
 
     await this.refreshAuth(signal)
-    return await this.request(prompt, instructions, signal)
+    return await this.request(prompt, instructions, signal, onDelta)
   }
 
   private async request(
     prompt: string,
     instructions: string,
     signal?: AbortSignal,
+    onDelta?: (delta: string) => void,
   ): Promise<string> {
     const auth = this.requireAuth()
     let response: Response
@@ -136,7 +168,7 @@ export class CodexProvider implements AiProvider {
       )
     }
 
-    return await parseSse(response, signal)
+    return await parseSse(response, signal, onDelta)
   }
 
   private async refreshIfNeeded(signal?: AbortSignal): Promise<void> {
@@ -217,46 +249,36 @@ async function refreshAndPersistAuth(
   return auth
 }
 
-async function parseSse(response: Response, signal?: AbortSignal): Promise<string> {
-  if (!response.body) {
-    throw new ProviderJsonParseError('OpenAI Codex response did not include an SSE body')
-  }
-
-  let body: string
-  try {
-    body = await response.text()
-  } catch (error) {
-    if (signal?.aborted) throw error
-    throw new ProviderNetworkError(error instanceof Error ? error.message : String(error), {
-      cause: error,
-    })
-  }
-
+async function parseSse(
+  response: Response,
+  signal?: AbortSignal,
+  onDelta?: (delta: string) => void,
+): Promise<string> {
   let content = ''
-  for (const rawLine of body.split('\n')) {
-    const completed = processSseLine(
-      rawLine.replace(/\r$/, ''),
+  const completed = await readProviderSse(response, 'OpenAI Codex', signal, (message) =>
+    processSseEvent(
+      message.data,
       (delta) => {
         content += delta
+        onDelta?.(delta)
       },
       content.length > 0,
-    )
-    if (completed !== undefined) return content || completed
-  }
+    ),
+  )
+
+  if (completed !== undefined) return content || completed
 
   throw new ProviderJsonParseError('OpenAI Codex SSE stream ended before response.completed')
 }
 
-function processSseLine(
-  line: string,
+function processSseEvent(
+  data: string,
   append: (delta: string) => void,
   hasDeltas: boolean,
 ): string | undefined {
-  if (!line.startsWith('data: ')) return undefined
-
   let event: SseEvent
   try {
-    event = JSON.parse(line.slice('data: '.length)) as SseEvent
+    event = JSON.parse(data) as SseEvent
   } catch (error) {
     throw new ProviderJsonParseError(
       `OpenAI Codex SSE event is invalid JSON: ${error instanceof Error ? error.message : String(error)}`,
@@ -275,17 +297,22 @@ function processSseLine(
     return undefined
   }
 
-  if (event.type === 'response.completed') {
+  if (event.type === 'response.completed' || event.type === 'response.done') {
     return hasDeltas ? '' : extractCompletedText(event.response)
   }
 
-  if (event.type === 'response.failed' || event.type === 'error') {
-    const error = getEventError(event.error)
+  if (
+    event.type === 'response.failed' ||
+    event.type === 'response.incomplete' ||
+    event.type === 'response.error' ||
+    event.type === 'error'
+  ) {
+    const error = getSseError(event.error ?? getResponseError(event.response))
     const message = `OpenAI Codex response failed: ${formatEventError(error)}`
-    if (isRateLimited(error)) {
+    if (isSseRateLimited(error)) {
       throw new ProviderHttpError(message, 429)
     }
-    throw new Error(message)
+    throw new ProviderSseError(message)
   }
 
   return undefined
@@ -316,31 +343,14 @@ function extractCompletedText(response: unknown): string {
   return text
 }
 
-function getEventError(error: unknown): { code?: string; message: string } {
-  if (typeof error === 'string') return { message: error }
-  if (error && typeof error === 'object') {
-    const value = error as { code?: unknown; message?: unknown; type?: unknown }
-    let code: string | undefined
-    if (typeof value.code === 'string') {
-      code = value.code
-    } else if (typeof value.type === 'string') {
-      code = value.type
-    }
-    if (typeof value.message === 'string') return { code, message: value.message }
-    if (code) return { code, message: code }
-  }
-  return { message: 'unknown error' }
+function getResponseError(response: unknown): unknown {
+  if (!response || typeof response !== 'object') return undefined
+  const value = response as { error?: unknown; incomplete_details?: unknown }
+  return value.error ?? value.incomplete_details
 }
 
 function formatEventError(error: { code?: string; message: string }): string {
   return error.code && error.code !== error.message
     ? `${error.code}: ${error.message}`
     : error.message
-}
-
-function isRateLimited(error: { code?: string; message: string }): boolean {
-  return (
-    error.code?.toLowerCase().includes('rate_limit') ||
-    /rate[ -]?limit(?:ed)?|too many requests|\b429\b/iu.test(error.message)
-  )
 }
