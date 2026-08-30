@@ -13,6 +13,7 @@ import { showStatusOverlay } from '../youtube/status-overlay'
 import { SubtitleOverlayRenderer } from '../youtube/subtitle-overlay-renderer'
 import { createRuntimeTranslatorClient } from '../youtube/translator-client'
 import {
+  watchProviderChanges,
   watchSettings,
   type ExtensionMessage,
   type ExtensionResponse,
@@ -21,17 +22,53 @@ import {
   type SettingsResponse,
 } from '../shared/messages'
 
+class TranslationActivation {
+  readonly controller = new AbortController()
+  retryTimeoutId: number | undefined
+  session?: YoutubeSubtitleSession
+
+  dispose(): void {
+    this.controller.abort()
+    window.clearTimeout(this.retryTimeoutId)
+    this.retryTimeoutId = undefined
+    this.session?.stop()
+  }
+
+  isCurrent(): boolean {
+    return translationActivation === this && !this.controller.signal.aborted
+  }
+}
+
+class CaptionReload {
+  readonly controller = new AbortController()
+  retryTimeoutId: number | undefined
+  captionButtonTurnedOff?: HTMLButtonElement
+  suppressCcOffUntil = 0
+  autoCcToggled = false
+
+  dispose(): void {
+    this.controller.abort()
+    window.clearTimeout(this.retryTimeoutId)
+    this.retryTimeoutId = undefined
+
+    const button = this.captionButtonTurnedOff
+    this.captionButtonTurnedOff = undefined
+    if (button?.getAttribute('aria-pressed') === 'false') button.click()
+  }
+
+  isCurrent(): boolean {
+    return captionReload === this && !this.controller.signal.aborted
+  }
+}
+
 let session: YoutubeSubtitleSession | undefined
 let renderer: SubtitleOverlayRenderer | undefined
 let aiModeActive = false
 let lastVideoId = readVideoId()
 let animationFrameId: number | undefined
 let navigationPollId: number | undefined
-let captionRetryTimeoutId: number | undefined
-let activationRetryTimeoutId: number | undefined
-let activationRetryGeneration = 0
-let suppressCcOffUntil = 0
-let autoCcToggled = false
+let translationActivation: TranslationActivation | undefined
+let captionReload: CaptionReload | undefined
 let waitingForInitialCaptions = false
 
 function sendMessage<TResponse extends ExtensionResponse>(
@@ -105,12 +142,40 @@ function stopNavigationPoll(): void {
 
 function listenForSettingsChanges(): void {
   watchSettings((nextSettings) => {
-    if (nextSettings.enabled) {
-      void activateAiTranslate(nextSettings)
-    } else {
-      deactivateAiTranslate()
-    }
+    restartAiTranslate(nextSettings)
   })
+  watchProviderChanges(() => {
+    restartAiTranslate()
+  })
+}
+
+function restartAiTranslate(settingsOverride?: ExtensionSettings): void {
+  const wasActive = aiModeActive
+  const activation = startActivation()
+  teardownAiTranslate()
+  if (wasActive) showNativeCaptions()
+
+  if (settingsOverride) {
+    if (!settingsOverride.enabled) {
+      showNativeCaptions()
+      return
+    }
+    void activateAiTranslate(settingsOverride, true, undefined, activation)
+    return
+  }
+
+  void restartAiTranslateWithLatestSettings(activation)
+}
+
+async function restartAiTranslateWithLatestSettings(
+  activation: TranslationActivation,
+): Promise<void> {
+  const settings = await loadSettingsForActivation(activation)
+  if (!activation.isCurrent() || !settings) return
+
+  if (!settings.enabled) return
+
+  await activateAiTranslate(settings, true, undefined, activation)
 }
 
 function handleMaybeVideoChanged(): void {
@@ -130,16 +195,17 @@ function handleMaybeVideoChanged(): void {
 }
 
 function armCaptionCapture(): void {
+  disposeCaptionReload()
+  const reload = new CaptionReload()
+  captionReload = reload
   hideNativeCaptions()
-  autoCcToggled = false
   waitingForInitialCaptions = true
-  void forceSubtitleReload()
+  void forceSubtitleReload(reload)
   void scheduleCurrentWindow()
-  window.clearTimeout(captionRetryTimeoutId)
-  captionRetryTimeoutId = window.setTimeout(() => {
-    captionRetryTimeoutId = undefined
-    if (aiModeActive && (!session?.track || session.segments.length === 0)) {
-      void forceSubtitleReload()
+  reload.retryTimeoutId = window.setTimeout(() => {
+    reload.retryTimeoutId = undefined
+    if (reload.isCurrent() && aiModeActive && (!session?.track || session.segments.length === 0)) {
+      void forceSubtitleReload(reload)
     }
   }, 1_000)
 }
@@ -148,13 +214,13 @@ async function activateAiTranslate(
   settingsOverride?: ExtensionSettings,
   showUnavailableStatus = true,
   availabilityOverride?: CaptionAvailability,
-  isCurrent?: () => boolean,
+  activation = startActivation(),
 ): Promise<boolean> {
-  const settings = settingsOverride ?? (await loadSettingsForActivation())
-  if (!settings || isCurrent?.() === false) return false
+  const settings = settingsOverride ?? (await loadSettingsForActivation(activation))
+  if (!settings || !activation.isCurrent()) return false
 
   const availability = availabilityOverride ?? (await getCurrentCaptionAvailability())
-  if (isCurrent?.() === false) return false
+  if (!activation.isCurrent()) return false
 
   if (availability !== 'available') {
     deactivateAiTranslate()
@@ -170,15 +236,16 @@ async function activateAiTranslate(
   const validation = await sendMessage<MessageResponse>({
     type: 'VALIDATE_ACTIVE_PROVIDER',
   })
+  if (!activation.isCurrent()) return false
   if (!validation.ok) {
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', validation.error))
     return false
   }
-  if (isCurrent?.() === false) return false
 
-  cancelActivationRetry()
+  window.clearTimeout(activation.retryTimeoutId)
+  activation.retryTimeoutId = undefined
   aiModeActive = true
-  createSession({ ...settings, enabled: true })
+  createSession({ ...settings, enabled: true }, activation)
   armCaptionCapture()
   startRenderLoop()
   startNavigationPoll()
@@ -188,11 +255,9 @@ async function activateAiTranslate(
 
 function teardownAiTranslate(): void {
   const wasActive = aiModeActive
-  cancelActivationRetry()
+  disposeCaptionReload()
   aiModeActive = false
   waitingForInitialCaptions = false
-  window.clearTimeout(captionRetryTimeoutId)
-  captionRetryTimeoutId = undefined
   session?.stop()
   session = undefined
   renderer?.clear()
@@ -202,6 +267,7 @@ function teardownAiTranslate(): void {
 }
 
 function deactivateAiTranslate(): void {
+  startActivation()
   teardownAiTranslate()
   showNativeCaptions()
 }
@@ -211,7 +277,7 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
 
   const ccEnabled = isCcEnabled()
   if (!ccEnabled) {
-    if (waitingForInitialCaptions || Date.now() < suppressCcOffUntil) return
+    if (waitingForInitialCaptions || Date.now() < (captionReload?.suppressCcOffUntil ?? 0)) return
 
     deactivateAiTranslate()
     void syncTranslateToggle()
@@ -227,7 +293,15 @@ async function scheduleCurrentWindow(video = document.querySelector('video')): P
   await session.ensureTranslations(currentTimeMs, true)
 }
 
-async function forceSubtitleReload(): Promise<void> {
+function disposeCaptionReload(): void {
+  captionReload?.dispose()
+  captionReload = undefined
+}
+
+async function forceSubtitleReload(reload: CaptionReload): Promise<void> {
+  if (!reload.isCurrent()) return
+
+  const reloadSession = session
   const button = findCaptionButton()
   if (!button) {
     showStatusOverlay(chrome.i18n.getMessage('contentCcButtonNotFound'))
@@ -235,22 +309,45 @@ async function forceSubtitleReload(): Promise<void> {
   }
 
   const isOn = button.getAttribute('aria-pressed') === 'true'
-  suppressCcOffUntil = Date.now() + 1_500
+  reload.suppressCcOffUntil = Date.now() + 1_500
 
   if (!isOn) {
-    if (autoCcToggled) {
+    if (reload.autoCcToggled) {
       return
     }
 
-    autoCcToggled = true
-    suppressCcOffUntil = Date.now() + 3_000
+    reload.autoCcToggled = true
+    reload.suppressCcOffUntil = Date.now() + 3_000
     button.click()
     return
   }
 
+  reload.captionButtonTurnedOff = button
   button.click()
-  await new Promise((resolve) => window.setTimeout(resolve, 250))
+  await waitForDelay(250, reload.controller.signal)
+  if (!reload.isCurrent() || reloadSession !== session) return
+
+  reload.captionButtonTurnedOff = undefined
   if (aiModeActive) button.click()
+}
+
+function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) {
+      resolve()
+      return
+    }
+
+    let timeoutId: number | undefined
+    const finish = () => {
+      window.clearTimeout(timeoutId)
+      signal.removeEventListener('abort', finish)
+      resolve()
+    }
+
+    timeoutId = window.setTimeout(finish, delayMs)
+    signal.addEventListener('abort', finish, { once: true })
+  })
 }
 
 function startRenderLoop(): void {
@@ -291,18 +388,22 @@ async function getCurrentCaptionAvailability(): Promise<CaptionAvailability> {
   }
 }
 
-function createSession(settings: ExtensionSettings): void {
+function createSession(settings: ExtensionSettings, activation: TranslationActivation): void {
   session?.stop()
   renderer?.clear()
-  session = new YoutubeSubtitleSession(settings, createRuntimeTranslatorClient())
+  const nextSession = new YoutubeSubtitleSession(settings, createRuntimeTranslatorClient())
+  activation.session = nextSession
+  session = nextSession
 
-  session.fatalErrorHandler = (error: string) => {
+  nextSession.fatalErrorHandler = (error: string) => {
+    if (session !== nextSession) return
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
     // Per spec: do not restore native captions on fatal error
     teardownAiTranslate()
   }
 
-  session.windowFailedHandler = (error: string) => {
+  nextSession.windowFailedHandler = (error: string) => {
+    if (session !== nextSession) return
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
   }
 
@@ -313,12 +414,16 @@ function readVideoId(): string {
   return new URL(location.href).searchParams.get('v') ?? ''
 }
 
-async function loadSettingsForActivation(): Promise<ExtensionSettings | undefined> {
+async function loadSettingsForActivation(
+  activation?: TranslationActivation,
+): Promise<ExtensionSettings | undefined> {
   const response = await sendMessage<SettingsResponse>({
     type: 'GET_SETTINGS',
   })
   if (!response.ok) {
-    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', response.error))
+    if (!activation || activation.isCurrent()) {
+      showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', response.error))
+    }
     return undefined
   }
 
@@ -328,30 +433,32 @@ async function loadSettingsForActivation(): Promise<ExtensionSettings | undefine
 const ACTIVATION_RETRY_DELAY_MS = 500
 const ACTIVATION_RETRY_MAX_ATTEMPTS = 20
 
-function cancelActivationRetry(): void {
-  window.clearTimeout(activationRetryTimeoutId)
-  activationRetryTimeoutId = undefined
-  activationRetryGeneration += 1
+function startActivation(): TranslationActivation {
+  translationActivation?.dispose()
+  const activation = new TranslationActivation()
+  translationActivation = activation
+  return activation
 }
 
-function startStoredStateActivation(settings: ExtensionSettings): void {
-  cancelActivationRetry()
-  const retryGeneration = activationRetryGeneration
-  void retryStoredStateActivation(settings, retryGeneration)
+function startStoredStateActivation(
+  settings: ExtensionSettings,
+  activation: TranslationActivation,
+): void {
+  void retryStoredStateActivation(settings, activation)
 }
 
 async function retryStoredStateActivation(
   settings: ExtensionSettings,
-  retryGeneration: number,
+  activation: TranslationActivation,
   attempt = 0,
 ): Promise<void> {
-  const isCurrent = () => retryGeneration === activationRetryGeneration
   const availability = await getCurrentCaptionAvailability()
-  if (!isCurrent()) return
+  if (!activation.isCurrent()) return
 
   if (availability === 'available') {
-    if (await activateAiTranslate(settings, false, availability, isCurrent)) {
-      cancelActivationRetry()
+    if (await activateAiTranslate(settings, false, availability, activation)) {
+      window.clearTimeout(activation.retryTimeoutId)
+      activation.retryTimeoutId = undefined
     }
     return
   }
@@ -362,21 +469,21 @@ async function retryStoredStateActivation(
     return
   }
 
-  activationRetryTimeoutId = window.setTimeout(() => {
-    activationRetryTimeoutId = undefined
-    void retryStoredStateActivation(settings, retryGeneration, attempt + 1)
+  activation.retryTimeoutId = window.setTimeout(() => {
+    activation.retryTimeoutId = undefined
+    void retryStoredStateActivation(settings, activation, attempt + 1)
   }, ACTIVATION_RETRY_DELAY_MS)
 }
 
 async function applyStoredEnabledState(): Promise<void> {
-  const retryGeneration = activationRetryGeneration
+  const activation = startActivation()
   const response = await sendMessage<SettingsResponse>({
     type: 'GET_SETTINGS',
   })
-  if (!response.ok || retryGeneration !== activationRetryGeneration) return
+  if (!response.ok || !activation.isCurrent()) return
 
   if (response.settings.enabled) {
-    startStoredStateActivation(response.settings)
+    startStoredStateActivation(response.settings, activation)
   }
 }
 
