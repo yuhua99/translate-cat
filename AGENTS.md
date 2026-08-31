@@ -8,7 +8,7 @@
 ## UI style
 
 - Reuse the `--lcd-*` custom properties and `.lcd-*` primitives in `public/lcd.css`. Add shared colors, typography, and spacing there instead of repeating literal values.
-- Scope CSS injected into host pages under an extension-owned root, including its custom properties. Avoid global selectors that can affect YouTube.
+- Scope CSS injected into host pages under an extension-owned root, including its custom properties. YouTube's own nodes are the exception; reach them with global selectors.
 
 ## Verification
 
