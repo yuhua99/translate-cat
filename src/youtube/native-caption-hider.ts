@@ -7,8 +7,7 @@ export function hideNativeCaptions(): void {
   style.id = STYLE_ID
   style.textContent = `
     .caption-window,
-    .ytp-caption-window-rollup,
-    .ytp-caption-window-container .caption-window {
+    .ytp-caption-window-rollup {
       visibility: hidden !important;
       opacity: 0 !important;
     }
