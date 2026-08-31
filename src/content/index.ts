@@ -22,29 +22,16 @@ import {
   type SettingsResponse,
 } from '../shared/messages'
 
-class TranslationActivation {
-  readonly controller = new AbortController()
-  retryTimeoutId: number | undefined
-  session?: YoutubeSubtitleSession
-
-  dispose(): void {
-    this.controller.abort()
-    window.clearTimeout(this.retryTimeoutId)
-    this.retryTimeoutId = undefined
-    this.session?.stop()
-  }
-
-  isCurrent(): boolean {
-    return translationActivation === this && !this.controller.signal.aborted
-  }
-}
-
 class CaptionReload {
   readonly controller = new AbortController()
   retryTimeoutId: number | undefined
   captionButtonTurnedOff?: HTMLButtonElement
   suppressCcOffUntil = 0
   autoCcToggled = false
+
+  get aborted(): boolean {
+    return this.controller.signal.aborted
+  }
 
   dispose(): void {
     this.controller.abort()
@@ -55,21 +42,48 @@ class CaptionReload {
     this.captionButtonTurnedOff = undefined
     if (button?.getAttribute('aria-pressed') === 'false') button.click()
   }
+}
 
-  isCurrent(): boolean {
-    return captionReload === this && !this.controller.signal.aborted
+class TranslateRun {
+  readonly controller = new AbortController()
+  session?: YoutubeSubtitleSession
+  renderer?: SubtitleOverlayRenderer
+  active = false
+  waitingForInitialCaptions = false
+  retryTimeoutId?: number
+  captionReload?: CaptionReload
+  animationFrameId?: number
+  navigationPollId?: number
+
+  get aborted(): boolean {
+    return this.controller.signal.aborted
+  }
+
+  dispose(): void {
+    this.controller.abort()
+    window.clearTimeout(this.retryTimeoutId)
+    this.retryTimeoutId = undefined
+    this.captionReload?.dispose()
+    this.captionReload = undefined
+    this.active = false
+    this.waitingForInitialCaptions = false
+    this.session?.stop()
+    this.session = undefined
+    this.renderer?.clear()
+    this.renderer = undefined
+    if (this.animationFrameId !== undefined) {
+      window.cancelAnimationFrame(this.animationFrameId)
+      this.animationFrameId = undefined
+    }
+    if (this.navigationPollId !== undefined) {
+      window.clearInterval(this.navigationPollId)
+      this.navigationPollId = undefined
+    }
   }
 }
 
-let session: YoutubeSubtitleSession | undefined
-let renderer: SubtitleOverlayRenderer | undefined
-let aiModeActive = false
+let currentRun: TranslateRun | undefined
 let lastVideoId = readVideoId()
-let animationFrameId: number | undefined
-let navigationPollId: number | undefined
-let translationActivation: TranslationActivation | undefined
-let captionReload: CaptionReload | undefined
-let waitingForInitialCaptions = false
 
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
@@ -97,19 +111,21 @@ function listenForCaptionCapture(): void {
 }
 
 function handleCaptionCapture(detail: CaptionsCapturedEventDetail): void {
-  if (!session || !detail.responseText) return
+  const run = currentRun
+  if (!run || run.aborted || !run.session || !detail.responseText) return
 
-  session.handleCapturedCaptions(detail)
-  void scheduleCurrentWindow()
+  run.session.handleCapturedCaptions(detail)
+  void scheduleCurrentWindow(run)
 }
 
 function listenForPlayback(): void {
   document.addEventListener(
     'timeupdate',
     (event) => {
-      if (event.target instanceof HTMLVideoElement) {
-        void scheduleCurrentWindow(event.target)
-      }
+      const run = currentRun
+      if (!run || run.aborted || !(event.target instanceof HTMLVideoElement)) return
+
+      void scheduleCurrentWindow(run, event.target)
     },
     true,
   )
@@ -117,9 +133,10 @@ function listenForPlayback(): void {
   document.addEventListener(
     'seeked',
     (event) => {
-      if (event.target instanceof HTMLVideoElement) {
-        void scheduleCurrentWindow(event.target)
-      }
+      const run = currentRun
+      if (!run || run.aborted || !(event.target instanceof HTMLVideoElement)) return
+
+      void scheduleCurrentWindow(run, event.target)
     },
     true,
   )
@@ -129,15 +146,9 @@ function listenForNavigation(): void {
   window.addEventListener('yt-navigate-finish', handleMaybeVideoChanged)
 }
 
-function startNavigationPoll(): void {
-  if (navigationPollId !== undefined) return
-  navigationPollId = window.setInterval(handleMaybeVideoChanged, 1_000)
-}
-
-function stopNavigationPoll(): void {
-  if (navigationPollId === undefined) return
-  window.clearInterval(navigationPollId)
-  navigationPollId = undefined
+function startNavigationPoll(run: TranslateRun): void {
+  if (run.aborted || run.navigationPollId !== undefined) return
+  run.navigationPollId = window.setInterval(handleMaybeVideoChanged, 1_000)
 }
 
 function listenForSettingsChanges(): void {
@@ -150,32 +161,29 @@ function listenForSettingsChanges(): void {
 }
 
 function restartAiTranslate(settingsOverride?: ExtensionSettings): void {
-  const wasActive = aiModeActive
-  const activation = startActivation()
-  teardownAiTranslate()
-  if (wasActive) showNativeCaptions()
+  const wasActive = currentRun?.active ?? false
+  const run = startActivation()
+  if (wasActive) void syncTranslateToggle()
+  if (wasActive || settingsOverride?.enabled === false) showNativeCaptions()
 
   if (settingsOverride) {
     if (!settingsOverride.enabled) {
-      showNativeCaptions()
       return
     }
-    void activateAiTranslate(settingsOverride, true, undefined, activation)
+    void activateAiTranslate(settingsOverride, true, undefined, run)
     return
   }
 
-  void restartAiTranslateWithLatestSettings(activation)
+  void restartAiTranslateWithLatestSettings(run)
 }
 
-async function restartAiTranslateWithLatestSettings(
-  activation: TranslationActivation,
-): Promise<void> {
-  const settings = await loadSettingsForActivation(activation)
-  if (!activation.isCurrent() || !settings) return
+async function restartAiTranslateWithLatestSettings(run: TranslateRun): Promise<void> {
+  const settings = await loadSettingsForActivation(run)
+  if (run.aborted || !settings) return
 
   if (!settings.enabled) return
 
-  await activateAiTranslate(settings, true, undefined, activation)
+  await activateAiTranslate(settings, true, undefined, run)
 }
 
 function handleMaybeVideoChanged(): void {
@@ -183,30 +191,40 @@ function handleMaybeVideoChanged(): void {
   if (videoId === lastVideoId) return
 
   lastVideoId = videoId
-  renderer?.clear()
+  const run = currentRun
+  if (!run || run.aborted) return
 
-  if (!aiModeActive) {
-    session?.stop()
+  run.renderer?.clear()
+  if (!run.active) {
+    run.session?.stop()
     return
   }
 
-  session?.resetForNavigation(videoId)
-  armCaptionCapture()
+  run.session?.resetForNavigation(videoId)
+  armCaptionCapture(run)
 }
 
-function armCaptionCapture(): void {
-  disposeCaptionReload()
+function armCaptionCapture(run: TranslateRun): void {
+  if (run.aborted) return
+
+  disposeCaptionReload(run)
   const reload = new CaptionReload()
-  captionReload = reload
+  run.captionReload = reload
   hideNativeCaptions()
-  waitingForInitialCaptions = true
-  void forceSubtitleReload(reload)
-  void scheduleCurrentWindow()
+  run.waitingForInitialCaptions = true
+  void forceSubtitleReload(run, reload)
+  void scheduleCurrentWindow(run)
   reload.retryTimeoutId = window.setTimeout(() => {
     reload.retryTimeoutId = undefined
-    if (reload.isCurrent() && aiModeActive && (!session?.track || session.segments.length === 0)) {
-      void forceSubtitleReload(reload)
+    if (
+      run.aborted ||
+      reload.aborted ||
+      !run.active ||
+      (run.session?.track && run.session.segments.length > 0)
+    ) {
+      return
     }
+    void forceSubtitleReload(run, reload)
   }, 1_000)
 }
 
@@ -214,13 +232,13 @@ async function activateAiTranslate(
   settingsOverride?: ExtensionSettings,
   showUnavailableStatus = true,
   availabilityOverride?: CaptionAvailability,
-  activation = startActivation(),
+  run = startActivation(),
 ): Promise<boolean> {
-  const settings = settingsOverride ?? (await loadSettingsForActivation(activation))
-  if (!settings || !activation.isCurrent()) return false
+  const settings = settingsOverride ?? (await loadSettingsForActivation(run))
+  if (run.aborted || !settings) return false
 
   const availability = availabilityOverride ?? (await getCurrentCaptionAvailability())
-  if (!activation.isCurrent()) return false
+  if (run.aborted) return false
 
   if (availability !== 'available') {
     deactivateAiTranslate()
@@ -236,72 +254,71 @@ async function activateAiTranslate(
   const validation = await sendMessage<MessageResponse>({
     type: 'VALIDATE_ACTIVE_PROVIDER',
   })
-  if (!activation.isCurrent()) return false
+  if (run.aborted) return false
   if (!validation.ok) {
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', validation.error))
     return false
   }
 
-  window.clearTimeout(activation.retryTimeoutId)
-  activation.retryTimeoutId = undefined
-  aiModeActive = true
-  createSession({ ...settings, enabled: true }, activation)
-  armCaptionCapture()
-  startRenderLoop()
-  startNavigationPoll()
+  run.active = true
+  createSession(run, { ...settings, enabled: true })
+  armCaptionCapture(run)
+  startRenderLoop(run)
+  startNavigationPoll(run)
   void syncTranslateToggle()
   return true
 }
 
-function teardownAiTranslate(): void {
-  const wasActive = aiModeActive
-  disposeCaptionReload()
-  aiModeActive = false
-  waitingForInitialCaptions = false
-  session?.stop()
-  session = undefined
-  renderer?.clear()
-  stopRenderLoop()
-  stopNavigationPoll()
+function teardownAiTranslate(run: TranslateRun): void {
+  const wasActive = run.active
+  run.dispose()
+  if (currentRun === run) currentRun = undefined
   if (wasActive) void syncTranslateToggle()
 }
 
 function deactivateAiTranslate(): void {
-  startActivation()
-  teardownAiTranslate()
+  if (currentRun) teardownAiTranslate(currentRun)
   showNativeCaptions()
 }
 
-async function scheduleCurrentWindow(video = document.querySelector('video')): Promise<void> {
-  if (!aiModeActive || !session || !video) return
+async function scheduleCurrentWindow(
+  run: TranslateRun,
+  video = document.querySelector('video'),
+): Promise<void> {
+  if (!run || run.aborted || !run.active || !run.session || !video) return
 
   const ccEnabled = isCcEnabled()
   if (!ccEnabled) {
-    if (waitingForInitialCaptions || Date.now() < (captionReload?.suppressCcOffUntil ?? 0)) return
+    if (
+      run.waitingForInitialCaptions ||
+      Date.now() < (run.captionReload?.suppressCcOffUntil ?? 0)
+    ) {
+      return
+    }
 
     deactivateAiTranslate()
     void syncTranslateToggle()
     return
   }
 
-  if (session.track) {
-    waitingForInitialCaptions = false
+  if (run.session.track) {
+    run.waitingForInitialCaptions = false
   }
 
   const currentTimeMs = video.currentTime * 1000
   hideNativeCaptions()
-  await session.ensureTranslations(currentTimeMs, true)
+  await run.session.ensureTranslations(currentTimeMs, true)
 }
 
-function disposeCaptionReload(): void {
-  captionReload?.dispose()
-  captionReload = undefined
+function disposeCaptionReload(run: TranslateRun): void {
+  run.captionReload?.dispose()
+  run.captionReload = undefined
 }
 
-async function forceSubtitleReload(reload: CaptionReload): Promise<void> {
-  if (!reload.isCurrent()) return
+async function forceSubtitleReload(run: TranslateRun, reload: CaptionReload): Promise<void> {
+  if (run.aborted || reload.aborted) return
 
-  const reloadSession = session
+  const reloadSession = run.session
   const button = findCaptionButton()
   if (!button) {
     showStatusOverlay(chrome.i18n.getMessage('contentCcButtonNotFound'))
@@ -325,10 +342,10 @@ async function forceSubtitleReload(reload: CaptionReload): Promise<void> {
   reload.captionButtonTurnedOff = button
   button.click()
   await waitForDelay(250, reload.controller.signal)
-  if (!reload.isCurrent() || reloadSession !== session) return
+  if (run.aborted || reload.aborted || reloadSession !== run.session) return
 
   reload.captionButtonTurnedOff = undefined
-  if (aiModeActive) button.click()
+  if (run.active) button.click()
 }
 
 function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
@@ -350,29 +367,25 @@ function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-function startRenderLoop(): void {
-  if (animationFrameId !== undefined) return
+function startRenderLoop(run: TranslateRun): void {
+  if (run.aborted || run.animationFrameId !== undefined) return
 
   const render = () => {
+    if (run.aborted) return
+
     const video = document.querySelector('video')
-    if (aiModeActive && session && video) {
+    if (run.active && run.session && video) {
       const currentTimeMs = video.currentTime * 1000
-      renderer?.render(
-        session.translatedCues,
+      run.renderer?.render(
+        run.session.translatedCues,
         currentTimeMs,
-        session.pendingSegmentAt(currentTimeMs)?.text,
+        run.session.pendingSegmentAt(currentTimeMs)?.text,
       )
     }
-    animationFrameId = window.requestAnimationFrame(render)
+    run.animationFrameId = window.requestAnimationFrame(render)
   }
 
-  animationFrameId = window.requestAnimationFrame(render)
-}
-
-function stopRenderLoop(): void {
-  if (animationFrameId === undefined) return
-  window.cancelAnimationFrame(animationFrameId)
-  animationFrameId = undefined
+  run.animationFrameId = window.requestAnimationFrame(render)
 }
 
 function isCcEnabled(): boolean {
@@ -388,26 +401,25 @@ async function getCurrentCaptionAvailability(): Promise<CaptionAvailability> {
   }
 }
 
-function createSession(settings: ExtensionSettings, activation: TranslationActivation): void {
-  session?.stop()
-  renderer?.clear()
+function createSession(run: TranslateRun, settings: ExtensionSettings): void {
+  run.session?.stop()
+  run.renderer?.clear()
   const nextSession = new YoutubeSubtitleSession(settings, createRuntimeTranslatorClient())
-  activation.session = nextSession
-  session = nextSession
+  run.session = nextSession
 
   nextSession.fatalErrorHandler = (error: string) => {
-    if (session !== nextSession) return
+    if (run.aborted) return
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
     // Per spec: do not restore native captions on fatal error
-    teardownAiTranslate()
+    teardownAiTranslate(run)
   }
 
   nextSession.windowFailedHandler = (error: string) => {
-    if (session !== nextSession) return
+    if (run.aborted) return
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
   }
 
-  renderer = new SubtitleOverlayRenderer()
+  run.renderer = new SubtitleOverlayRenderer()
 }
 
 function readVideoId(): string {
@@ -415,15 +427,14 @@ function readVideoId(): string {
 }
 
 async function loadSettingsForActivation(
-  activation?: TranslationActivation,
+  run: TranslateRun,
 ): Promise<ExtensionSettings | undefined> {
   const response = await sendMessage<SettingsResponse>({
     type: 'GET_SETTINGS',
   })
+  if (run.aborted) return undefined
   if (!response.ok) {
-    if (!activation || activation.isCurrent()) {
-      showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', response.error))
-    }
+    showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', response.error))
     return undefined
   }
 
@@ -433,33 +444,23 @@ async function loadSettingsForActivation(
 const ACTIVATION_RETRY_DELAY_MS = 500
 const ACTIVATION_RETRY_MAX_ATTEMPTS = 20
 
-function startActivation(): TranslationActivation {
-  translationActivation?.dispose()
-  const activation = new TranslationActivation()
-  translationActivation = activation
-  return activation
-}
-
-function startStoredStateActivation(
-  settings: ExtensionSettings,
-  activation: TranslationActivation,
-): void {
-  void retryStoredStateActivation(settings, activation)
+function startActivation(): TranslateRun {
+  currentRun?.dispose()
+  const run = new TranslateRun()
+  currentRun = run
+  return run
 }
 
 async function retryStoredStateActivation(
   settings: ExtensionSettings,
-  activation: TranslationActivation,
+  run: TranslateRun,
   attempt = 0,
 ): Promise<void> {
   const availability = await getCurrentCaptionAvailability()
-  if (!activation.isCurrent()) return
+  if (run.aborted) return
 
   if (availability === 'available') {
-    if (await activateAiTranslate(settings, false, availability, activation)) {
-      window.clearTimeout(activation.retryTimeoutId)
-      activation.retryTimeoutId = undefined
-    }
+    await activateAiTranslate(settings, false, availability, run)
     return
   }
 
@@ -469,21 +470,22 @@ async function retryStoredStateActivation(
     return
   }
 
-  activation.retryTimeoutId = window.setTimeout(() => {
-    activation.retryTimeoutId = undefined
-    void retryStoredStateActivation(settings, activation, attempt + 1)
+  run.retryTimeoutId = window.setTimeout(() => {
+    run.retryTimeoutId = undefined
+    if (run.aborted) return
+    void retryStoredStateActivation(settings, run, attempt + 1)
   }, ACTIVATION_RETRY_DELAY_MS)
 }
 
 async function applyStoredEnabledState(): Promise<void> {
-  const activation = startActivation()
+  const run = startActivation()
   const response = await sendMessage<SettingsResponse>({
     type: 'GET_SETTINGS',
   })
-  if (!response.ok || !activation.isCurrent()) return
+  if (run.aborted || !response.ok) return
 
   if (response.settings.enabled) {
-    startStoredStateActivation(response.settings, activation)
+    void retryStoredStateActivation(response.settings, run)
   }
 }
 
@@ -493,18 +495,24 @@ function boot(): void {
   listenForNavigation()
   listenForMainVideoLoads(() => {
     void syncTranslateToggle()
-    if (!aiModeActive) void applyStoredEnabledState()
+    const run = currentRun
+    if (!run || run.aborted || !run.active) void applyStoredEnabledState()
   })
   listenForSettingsChanges()
   injectTranslateToggle({
-    isActive: () => aiModeActive,
+    isActive: () => {
+      const run = currentRun
+      return !!run && !run.aborted && run.active
+    },
     onActivateRequest: activateAiTranslate,
     onDeactivateRequest: deactivateAiTranslate,
   })
   void applyStoredEnabledState()
 
   window.addEventListener('pagehide', () => {
-    session?.stop()
+    const run = currentRun
+    if (!run || run.aborted) return
+    run.session?.stop()
   })
 }
 
