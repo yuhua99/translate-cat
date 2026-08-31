@@ -120,7 +120,10 @@ async function updateProviderAuthStatus(): Promise<void> {
     } satisfies ExtensionMessage)
     if (!response.ok || getProviderType() !== providerType) return
     setCodexSignInButton(response.signedIn)
-  } catch {}
+  } catch {
+    // Fire-and-forget status check: on failure the button keeps the signed-out
+    // default set by syncProviderAuth, so the rejection is safe to swallow.
+  }
 }
 
 function getSelectedModel(): string {
