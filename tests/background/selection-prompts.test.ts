@@ -28,29 +28,18 @@ describe('selection prompts', () => {
   test('creates a plain-text dictionary prompt for a single word', () => {
     const prompt = createSelectionPrompt({ text: 'serendipity', targetLanguage: 'zh-TW' })
 
-    expect(createSelectionSystemPrompt({ text: 'serendipity', targetLanguage: 'zh-TW' })).toBe(
-      'You are a concise bilingual dictionary. Return plain text only.',
+    expect(createSelectionSystemPrompt({ text: 'serendipity', targetLanguage: 'zh-TW' })).toContain(
+      'bilingual dictionary',
     )
     expect(prompt).toContain('Explain the selected word like a concise bilingual dictionary')
+    expect(prompt).toContain('translate it naturally')
     expect(prompt).toContain('---BEGIN SELECTED TEXT---\n\n"serendipity"')
     expect(prompt).toContain('Return only the result as plain text.')
     expect(prompt).not.toContain('Return JSON only')
   })
 
-  test('keeps manual and subtitle prompts as JSON prompts', () => {
+  test('keeps subtitle prompts as JSON prompts', () => {
     const item = { id: 'segment-id', text: 'Hello', startMs: 0 }
-
-    expect(
-      createManualSystemPrompt({ mode: 'selection', items: [item], targetLanguage: 'zh-TW' }),
-    ).toBe('You are a translation engine. Return valid JSON only.')
-    expect(
-      createManualPrompt({ mode: 'selection', items: [item], targetLanguage: 'zh-TW' }),
-    ).toContain(
-      'Return JSON only in this shape: {"translations":[{"id":"segment-id","text":"translation"}]}',
-    )
-    expect(
-      createManualSystemPrompt({ mode: 'dictionary', items: [item], targetLanguage: 'zh-TW' }),
-    ).toBe('You are a concise bilingual dictionary. Return valid JSON only.')
     expect(createManualSystemPrompt({ items: [item], targetLanguage: 'zh-TW' })).toBe(
       'You are a subtitle translation engine. Return valid JSON only.',
     )

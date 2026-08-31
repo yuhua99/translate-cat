@@ -15,7 +15,6 @@ export interface ProviderSecret {
 }
 
 export interface ManualTranslateInput {
-  mode?: 'subtitle' | 'selection' | 'dictionary'
   items: Array<{
     id: string
     text: string
