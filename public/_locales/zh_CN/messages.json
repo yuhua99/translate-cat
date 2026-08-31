@@ -17,7 +17,6 @@
   "popupSave": { "message": "保存" },
   "signOut": { "message": "退出登录" },
   "popupSignedIn": { "message": "已登录" },
-  "popupNotSignedIn": { "message": "未登录" },
   "popupCustomModelOption": { "message": "自定义模型" },
   "popupTestingProvider": { "message": "正在测试提供商..." },
   "popupSaved": { "message": "已保存" },

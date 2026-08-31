@@ -45,7 +45,6 @@ const providerApiKeyInput = requiredElement<HTMLInputElement>('#provider-api-key
 const codexAuthRow = requiredElement<HTMLElement>('#codex-auth-row')
 const codexSignInButton = requiredElement<HTMLButtonElement>('#codex-sign-in')
 const codexSignInLabel = codexSignInButton.querySelector<HTMLSpanElement>('.codex-chip__label')
-const codexAuthStatus = requiredElement<HTMLParagraphElement>('#codex-auth-status')
 const saveButton = requiredElement<HTMLButtonElement>('#save')
 const status = requiredElement<HTMLParagraphElement>('#status')
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
@@ -106,8 +105,6 @@ function syncProviderAuth(): void {
   const isOAuth = isOAuthProvider()
   providerApiKeyRow.hidden = isOAuth
   codexAuthRow.hidden = !isOAuth
-  codexAuthStatus.textContent = ''
-  codexAuthStatus.classList.remove('success')
   setCodexSignInButton(false)
   if (isOAuth) void updateProviderAuthStatus()
 }
@@ -123,13 +120,7 @@ async function updateProviderAuthStatus(): Promise<void> {
     } satisfies ExtensionMessage)
     if (!response.ok || getProviderType() !== providerType) return
     setCodexSignInButton(response.signedIn)
-    codexAuthStatus.textContent = chrome.i18n.getMessage(
-      response.signedIn ? 'popupSignedIn' : 'popupNotSignedIn',
-    )
-    codexAuthStatus.classList.toggle('success', response.signedIn)
-  } catch {
-    codexAuthStatus.textContent = ''
-  }
+  } catch {}
 }
 
 function getSelectedModel(): string {

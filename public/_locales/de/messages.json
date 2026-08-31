@@ -19,7 +19,6 @@
   "popupSave": { "message": "Speichern" },
   "signOut": { "message": "Abmelden" },
   "popupSignedIn": { "message": "Angemeldet" },
-  "popupNotSignedIn": { "message": "Nicht angemeldet" },
   "popupCustomModelOption": { "message": "Benutzerdefiniertes Modell" },
   "popupTestingProvider": { "message": "Anbieter wird getestet..." },
   "popupSaved": { "message": "Gespeichert" },

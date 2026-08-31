@@ -7,7 +7,6 @@ export function localizePage(): void {
     ['data-i18n-placeholder', 'placeholder'],
     ['data-i18n-aria-label', 'aria-label'],
     ['data-i18n-alt', 'alt'],
-    ['data-i18n-title', 'title'],
   ] as const
   for (const [dataAttribute, attribute] of attributes) {
     document.querySelectorAll<HTMLElement>(`[${dataAttribute}]`).forEach((element) => {

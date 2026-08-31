@@ -70,7 +70,7 @@ function createToggleButton(): HTMLButtonElement {
   return button
 }
 
-async function resolveToggleState(captionButton = findCaptionButton()): Promise<ToggleState> {
+async function resolveToggleState(captionButton: HTMLButtonElement): Promise<ToggleState> {
   if ((await getCaptionAvailability(captionButton)) !== 'available') {
     return { kind: 'unavailable', reason: chrome.i18n.getMessage('captionsNotProvided') }
   }

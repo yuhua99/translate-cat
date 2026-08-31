@@ -19,7 +19,6 @@
   "popupSave": { "message": "Save" },
   "signOut": { "message": "Sign out" },
   "popupSignedIn": { "message": "Signed in" },
-  "popupNotSignedIn": { "message": "Not signed in" },
   "popupCustomModelOption": { "message": "Custom model" },
   "popupTestingProvider": { "message": "Testing provider..." },
   "popupSaved": { "message": "Saved" },

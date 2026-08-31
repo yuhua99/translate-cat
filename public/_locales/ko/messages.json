@@ -17,7 +17,6 @@
   "popupSave": { "message": "저장" },
   "signOut": { "message": "로그아웃" },
   "popupSignedIn": { "message": "로그인됨" },
-  "popupNotSignedIn": { "message": "로그인하지 않음" },
   "popupCustomModelOption": { "message": "사용자 지정 모델" },
   "popupTestingProvider": { "message": "공급업체 테스트 중..." },
   "popupSaved": { "message": "저장됨" },

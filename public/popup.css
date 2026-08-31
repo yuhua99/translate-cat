@@ -245,10 +245,6 @@ option::checkmark {
   transform: translateX(-50%);
 }
 
-#codex-auth-status {
-  display: none;
-}
-
 #provider-api-key,
 #provider-model {
   flex: none;

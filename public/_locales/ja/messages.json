@@ -19,7 +19,6 @@
   "popupSave": { "message": "保存" },
   "signOut": { "message": "サインアウト" },
   "popupSignedIn": { "message": "サインイン済み" },
-  "popupNotSignedIn": { "message": "未サインイン" },
   "popupCustomModelOption": { "message": "カスタムモデル" },
   "popupTestingProvider": { "message": "プロバイダーをテスト中..." },
   "popupSaved": { "message": "保存しました" },

@@ -195,11 +195,10 @@ function hashString(input: string): string {
 async function resolveProvider(
   providerType: ProviderType,
   stores: ProviderStores,
-  config?: ProviderConfig,
+  config: ProviderConfig,
 ) {
-  const resolvedConfig = config ?? (await getProviderConfig(stores.sync, providerType))
   const secret = await getProviderSecret(stores.local, providerType)
-  return createProvider(resolvedConfig, secret, stores.local)
+  return createProvider(config, secret, stores.local)
 }
 
 export interface SelectionTranslationErrorMessages {
@@ -218,7 +217,7 @@ export interface SelectionTranslationStreamOptions {
 
 export async function resolveActiveProvider(
   stores: ProviderStores,
-  errors?: SelectionTranslationErrorMessages,
+  errors: SelectionTranslationErrorMessages,
 ): Promise<
   | { ok: true; providerType: ProviderType; config: ProviderConfig; secret: ProviderSecret }
   | TranslationError
@@ -232,17 +231,15 @@ export async function resolveActiveProvider(
       ok: false,
       error:
         settings.providerType === 'codex'
-          ? (errors?.notSignedInCodex() ?? 'Not signed in to OpenAI Codex')
-          : (errors?.missingApiKey(settings.providerType) ??
-            `Missing API key for ${settings.providerType}`),
+          ? errors.notSignedInCodex()
+          : errors.missingApiKey(settings.providerType),
       fatal: false,
     }
   }
   if (!config.model) {
     return {
       ok: false,
-      error:
-        errors?.missingModel(settings.providerType) ?? `Missing model for ${settings.providerType}`,
+      error: errors.missingModel(settings.providerType),
       fatal: false,
     }
   }
@@ -262,18 +259,10 @@ export async function translateSelectionMessage(
     if (!activeProvider.ok) return activeProvider
 
     const provider = createProvider(activeProvider.config, activeProvider.secret, stores.local)
-    if (!provider.translateSelection) {
-      return {
-        ok: false,
-        error: `Selection translation is not supported by ${activeProvider.providerType}`,
-        fatal: false,
-      }
-    }
-
     let text = ''
     const result = await withRetry(
       () =>
-        provider.translateSelection!(
+        provider.translateSelection(
           { text: request.text, targetLanguage: request.targetLanguage },
           {
             signal: options.signal,

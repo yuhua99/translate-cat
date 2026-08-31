@@ -47,9 +47,6 @@ export interface ProviderTestOutput {
 
 export interface AiProvider {
   translateManual(input: ManualTranslateInput, signal?: AbortSignal): Promise<ManualTranslateOutput>
-  translateSelection?(
-    input: SelectionTranslateInput,
-    options: SelectionStreamOptions,
-  ): Promise<void>
+  translateSelection(input: SelectionTranslateInput, options: SelectionStreamOptions): Promise<void>
   testConnection(): Promise<ProviderTestOutput>
 }

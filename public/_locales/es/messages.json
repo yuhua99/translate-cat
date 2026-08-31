@@ -19,7 +19,6 @@
   "popupSave": { "message": "Guardar" },
   "signOut": { "message": "Cerrar sesión" },
   "popupSignedIn": { "message": "Sesión iniciada" },
-  "popupNotSignedIn": { "message": "Sesión no iniciada" },
   "popupCustomModelOption": { "message": "Modelo personalizado" },
   "popupTestingProvider": { "message": "Probando el proveedor..." },
   "popupSaved": { "message": "Guardado" },
