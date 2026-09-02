@@ -190,11 +190,21 @@ option::checkmark {
   opacity: 0;
 }
 
-.popup__toggle-chip {
-  min-width: 56px;
+.popup__toggle-label {
+  display: grid;
+}
+
+.popup__toggle-label::before,
+.popup__toggle-label::after {
+  grid-area: 1 / 1;
 }
 
 .popup__toggle-label::before {
+  content: 'OFF';
+}
+
+.popup__toggle-label::after {
+  visibility: hidden;
   content: 'OFF';
 }
 
@@ -222,27 +232,25 @@ option::checkmark {
   opacity: 0.55;
 }
 
-#codex-sign-in {
-  min-width: 92px;
+.codex-chip__labels {
+  display: grid;
 }
 
-.codex-chip__label {
-  position: relative;
-  display: inline-block;
+.codex-chip__label,
+.codex-chip__sign-out-label {
+  grid-area: 1 / 1;
+}
+
+.codex-chip__sign-out-label {
+  visibility: hidden;
 }
 
 #codex-sign-in.is-signed-in:hover .codex-chip__label {
   visibility: hidden;
 }
 
-#codex-sign-in.is-signed-in:hover .codex-chip__label::after {
-  position: absolute;
-  top: 0;
-  left: 50%;
+#codex-sign-in.is-signed-in:hover .codex-chip__sign-out-label {
   visibility: visible;
-  color: currentColor;
-  content: 'LOGOUT';
-  transform: translateX(-50%);
 }
 
 #provider-api-key,
@@ -275,7 +283,6 @@ option::checkmark {
 #status {
   margin: 0;
   padding: var(--lcd-space) calc(var(--lcd-space) * 2);
-  color: var(--lcd-ink);
   font: 700 var(--lcd-size-meta)/1.25 var(--lcd-font);
   letter-spacing: 0.04em;
   text-align: center;
@@ -283,12 +290,6 @@ option::checkmark {
 
 #status:empty {
   display: none;
-}
-
-#status.success,
-#status.error {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
 }
 
 ::selection {

@@ -44,7 +44,10 @@ const providerApiKeyRow = requiredElement<HTMLElement>('#provider-api-key-row')
 const providerApiKeyInput = requiredElement<HTMLInputElement>('#provider-api-key')
 const codexAuthRow = requiredElement<HTMLElement>('#codex-auth-row')
 const codexSignInButton = requiredElement<HTMLButtonElement>('#codex-sign-in')
-const codexSignInLabel = codexSignInButton.querySelector<HTMLSpanElement>('.codex-chip__label')
+const codexSignInLabel = requiredElement<HTMLSpanElement>('#codex-sign-in .codex-chip__label')
+const codexSignOutLabel = requiredElement<HTMLSpanElement>(
+  '#codex-sign-in .codex-chip__sign-out-label',
+)
 const saveButton = requiredElement<HTMLButtonElement>('#save')
 const status = requiredElement<HTMLParagraphElement>('#status')
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
@@ -68,11 +71,12 @@ function setStatus(text: string, kind: 'success' | 'error' | 'neutral' = 'neutra
   status.textContent = text
   status.classList.toggle('success', kind === 'success')
   status.classList.toggle('error', kind === 'error')
+  status.classList.toggle('lcd-inverted', kind !== 'neutral')
 
-  if (kind === 'success') {
+  if (kind !== 'neutral') {
     statusClearTimeout = window.setTimeout(() => {
       status.textContent = ''
-      status.classList.remove('success', 'error')
+      status.classList.remove('success', 'error', 'lcd-inverted')
       statusClearTimeout = undefined
     }, 5000)
   }
@@ -94,11 +98,9 @@ function setCodexSignInButton(signedIn: boolean): void {
     chrome.i18n.getMessage(signedIn ? 'signOut' : 'signIn'),
   )
   const label = chrome.i18n.getMessage(signedIn ? 'popupSignedIn' : 'signIn')
-  if (codexSignInLabel) {
-    codexSignInLabel.textContent = label
-  } else {
-    codexSignInButton.textContent = label
-  }
+  const signOutLabel = signedIn ? chrome.i18n.getMessage('signOut') : ''
+  codexSignInLabel.textContent = label
+  codexSignOutLabel.textContent = signOutLabel
 }
 
 function syncProviderAuth(): void {
@@ -189,6 +191,11 @@ function updateSaveRequired(): void {
     getSelectedModel() !== savedModel ||
     (!isOAuthProvider() && providerApiKeyInput.value.trim() !== savedApiKey)
   saveButton.hidden = !dirty
+}
+
+function handleFormChange(): void {
+  if (status.classList.contains('success') || status.classList.contains('error')) setStatus('')
+  updateSaveRequired()
 }
 
 function renderSettings(settings: ExtensionSettings): void {
@@ -311,23 +318,23 @@ async function saveSettings(): Promise<void> {
 providerTypeInput.addEventListener('change', () => {
   renderModelPresets(getProviderType())
   syncProviderAuth()
-  updateSaveRequired()
+  handleFormChange()
 })
 
 providerModelPresetInput.addEventListener('change', () => {
   syncCustomModelVisibility()
-  updateSaveRequired()
+  handleFormChange()
 })
 
 for (const input of [providerApiKeyInput, providerModelInput, targetLanguageInput]) {
-  input.addEventListener('input', updateSaveRequired)
+  input.addEventListener('input', handleFormChange)
 }
 
 providerApiKeyInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') providerApiKeyInput.blur()
 })
 
-selectionEnabledInput.addEventListener('change', updateSaveRequired)
+selectionEnabledInput.addEventListener('change', handleFormChange)
 
 saveButton.addEventListener('click', () => {
   void saveSettings()

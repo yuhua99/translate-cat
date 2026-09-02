@@ -79,6 +79,11 @@
   background: var(--lcd-ink);
 }
 
+.lcd-inverted::selection {
+  color: var(--lcd-ink);
+  background: var(--lcd-screen);
+}
+
 .lcd-chip {
   display: inline-flex;
   align-items: center;

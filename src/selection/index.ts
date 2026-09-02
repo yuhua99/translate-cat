@@ -92,6 +92,10 @@ const STYLE = `
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+#${ROOT_ID} .tc-body.tc-error::selection {
+  color: var(--lcd-ink);
+  background: var(--lcd-screen);
+}
 @keyframes tc-cursor-blink {
   50% { opacity: 0; }
 }
