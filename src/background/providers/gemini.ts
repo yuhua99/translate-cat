@@ -44,7 +44,7 @@ export class GeminiProvider implements AiProvider {
   ): Promise<ManualTranslateOutput> {
     const response = await this.complete(
       createManualPrompt(input),
-      { system: createManualSystemPrompt(input) },
+      { system: createManualSystemPrompt() },
       signal,
     )
     return parseJsonObject<ManualTranslateOutput>(response.content)

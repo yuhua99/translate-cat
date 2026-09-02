@@ -60,7 +60,7 @@ export class CodexProvider implements AiProvider {
   ): Promise<ManualTranslateOutput> {
     const content = await this.complete(
       createManualPrompt(input),
-      createManualSystemPrompt(input),
+      createManualSystemPrompt(),
       signal,
     )
     try {

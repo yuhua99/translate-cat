@@ -31,7 +31,7 @@ function isDictionarySelection(text: string): boolean {
   return Boolean(trimmedText) && !/\s/u.test(trimmedText)
 }
 
-export function createManualSystemPrompt(input: ManualTranslateInput): string {
+export function createManualSystemPrompt(): string {
   return 'You are a subtitle translation engine. Return valid JSON only.'
 }
 

@@ -40,7 +40,7 @@ describe('selection prompts', () => {
 
   test('keeps subtitle prompts as JSON prompts', () => {
     const item = { id: 'segment-id', text: 'Hello', startMs: 0 }
-    expect(createManualSystemPrompt({ items: [item], targetLanguage: 'zh-TW' })).toBe(
+    expect(createManualSystemPrompt()).toBe(
       'You are a subtitle translation engine. Return valid JSON only.',
     )
     expect(createManualPrompt({ items: [item], targetLanguage: 'zh-TW' })).toContain(
