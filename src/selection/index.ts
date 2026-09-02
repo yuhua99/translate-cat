@@ -13,7 +13,7 @@ const STYLE_ID = 'translate-cat-selection-style'
 const MAX_LEN = 2000
 const Z = 2147483647
 
-// Mirror public/lcd.css type tokens; this stylesheet is injected into host pages.
+// Mirror public/lcd.css tokens used by this injected host-page stylesheet.
 const STYLE = `
 #${ROOT_ID},
 #${ROOT_ID} * {
@@ -22,7 +22,11 @@ const STYLE = `
 #${ROOT_ID} {
   --lcd-screen: #a8b39a;
   --lcd-ink: #1e241c;
+  --lcd-grid: rgb(30 36 28 / 6%);
+  --lcd-space: 4px;
+  --lcd-hairline: 2px;
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
+  --lcd-size-meta: 11px;
   --lcd-size-read: 13px;
   position: fixed;
   z-index: ${Z};
@@ -43,6 +47,10 @@ const STYLE = `
   cursor: pointer;
   font: 700 var(--lcd-size-read)/1 var(--lcd-font);
 }
+#${ROOT_ID} .tc-trigger:focus-visible {
+  outline: var(--lcd-hairline) solid var(--lcd-ink);
+  outline-offset: 1px;
+}
 #${ROOT_ID} .tc-trigger svg {
   display: block;
   width: 28px;
@@ -50,19 +58,19 @@ const STYLE = `
   pointer-events: none;
   shape-rendering: crispEdges;
 }
+/* Keep max-width in sync with BUBBLE_MAX_WIDTH. */
 #${ROOT_ID} .tc-bubble {
   max-width: 360px;
   overflow: hidden;
   color: var(--lcd-ink);
   background-color: var(--lcd-screen);
-  background-image: repeating-linear-gradient(90deg, rgba(30, 36, 28, 0.06) 0 1px, transparent 1px 4px);
-  border: 1px solid var(--lcd-ink);
-  border-radius: 2px;
+  background-image: repeating-linear-gradient(90deg, var(--lcd-grid) 0 1px, transparent 1px 4px);
+  border: var(--lcd-hairline) solid var(--lcd-ink);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
 }
 #${ROOT_ID} .tc-handle {
-  height: 8px;
-  border-bottom: 1px dotted var(--lcd-ink);
+  height: 12px;
+  border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
   background-image: radial-gradient(circle, var(--lcd-ink) 1px, transparent 1.25px);
   background-position: center;
   background-size: 4px 4px;
@@ -70,15 +78,29 @@ const STYLE = `
   touch-action: none;
   user-select: none;
 }
+#${ROOT_ID} .tc-handle:hover {
+  background-color: var(--lcd-ink);
+  background-image: radial-gradient(circle, var(--lcd-screen) 1px, transparent 1.25px);
+}
 #${ROOT_ID} .tc-body {
   max-height: 40vh;
-  padding: 10px 12px;
+  padding: calc(var(--lcd-space) * 2) calc(var(--lcd-space) * 3);
   overflow: auto;
   color: var(--lcd-ink);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
   white-space: pre-wrap;
   word-break: break-word;
   user-select: text;
+}
+#${ROOT_ID} .tc-body::-webkit-scrollbar {
+  width: 8px;
+}
+#${ROOT_ID} .tc-body::-webkit-scrollbar-track {
+  background: var(--lcd-screen);
+}
+#${ROOT_ID} .tc-body::-webkit-scrollbar-thumb {
+  background: var(--lcd-ink);
+  border: 2px solid var(--lcd-screen);
 }
 #${ROOT_ID} .tc-body.tc-loading::after {
   display: inline-block;
@@ -89,7 +111,9 @@ const STYLE = `
 #${ROOT_ID} .tc-body.tc-error {
   color: var(--lcd-screen);
   background: var(--lcd-ink);
-  letter-spacing: 0.06em;
+  font-size: var(--lcd-size-meta);
+  line-height: 1.25;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 #${ROOT_ID} .tc-body.tc-error::selection {
@@ -158,17 +182,23 @@ function dismiss(): void {
 }
 
 const ICON_SIZE = 28
-const BUBBLE_WIDTH = 368
 const EDGE_MARGIN = 8
+// Keep in sync with .tc-bubble max-width + border in STYLE.
+const BUBBLE_MAX_WIDTH = 364
 
 function clamp(value: number, min: number, max: number): number {
   if (max < min) return min
   return Math.min(Math.max(value, min), max)
 }
 
-function clampPosition(x: number, y: number, width: number): { x: number; y: number } {
+function clampPosition(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): { x: number; y: number } {
   const maxX = window.innerWidth - width - EDGE_MARGIN
-  const maxY = window.innerHeight - EDGE_MARGIN
+  const maxY = window.innerHeight - height - EDGE_MARGIN
   return {
     x: clamp(x, EDGE_MARGIN, maxX),
     y: clamp(y, EDGE_MARGIN, maxY),
@@ -186,7 +216,7 @@ function makeRoot(x: number, y: number): HTMLDivElement {
 
 function renderIcon(x: number, y: number, text: string): void {
   dismiss()
-  const pos = clampPosition(x, y, ICON_SIZE)
+  const pos = clampPosition(x, y, ICON_SIZE, ICON_SIZE)
   root = makeRoot(pos.x, pos.y)
   showingIcon = true
   const btn = document.createElement('button')
@@ -215,8 +245,7 @@ function renderBubble(
   isLoading = false,
 ): void {
   dismiss()
-  const pos = clampPosition(x, y, BUBBLE_WIDTH)
-  root = makeRoot(pos.x, pos.y)
+  root = makeRoot(0, 0)
   const bubble = document.createElement('div')
   bubble.className = 'tc-bubble'
   const handle = document.createElement('div')
@@ -231,6 +260,17 @@ function renderBubble(
   root.appendChild(bubble)
   bubbleBody = body
   document.body.appendChild(root)
+  const bubbleRect = bubble.getBoundingClientRect()
+  // Streaming content grows to max-width after measuring, so clamp against the cap.
+  const effectiveWidth = isLoading ? BUBBLE_MAX_WIDTH : bubbleRect.width
+  const pos = clampPosition(x, y, effectiveWidth, bubbleRect.height)
+  root.style.left = `${pos.x}px`
+  if (y > window.innerHeight / 2) {
+    root.style.top = ''
+    root.style.bottom = `${Math.max(window.innerHeight - y, EDGE_MARGIN)}px`
+  } else {
+    root.style.top = `${pos.y}px`
+  }
   attachDrag(handle)
 }
 
@@ -265,6 +305,10 @@ function attachDrag(handle: HTMLElement): void {
     if (!root) return
     e.preventDefault()
     e.stopPropagation()
+    if (root.style.bottom) {
+      root.style.top = `${root.getBoundingClientRect().top}px`
+      root.style.bottom = ''
+    }
     startX = e.clientX
     startY = e.clientY
     startLeft = parseFloat(root.style.left) || 0
