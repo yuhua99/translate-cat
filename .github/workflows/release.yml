@@ -22,7 +22,7 @@ jobs:
         run: bun run build
 
       - name: Package
-        run: cd dist && zip -r ../extension.zip .
+        run: cd dist && zip -r ../extension.zip . -x '*.map'
 
       - name: Extract Release Notes
         run: |
