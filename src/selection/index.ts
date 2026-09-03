@@ -22,10 +22,12 @@ const STYLE = `
 #${ROOT_ID} {
   --lcd-screen: #a8b39a;
   --lcd-ink: #1e241c;
+  --lcd-bezel-ink: #d1d5ca;
   --lcd-grid: rgb(30 36 28 / 6%);
   --lcd-space: 4px;
   --lcd-hairline: 2px;
   --lcd-font: ui-monospace, 'SF Mono', Consolas, monospace;
+  --lcd-size-ui: 12px;
   --lcd-size-meta: 11px;
   --lcd-size-read: 13px;
   position: fixed;
@@ -58,6 +60,12 @@ const STYLE = `
   pointer-events: none;
   shape-rendering: crispEdges;
 }
+#${ROOT_ID} .tc-logo__ink {
+  fill: var(--lcd-ink);
+}
+#${ROOT_ID} .tc-logo__face {
+  fill: var(--lcd-bezel-ink);
+}
 /* Keep max-width in sync with BUBBLE_MAX_WIDTH. */
 #${ROOT_ID} .tc-bubble {
   max-width: 360px;
@@ -68,19 +76,41 @@ const STYLE = `
   border: var(--lcd-hairline) solid var(--lcd-ink);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
 }
-#${ROOT_ID} .tc-handle {
-  height: 12px;
+#${ROOT_ID} .tc-titlebar {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 calc(var(--lcd-space) * 1.5);
   border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
-  background-image: radial-gradient(circle, var(--lcd-ink) 1px, transparent 1.25px);
-  background-position: center;
-  background-size: 4px 4px;
   cursor: move;
+  font: 700 var(--lcd-size-ui)/1 var(--lcd-font);
+  letter-spacing: 0.08em;
   touch-action: none;
   user-select: none;
 }
-#${ROOT_ID} .tc-handle:hover {
+#${ROOT_ID} .tc-titlebar:hover {
+  color: var(--lcd-screen);
   background-color: var(--lcd-ink);
-  background-image: radial-gradient(circle, var(--lcd-screen) 1px, transparent 1.25px);
+}
+#${ROOT_ID} .tc-titlebar__logo {
+  display: block;
+  margin-right: 6px;
+}
+#${ROOT_ID} .tc-titlebar__logo svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  shape-rendering: crispEdges;
+}
+#${ROOT_ID} .tc-titlebar .tc-logo__face {
+  fill: var(--lcd-screen);
+}
+#${ROOT_ID} .tc-titlebar:hover .tc-logo__ink {
+  fill: var(--lcd-screen);
+}
+#${ROOT_ID} .tc-titlebar:hover .tc-logo__face {
+  fill: var(--lcd-ink);
 }
 #${ROOT_ID} .tc-body {
   max-height: 40vh;
@@ -125,7 +155,7 @@ const STYLE = `
 }
 `
 
-const PIXEL_LOGO = `<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="1" width="14" height="1" fill="#1e241c"/><rect y="1" width="16" height="14" fill="#1e241c"/><rect x="1" y="15" width="14" height="1" fill="#1e241c"/><g fill="#d1d5ca"><rect x="3" y="6" width="2" height="2"/><rect x="11" y="6" width="2" height="2"/><rect x="2" y="8" width="12" height="7"/><rect x="1" y="11" width="14" height="3"/></g><g fill="#1e241c"><rect x="3" y="10" width="3" height="1"/><rect x="10" y="10" width="3" height="1"/><rect x="4" y="11" width="2" height="1"/><rect x="10" y="11" width="2" height="1"/><rect x="7" y="12" width="2" height="1"/><rect x="1" y="12" width="2" height="1"/><rect x="13" y="12" width="2" height="1"/><rect x="1" y="14" width="3" height="1"/><rect x="12" y="14" width="3" height="1"/></g></svg>`
+const PIXEL_LOGO = `<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><g class="tc-logo__ink"><rect x="1" width="14" height="1"/><rect y="1" width="16" height="14"/><rect x="1" y="15" width="14" height="1"/></g><g class="tc-logo__face"><rect x="3" y="6" width="2" height="2"/><rect x="11" y="6" width="2" height="2"/><rect x="2" y="8" width="12" height="7"/><rect x="1" y="11" width="14" height="3"/></g><g class="tc-logo__ink"><rect x="3" y="10" width="3" height="1"/><rect x="10" y="10" width="3" height="1"/><rect x="4" y="11" width="2" height="1"/><rect x="10" y="11" width="2" height="1"/><rect x="7" y="12" width="2" height="1"/><rect x="1" y="12" width="2" height="1"/><rect x="13" y="12" width="2" height="1"/><rect x="1" y="14" width="3" height="1"/><rect x="12" y="14" width="3" height="1"/></g></svg>`
 
 function ensureStyle(): void {
   if (document.getElementById(STYLE_ID)) return
@@ -249,8 +279,14 @@ function renderBubble(
   const bubble = document.createElement('div')
   bubble.className = 'tc-bubble'
   const handle = document.createElement('div')
-  handle.className = 'tc-handle'
+  handle.className = 'tc-titlebar'
   handle.setAttribute('aria-label', chrome.i18n.getMessage('selectionDrag'))
+  const logo = document.createElement('span')
+  logo.className = 'tc-titlebar__logo'
+  logo.innerHTML = PIXEL_LOGO
+  const wordmark = document.createElement('span')
+  wordmark.textContent = 'TRANSLATE CAT'
+  handle.append(logo, wordmark)
   const body = document.createElement('div')
   body.className = isError ? 'tc-body tc-error' : isLoading ? 'tc-body tc-loading' : 'tc-body'
   bubbleText = document.createTextNode(content)
