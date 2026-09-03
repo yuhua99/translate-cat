@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-09-03
+
+### Added
+
+- Streamed selected-text translations as they arrive, with immediate cancellation when the bubble closes or the selection changes.
+- Added the Gemini 3.8 Flash model to the provider list.
+
+### Changed
+
+- Changed the default provider to ChatGPT.
+- Replaced the selection bubble's dotted drag handle with a title bar carrying the pixel cat logo.
+- Disabled model thinking by default on supported models, making translations faster and cheaper.
+- Trimmed the opencode Zen model list to the supported models.
+- Delegated word-or-phrase detection for selected text to the model, so phrases in languages without spaces are translated instead of explained.
+
+### Fixed
+
+- Cleared stale save status messages when settings change, so they no longer block the save button.
+- Sized popup buttons and inputs to their content, keeping localized labels aligned.
+- Aligned the selection bubble with the retro LCD styling and clamped it to the viewport when dragging.
+- Removed the extra padding at the end of popup dropdown rows.
+- Kept text selection readable on inverted status messages.
+- Cancelled in-flight translations more reliably when switching providers.
+
 ## [0.3.1] - 2026-08-28
 
 ### Added
