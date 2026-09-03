@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   enabled: false,
   selectionEnabled: true,
   targetLanguage: 'zh-TW',
-  provider: { type: 'opencodeZen', model: getDefaultModel('opencodeZen') },
+  provider: { type: 'codex', model: getDefaultModel('codex') },
 }
 
 export function assembleSettings(stored: Record<string, unknown>): ExtensionSettings {

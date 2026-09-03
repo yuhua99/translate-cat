@@ -63,6 +63,7 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
       { id: 'gemini-3.5-flash-lite' },
       { id: 'gemini-3.5-flash' },
       { id: 'gemini-3.7-flash' },
+      { id: 'gemini-3.8-flash' },
     ],
   },
 }
