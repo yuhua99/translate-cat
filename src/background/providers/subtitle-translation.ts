@@ -1,12 +1,7 @@
 import { getCachedTranslations, setCachedTranslations } from '../cache'
 import { ProviderHttpError, ProviderJsonParseError, ProviderNetworkError } from './errors'
 import { createProvider } from './factory'
-import {
-  getProviderConfig,
-  getProviderSecret,
-  hasCredentials,
-  type ProviderStores,
-} from './storage'
+import { getProviderSecret, hasCredentials, type ProviderStores } from './storage'
 import { getSettings } from '../settings-storage'
 import {
   missingManualTranslationIds,
@@ -116,8 +111,8 @@ export async function translateSubtitleMessage(
   stores: ProviderStores,
   signal?: AbortSignal,
 ): Promise<TranslateSubtitleResult | TranslationError> {
-  const providerConfig = await getProviderConfig(stores.sync, message.providerType)
-  const cacheKey = createWindowCacheKey(message, providerConfig.model)
+  const providerConfig = message.provider
+  const cacheKey = createWindowCacheKey(message)
   const cached = await getCachedTranslations(stores.local, cacheKey)
   const requestedIds = message.items.map((item) => item.id)
 
@@ -125,7 +120,7 @@ export async function translateSubtitleMessage(
     return { ok: true, translations: validateManualTranslations(requestedIds, cached) }
   }
 
-  const provider = await resolveProvider(message.providerType, stores, providerConfig)
+  const provider = await resolveProvider(stores, providerConfig)
   const providerItems = message.items.map((item, index) => ({ ...item, id: String(index) }))
   const providerIdToSourceId = new Map(
     providerItems.map((item, index) => [item.id, message.items[index]?.id]),
@@ -168,7 +163,7 @@ export async function translateSubtitleMessage(
   return { ok: true, translations }
 }
 
-function createWindowCacheKey(message: TranslateSubtitleMessage, model: string): string {
+function createWindowCacheKey(message: TranslateSubtitleMessage): string {
   const first = message.items[0]?.startMs ?? 0
   const windowStartMs = Math.floor(first / 30_000) * 30_000
   const sourceHash = hashString(message.items.map((item) => `${item.id}:${item.text}`).join('\n'))
@@ -177,8 +172,8 @@ function createWindowCacheKey(message: TranslateSubtitleMessage, model: string):
     message.videoId,
     message.trackId,
     message.targetLanguage,
-    message.providerType,
-    model,
+    message.provider.type,
+    message.provider.model,
     windowStartMs,
     sourceHash,
   ].join('|')
@@ -192,18 +187,13 @@ function hashString(input: string): string {
   return Math.abs(hash).toString(36)
 }
 
-async function resolveProvider(
-  providerType: ProviderType,
-  stores: ProviderStores,
-  config: ProviderConfig,
-) {
-  const secret = await getProviderSecret(stores.local, providerType)
+async function resolveProvider(stores: ProviderStores, config: ProviderConfig) {
+  const secret = await getProviderSecret(stores.local, config.type)
   return createProvider(config, secret, stores.local)
 }
 
 export interface SelectionTranslationErrorMessages {
   missingApiKey: (providerType: ProviderType) => string
-  missingModel: (providerType: ProviderType) => string
   notSignedInCodex: () => string
   noTranslation: () => string
 }
@@ -218,33 +208,20 @@ export interface SelectionTranslationStreamOptions {
 export async function resolveActiveProvider(
   stores: ProviderStores,
   errors: SelectionTranslationErrorMessages,
-): Promise<
-  | { ok: true; providerType: ProviderType; config: ProviderConfig; secret: ProviderSecret }
-  | TranslationError
-> {
+): Promise<{ ok: true; config: ProviderConfig; secret: ProviderSecret } | TranslationError> {
   const settings = await getSettings(stores.sync)
-  const config = await getProviderConfig(stores.sync, settings.providerType)
-  const secret = await getProviderSecret(stores.local, settings.providerType)
+  const config = settings.provider
+  const secret = await getProviderSecret(stores.local, config.type)
 
-  if (!hasCredentials(settings.providerType, secret)) {
+  if (!hasCredentials(config.type, secret)) {
     return {
       ok: false,
       error:
-        settings.providerType === 'codex'
-          ? errors.notSignedInCodex()
-          : errors.missingApiKey(settings.providerType),
+        config.type === 'codex' ? errors.notSignedInCodex() : errors.missingApiKey(config.type),
       fatal: false,
     }
   }
-  if (!config.model) {
-    return {
-      ok: false,
-      error: errors.missingModel(settings.providerType),
-      fatal: false,
-    }
-  }
-
-  return { ok: true, providerType: settings.providerType, config, secret }
+  return { ok: true, config, secret }
 }
 
 export async function translateSelectionMessage(

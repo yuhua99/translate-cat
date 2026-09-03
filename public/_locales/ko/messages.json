@@ -57,9 +57,5 @@
   "bgMissingApiKey": {
     "message": "$PROVIDER$의 API 키가 없음",
     "placeholders": { "provider": { "content": "$1" } }
-  },
-  "bgMissingModel": {
-    "message": "$PROVIDER$의 모델이 없음",
-    "placeholders": { "provider": { "content": "$1" } }
   }
 }

@@ -1,5 +1,5 @@
 import type { CaptionSegment, CaptionTrack } from './caption-types'
-import type { ProviderType } from '../background/providers/types'
+import type { ProviderConfig } from '../background/providers/types'
 import type { TranslateSubtitleResult, TranslationError } from '../shared/messages'
 
 export interface TranslatorClient {
@@ -10,7 +10,7 @@ export interface TranslatorClient {
 }
 
 export interface TranslateSubtitleInput {
-  providerType: ProviderType
+  provider: ProviderConfig
   videoId: string
   track: CaptionTrack
   segments: CaptionSegment[]
@@ -42,7 +42,7 @@ export function createRuntimeTranslatorClient(): TranslatorClient {
       try {
         return await chrome.runtime.sendMessage({
           type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-          providerType: input.providerType,
+          provider: input.provider,
           videoId: input.videoId,
           trackId: input.track.trackId,
           targetLanguage: input.targetLanguage,

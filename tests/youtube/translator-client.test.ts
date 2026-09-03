@@ -30,7 +30,7 @@ afterEach(() => {
 })
 
 const input: TranslateSubtitleInput = {
-  providerType: 'openai',
+  provider: { type: 'openai', model: 'gpt-4o-mini' },
   videoId: 'v1',
   track: { trackId: 't1', kind: 'manual' } as never,
   segments: [{ id: 'v1:en::manual:0', text: 'Hello', startMs: 0, endMs: 1000 } as never],
@@ -45,8 +45,13 @@ describe('createRuntimeTranslatorClient', () => {
     await client.translateSubtitle(input, new AbortController().signal)
 
     expect(sent).toHaveLength(1)
-    const msg = sent[0] as { type: string; requestId: string }
+    const msg = sent[0] as {
+      type: string
+      provider: { type: string; model: string }
+      requestId: string
+    }
     expect(msg.type).toBe('TRANSLATE_SUBTITLE_AI_PROVIDER')
+    expect(msg.provider).toEqual(input.provider)
     expect(typeof msg.requestId).toBe('string')
     expect(msg.requestId.length).toBeGreaterThan(0)
   })

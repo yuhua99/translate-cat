@@ -1,11 +1,5 @@
 import { createProvider } from './providers/factory'
-import {
-  getProviderConfig,
-  getProviderSecret,
-  hasCredentials,
-  setProviderConfig,
-  setProviderSecret,
-} from './providers/storage'
+import { getProviderSecret, hasCredentials, setProviderSecret } from './providers/storage'
 import {
   resolveActiveProvider,
   translateSelectionMessage,
@@ -13,7 +7,7 @@ import {
   type SelectionTranslationErrorMessages,
 } from './providers/subtitle-translation'
 import { registerSelectionTranslationPort } from './selection-stream'
-import { getSettings, setSettings } from './settings-storage'
+import { getSettings, setAppSettings, setSubtitleEnabled } from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -38,7 +32,6 @@ const pendingTranslations = new Map<string, AbortController>()
 
 const activeProviderErrors = {
   missingApiKey: (providerType) => chrome.i18n.getMessage('bgMissingApiKey', providerType),
-  missingModel: (providerType) => chrome.i18n.getMessage('bgMissingModel', providerType),
   notSignedInCodex: () => chrome.i18n.getMessage('bgNotSignedInCodex'),
   noTranslation: () => chrome.i18n.getMessage('selectionNoTranslation'),
 } satisfies SelectionTranslationErrorMessages
@@ -65,22 +58,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         return
       }
 
-      if (message.type === 'SET_SETTINGS') {
-        await setSettings(chrome.storage.sync, message.settings)
+      if (message.type === 'SET_SUBTITLE_ENABLED') {
+        await setSubtitleEnabled(chrome.storage.sync, message.enabled)
         sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }
 
-      if (message.type === 'GET_PROVIDER_CONFIG') {
-        sendResponse({
-          ok: true,
-          config: await getProviderConfig(chrome.storage.sync, message.providerType),
-        } satisfies ExtensionResponse)
-        return
-      }
-
-      if (message.type === 'SET_PROVIDER_CONFIG') {
-        await setProviderConfig(chrome.storage.sync, message.config)
+      if (message.type === 'SET_APP_SETTINGS') {
+        await setAppSettings(chrome.storage.sync, message)
         sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }

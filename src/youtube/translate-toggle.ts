@@ -1,6 +1,6 @@
 import {
   DEFAULT_SETTINGS,
-  watchProviderChanges,
+  watchProviderSecretChanges,
   watchSettings,
   type ExtensionMessage,
   type ExtensionResponse,
@@ -186,10 +186,17 @@ async function toggleEnabled(): Promise<void> {
   if (!button || button.dataset.state?.startsWith('unavailable')) return
 
   const settings = await loadSettings()
+
+  if (!isActive() && settings.enabled) {
+    await onActivateRequest()
+    await syncTranslateToggle()
+    return
+  }
+
   if (isActive()) {
     const response = await sendMessage<MessageResponse>({
-      type: 'SET_SETTINGS',
-      settings: { ...settings, enabled: false },
+      type: 'SET_SUBTITLE_ENABLED',
+      enabled: false,
     })
     if (!response.ok) return
 
@@ -198,15 +205,9 @@ async function toggleEnabled(): Promise<void> {
     return
   }
 
-  if (settings.enabled) {
-    await onActivateRequest()
-    await syncTranslateToggle()
-    return
-  }
-
   const response = await sendMessage<MessageResponse>({
-    type: 'SET_SETTINGS',
-    settings: { ...settings, enabled: true },
+    type: 'SET_SUBTITLE_ENABLED',
+    enabled: true,
   })
   if (!response.ok) return
 
@@ -253,7 +254,7 @@ function observeCaptionButton(): void {
 
 function listenForSettingsChanges(): void {
   watchSettings(updateButtonFromSettings)
-  watchProviderChanges(() => {
+  watchProviderSecretChanges(() => {
     void syncTranslateToggle()
   })
 }

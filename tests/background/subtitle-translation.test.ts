@@ -12,8 +12,11 @@ function createMemoryStorage(initial: Record<string, unknown> = {}): ProviderSto
   const data = { ...initial }
 
   return {
-    async get(key: string): Promise<Record<string, unknown>> {
-      return { [key]: data[key] }
+    async get(keys: string | string[]): Promise<Record<string, unknown>> {
+      if (Array.isArray(keys)) {
+        return Object.fromEntries(keys.map((key) => [key, data[key]]))
+      }
+      return { [keys]: data[keys] }
     },
     async set(items: Record<string, unknown>): Promise<void> {
       Object.assign(data, items)
@@ -48,7 +51,7 @@ describe('translateSubtitleMessage', () => {
       translateSubtitleMessage(
         {
           type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-          providerType: 'openai',
+          provider: { type: 'openai', model: 'gpt-4.1-mini' },
           videoId: 'video-1',
           trackId: 'en::manual',
           targetLanguage: 'zh-TW',
@@ -70,6 +73,45 @@ describe('translateSubtitleMessage', () => {
     expect(requestBody?.messages?.at(-1)?.content).not.toContain('"id":"a"')
   })
 
+  test('does not reuse cached translations across provider models', async () => {
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return Response.json({
+        choices: [
+          {
+            message: {
+              content: '{"translations":[{"id":"0","text":"你好"}]}',
+            },
+          },
+        ],
+      })
+    }
+
+    const stores = createStores()
+    const message = {
+      type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+      provider: { type: 'openai', model: 'gpt-4.1-mini' },
+      videoId: 'video-1',
+      trackId: 'en::manual',
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+    } as const
+
+    await translateSubtitleMessage(message, stores)
+    await translateSubtitleMessage(
+      { ...message, provider: { type: 'openai', model: 'gpt-4.1' } },
+      stores,
+    )
+
+    expect(fetchCalls).toBe(2)
+    const cache = await stores.local.get('translationWindowCache')
+    const entries = (
+      cache.translationWindowCache as { entries?: Record<string, unknown> } | undefined
+    )?.entries
+    expect(Object.keys(entries ?? {})).toHaveLength(2)
+  })
+
   test('does not cache partial translations when some ids are missing', async () => {
     let fetchCalls = 0
     globalThis.fetch = async () => {
@@ -88,7 +130,7 @@ describe('translateSubtitleMessage', () => {
     const stores = createStores()
     const message = {
       type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-      providerType: 'openai',
+      provider: { type: 'openai', model: 'gpt-4.1-mini' },
       videoId: 'video-1',
       trackId: 'en::manual',
       targetLanguage: 'zh-TW',
@@ -119,7 +161,7 @@ describe('translateSubtitleMessage', () => {
     const result = await translateSubtitleMessage(
       {
         type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        providerType: 'openai',
+        provider: { type: 'openai', model: 'gpt-4.1-mini' },
         videoId: 'video-1',
         trackId: 'en::manual',
         targetLanguage: 'zh-TW',
@@ -150,7 +192,7 @@ describe('translateSubtitleMessage', () => {
     const result = await translateSubtitleMessage(
       {
         type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        providerType: 'openai',
+        provider: { type: 'openai', model: 'gpt-4.1-mini' },
         videoId: 'video-1',
         trackId: 'en::manual',
         targetLanguage: 'zh-TW',
@@ -177,7 +219,7 @@ describe('translateSubtitleMessage', () => {
     const result = await translateSubtitleMessage(
       {
         type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        providerType: 'openai',
+        provider: { type: 'openai', model: 'gpt-4.1-mini' },
         videoId: 'video-1',
         trackId: 'en::manual',
         targetLanguage: 'zh-TW',
@@ -202,7 +244,7 @@ describe('translateSubtitleMessage', () => {
     const result = await translateSubtitleMessage(
       {
         type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        providerType: 'openai',
+        provider: { type: 'openai', model: 'gpt-4.1-mini' },
         videoId: 'video-1',
         trackId: 'en::manual',
         targetLanguage: 'zh-TW',

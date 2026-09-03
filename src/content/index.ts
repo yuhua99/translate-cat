@@ -13,7 +13,7 @@ import { showStatusOverlay } from '../youtube/status-overlay'
 import { SubtitleOverlayRenderer } from '../youtube/subtitle-overlay-renderer'
 import { createRuntimeTranslatorClient } from '../youtube/translator-client'
 import {
-  watchProviderChanges,
+  watchProviderSecretChanges,
   watchSettings,
   type ExtensionMessage,
   type ExtensionResponse,
@@ -155,7 +155,7 @@ function listenForSettingsChanges(): void {
   watchSettings((nextSettings) => {
     restartAiTranslate(nextSettings)
   })
-  watchProviderChanges(() => {
+  watchProviderSecretChanges(() => {
     restartAiTranslate()
   })
 }

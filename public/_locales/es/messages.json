@@ -61,9 +61,5 @@
   "bgMissingApiKey": {
     "message": "Falta la clave de API de $PROVIDER$",
     "placeholders": { "provider": { "content": "$1" } }
-  },
-  "bgMissingModel": {
-    "message": "Falta el modelo de $PROVIDER$",
-    "placeholders": { "provider": { "content": "$1" } }
   }
 }

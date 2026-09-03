@@ -7,7 +7,7 @@ const settings: ExtensionSettings = {
   enabled: true,
   selectionEnabled: true,
   targetLanguage: 'Traditional Chinese',
-  providerType: 'openai',
+  provider: { type: 'openai', model: 'gpt-4o-mini' },
 }
 
 function createTranslatorClient(): TranslatorClient & { calls: string[][] } {

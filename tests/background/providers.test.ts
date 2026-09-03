@@ -12,9 +12,7 @@ import { TOKEN_URL } from '../../src/shared/codex-oauth'
 import { OpenAiProvider } from '../../src/background/providers/openai'
 import { OpencodeZenProvider } from '../../src/background/providers/opencode-zen'
 import {
-  getProviderConfig,
   getProviderSecret,
-  setProviderConfig,
   setProviderSecret,
   type ProviderStorageArea,
 } from '../../src/background/providers/storage'
@@ -54,8 +52,11 @@ function createMemoryStorage(
 
   return {
     data,
-    async get(key: string): Promise<Record<string, unknown>> {
-      return { [key]: data[key] }
+    async get(keys: string | string[]): Promise<Record<string, unknown>> {
+      if (Array.isArray(keys)) {
+        return Object.fromEntries(keys.map((key) => [key, data[key]]))
+      }
+      return { [keys]: data[keys] }
     },
     async set(items: Record<string, unknown>): Promise<void> {
       Object.assign(data, items)
@@ -72,17 +73,11 @@ describe('parseJsonObject', () => {
 })
 
 describe('provider storage', () => {
-  test('stores config in sync storage and secret separately by provider type', async () => {
+  test('stores API secrets locally by provider type', async () => {
     const sync = createMemoryStorage()
     const local = createMemoryStorage()
-
-    await setProviderConfig(sync, { type: 'openai', model: 'gpt-4.1-mini' })
     await setProviderSecret(local, 'openai', { apiKey: 'secret-key' })
 
-    await expect(getProviderConfig(sync, 'openai')).resolves.toEqual({
-      type: 'openai',
-      model: 'gpt-4.1-mini',
-    })
     await expect(getProviderSecret(local, 'openai')).resolves.toEqual({ apiKey: 'secret-key' })
     expect(JSON.stringify(sync.data)).not.toContain('secret-key')
   })

@@ -73,8 +73,8 @@ export function getProviderLabel(type: ProviderType): string {
   return PROVIDER_REGISTRY[type].label
 }
 
-export function getDefaultProviderConfig(type: ProviderType): ProviderConfig {
-  return { type, model: PROVIDER_REGISTRY[type].defaultModel }
+export function getDefaultModel(type: ProviderType): string {
+  return PROVIDER_REGISTRY[type].defaultModel
 }
 
 export function getProviderModels(type: ProviderType): string[] {

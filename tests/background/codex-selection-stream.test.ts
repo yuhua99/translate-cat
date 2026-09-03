@@ -39,7 +39,10 @@ function createProvider(): CodexProvider {
 
 function createStorage(): ProviderStorageArea {
   return {
-    async get(): Promise<Record<string, unknown>> {
+    async get(keys: string | string[]): Promise<Record<string, unknown>> {
+      if (Array.isArray(keys)) {
+        return Object.fromEntries(keys.map((key) => [key, undefined]))
+      }
       return {}
     },
     async set(): Promise<void> {},

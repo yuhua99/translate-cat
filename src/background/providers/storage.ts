@@ -1,23 +1,14 @@
-import type { ProviderConfig, ProviderSecret, ProviderType } from './types'
-import { PROVIDER_CONFIGS_KEY, PROVIDER_SECRETS_KEY } from '../../shared/messages'
-import { getDefaultProviderConfig } from '../../shared/providers'
+import type { ProviderSecret, ProviderType } from './types'
+import { PROVIDER_SECRETS_KEY } from '../../shared/messages'
 
 export interface ProviderStorageArea {
-  get(key: string): Promise<Record<string, unknown>>
+  get(keys: string | string[]): Promise<Record<string, unknown>>
   set(items: Record<string, unknown>): Promise<void>
 }
 
 export interface ProviderStores {
   sync: ProviderStorageArea
   local: ProviderStorageArea
-}
-
-export async function getProviderConfig(
-  storage: ProviderStorageArea,
-  providerType: ProviderType,
-): Promise<ProviderConfig> {
-  const configs = await getProviderConfigs(storage)
-  return configs[providerType] ?? getDefaultProviderConfig(providerType)
 }
 
 export async function getProviderSecret(
@@ -35,16 +26,6 @@ export function hasCredentials(providerType: ProviderType, secret: ProviderSecre
   return providerType === 'codex' ? Boolean(secret.codexAuth) : Boolean(secret.apiKey)
 }
 
-export async function setProviderConfig(
-  storage: ProviderStorageArea,
-  config: ProviderConfig,
-): Promise<void> {
-  const configs = await getProviderConfigs(storage)
-  await storage.set({
-    [PROVIDER_CONFIGS_KEY]: { ...configs, [config.type]: config },
-  })
-}
-
 export async function setProviderSecret(
   storage: ProviderStorageArea,
   providerType: ProviderType,
@@ -57,14 +38,4 @@ export async function setProviderSecret(
   await storage.set({
     [PROVIDER_SECRETS_KEY]: { ...secrets, [providerType]: secret },
   })
-}
-
-async function getProviderConfigs(
-  storage: ProviderStorageArea,
-): Promise<Partial<Record<ProviderType, ProviderConfig>>> {
-  const stored = await storage.get(PROVIDER_CONFIGS_KEY)
-  return (
-    (stored[PROVIDER_CONFIGS_KEY] as Partial<Record<ProviderType, ProviderConfig>> | undefined) ??
-    {}
-  )
 }

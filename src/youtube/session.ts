@@ -199,7 +199,7 @@ export class YoutubeSubtitleSession {
 
     const result = await this.translatorClient.translateSubtitle(
       {
-        providerType: this.settings.providerType,
+        provider: this.settings.provider,
         videoId: this.videoId,
         track: this.track,
         segments,

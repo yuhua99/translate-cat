@@ -9,7 +9,6 @@ import { sseEvents } from '../helpers/sse'
 const originalFetch = globalThis.fetch
 const errors = {
   missingApiKey: (providerType) => `Missing API key for ${providerType}`,
-  missingModel: (providerType) => `Missing model for ${providerType}`,
   notSignedInCodex: () => 'Not signed in to OpenAI Codex',
   noTranslation: () => 'No translation returned',
 } satisfies SelectionTranslationErrorMessages
@@ -17,7 +16,10 @@ const errors = {
 function createMemoryStorage(initial: Record<string, unknown> = {}): ProviderStorageArea {
   const data = { ...initial }
   return {
-    async get(key: string): Promise<Record<string, unknown>> {
+    async get(key: string | string[]): Promise<Record<string, unknown>> {
+      if (Array.isArray(key)) {
+        return Object.fromEntries(key.map((item) => [item, data[item]]))
+      }
       return { [key]: data[key] }
     },
     async set(items: Record<string, unknown>): Promise<void> {
@@ -29,8 +31,10 @@ function createMemoryStorage(initial: Record<string, unknown> = {}): ProviderSto
 function createStores(apiKey = 'test-key'): ProviderStores {
   return {
     sync: createMemoryStorage({
-      settings: { providerType: 'openai', targetLanguage: 'zh-TW' },
-      providerConfigs: { openai: { type: 'openai', model: 'gpt-4.1-mini' } },
+      subtitleEnabled: false,
+      selectionEnabled: true,
+      targetLanguage: 'zh-TW',
+      provider: { type: 'openai', model: 'gpt-4.1-mini' },
     }),
     local: createMemoryStorage({ providerSecrets: { openai: { apiKey } } }),
   }

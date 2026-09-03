@@ -59,9 +59,5 @@
   "bgMissingApiKey": {
     "message": "Missing API key for $PROVIDER$",
     "placeholders": { "provider": { "content": "$1" } }
-  },
-  "bgMissingModel": {
-    "message": "Missing model for $PROVIDER$",
-    "placeholders": { "provider": { "content": "$1" } }
   }
 }
