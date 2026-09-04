@@ -81,6 +81,57 @@ describe('provider storage', () => {
     await expect(getProviderSecret(local, 'openai')).resolves.toEqual({ apiKey: 'secret-key' })
     expect(JSON.stringify(sync.data)).not.toContain('secret-key')
   })
+
+  test('preserves concurrent writes for different providers', async () => {
+    let releaseFirstSet: (() => void) | undefined
+    let firstSetStarted: (() => void) | undefined
+    const data: Record<string, unknown> = {}
+    let setCalls = 0
+    const storage: ProviderStorageArea = {
+      async get(key) {
+        return { [key as string]: data[key as string] }
+      },
+      async set(items) {
+        setCalls += 1
+        if (setCalls === 1) {
+          firstSetStarted?.()
+          await new Promise<void>((resolve) => {
+            releaseFirstSet = resolve
+          })
+        }
+        Object.assign(data, items)
+      },
+    }
+
+    const openaiWrite = setProviderSecret(storage, 'openai', { apiKey: 'openai-key' })
+    await new Promise<void>((resolve) => {
+      firstSetStarted = resolve
+    })
+    const geminiWrite = setProviderSecret(storage, 'gemini', { apiKey: 'gemini-key' })
+    releaseFirstSet?.()
+    await Promise.all([openaiWrite, geminiWrite])
+
+    await expect(getProviderSecret(storage, 'openai')).resolves.toEqual({ apiKey: 'openai-key' })
+    await expect(getProviderSecret(storage, 'gemini')).resolves.toEqual({ apiKey: 'gemini-key' })
+  })
+
+  test('continues queued writes after a write failure', async () => {
+    const failure = new Error('write failed')
+    let setCalls = 0
+    const storage = createMemoryStorage()
+    storage.set = async (items) => {
+      setCalls += 1
+      if (setCalls === 1) throw failure
+      Object.assign(storage.data, items)
+    }
+
+    await expect(setProviderSecret(storage, 'openai', { apiKey: 'openai-key' })).rejects.toBe(
+      failure,
+    )
+    await setProviderSecret(storage, 'gemini', { apiKey: 'gemini-key' })
+
+    await expect(getProviderSecret(storage, 'gemini')).resolves.toEqual({ apiKey: 'gemini-key' })
+  })
 })
 
 describe('CodexProvider', () => {

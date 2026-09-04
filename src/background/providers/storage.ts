@@ -11,6 +11,14 @@ export interface ProviderStores {
   local: ProviderStorageArea
 }
 
+let writeQueue: Promise<unknown> = Promise.resolve()
+
+function enqueueWrite(task: () => Promise<void>): Promise<void> {
+  const next = writeQueue.then(task)
+  writeQueue = next.catch(() => undefined)
+  return next
+}
+
 export async function getProviderSecret(
   storage: ProviderStorageArea,
   providerType: ProviderType,
@@ -26,16 +34,18 @@ export function hasCredentials(providerType: ProviderType, secret: ProviderSecre
   return providerType === 'codex' ? Boolean(secret.codexAuth) : Boolean(secret.apiKey)
 }
 
-export async function setProviderSecret(
+export function setProviderSecret(
   storage: ProviderStorageArea,
   providerType: ProviderType,
   secret: ProviderSecret,
 ): Promise<void> {
-  const stored = await storage.get(PROVIDER_SECRETS_KEY)
-  const secrets =
-    (stored[PROVIDER_SECRETS_KEY] as Partial<Record<ProviderType, ProviderSecret>> | undefined) ??
-    {}
-  await storage.set({
-    [PROVIDER_SECRETS_KEY]: { ...secrets, [providerType]: secret },
+  return enqueueWrite(async () => {
+    const stored = await storage.get(PROVIDER_SECRETS_KEY)
+    const secrets =
+      (stored[PROVIDER_SECRETS_KEY] as Partial<Record<ProviderType, ProviderSecret>> | undefined) ??
+      {}
+    await storage.set({
+      [PROVIDER_SECRETS_KEY]: { ...secrets, [providerType]: secret },
+    })
   })
 }
