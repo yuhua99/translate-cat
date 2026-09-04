@@ -42,7 +42,7 @@ describe('YoutubeSubtitleSession', () => {
             events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
           }),
         },
-        undefined,
+        'video-1',
       ),
     ).toBe(true)
 
@@ -187,17 +187,15 @@ describe('YoutubeSubtitleSession', () => {
     const completedBefore = new Set(session.windowsCompleted)
     const callsBefore = [...client.calls]
 
-    expect(
-      session.handleCapturedCaptions(
-        {
-          url: 'https://www.youtube.com/api/timedtext?v=video-a&lang=en',
-          responseText: JSON.stringify({
-            events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'A caption' }] }],
-          }),
-        },
-        'video-b',
-      ),
-    ).toBe(false)
+    const staleCapture = {
+      url: 'https://www.youtube.com/api/timedtext?v=video-a&lang=en',
+      responseText: JSON.stringify({
+        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'A caption' }] }],
+      }),
+    }
+
+    expect(session.handleCapturedCaptions(staleCapture, 'video-b')).toBe(false)
+    expect(session.handleCapturedCaptions(staleCapture, '')).toBe(false)
 
     expect(session.videoId).toBe('video-b')
     expect(session.track).toEqual(trackBefore)

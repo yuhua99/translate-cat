@@ -46,10 +46,10 @@ export class YoutubeSubtitleSession {
     this.abortController = new AbortController()
   }
 
-  handleCapturedCaptions(input: CapturedCaptionResponse, expectedVideoId?: string): boolean {
+  handleCapturedCaptions(input: CapturedCaptionResponse, expectedVideoId: string): boolean {
     const parsed = parseCapturedCaptions(input)
 
-    if (expectedVideoId !== undefined && parsed.track.videoId !== expectedVideoId) {
+    if (parsed.track.videoId !== expectedVideoId) {
       return false
     }
 

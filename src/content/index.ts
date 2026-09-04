@@ -114,7 +114,7 @@ function handleCaptionCapture(detail: CaptionsCapturedEventDetail): void {
   const run = currentRun
   if (!run || run.aborted || !run.session || !detail.responseText) return
 
-  const expectedVideoId = readVideoId() || undefined
+  const expectedVideoId = readVideoId()
   if (!run.session.handleCapturedCaptions(detail, expectedVideoId)) return
 
   void scheduleCurrentWindow(run)
