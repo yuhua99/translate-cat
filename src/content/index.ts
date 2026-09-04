@@ -8,7 +8,7 @@ import { hideNativeCaptions, showNativeCaptions } from '../youtube/native-captio
 
 import { YoutubeSubtitleSession } from '../youtube/session'
 import { injectTranslateToggle, syncTranslateToggle } from '../youtube/translate-toggle'
-import { listenForMainVideoLoads } from '../youtube/video-load'
+import { listenForMainVideoLoads, parseYouTubeVideoId } from '../youtube/video-load'
 import { showStatusOverlay } from '../youtube/status-overlay'
 import { SubtitleOverlayRenderer } from '../youtube/subtitle-overlay-renderer'
 import { createRuntimeTranslatorClient } from '../youtube/translator-client'
@@ -423,7 +423,7 @@ function createSession(run: TranslateRun, settings: ExtensionSettings): void {
 }
 
 function readVideoId(): string {
-  return new URL(location.href).searchParams.get('v') ?? ''
+  return parseYouTubeVideoId(new URL(location.href)) ?? ''
 }
 
 async function loadSettingsForActivation(
