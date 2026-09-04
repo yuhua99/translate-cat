@@ -2,12 +2,13 @@ import { describe, expect, test } from 'bun:test'
 import { mergeAsrSegments } from '../../src/youtube/asr-merge'
 import type { CaptionSegment } from '../../src/youtube/caption-types'
 
-function seg(startMs: number, text: string, id?: string): CaptionSegment {
+function seg(startMs: number, text: string, endMs?: number, id?: string): CaptionSegment {
   const stableId = id ?? `s${startMs}`
   return {
     id: stableId,
     startMs,
     text,
+    ...(endMs === undefined ? {} : { endMs }),
   }
 }
 
@@ -16,19 +17,38 @@ describe('mergeAsrSegments', () => {
     expect(mergeAsrSegments([])).toEqual([])
   })
 
-  test('merges segments within gap threshold', () => {
-    const merged = mergeAsrSegments([seg(0, 'Hello '), seg(400, 'world')])
+  test('merges when gap from previous end is exactly 700ms', () => {
+    const merged = mergeAsrSegments([seg(0, 'Hello', 100), seg(800, 'world')])
 
     expect(merged).toHaveLength(1)
     expect(merged[0]?.text).toBe('Hello world')
   })
 
-  test('breaks on gap > 700ms', () => {
-    const merged = mergeAsrSegments([seg(0, 'First.'), seg(800, 'Second.')])
+  test('breaks when gap from previous end is 701ms', () => {
+    const merged = mergeAsrSegments([seg(0, 'First', 100), seg(801, 'Second')])
 
     expect(merged).toHaveLength(2)
-    expect(merged[0]?.text).toBe('First.')
-    expect(merged[1]?.text).toBe('Second.')
+    expect(merged[0]?.text).toBe('First')
+    expect(merged[1]?.text).toBe('Second')
+  })
+
+  test('merges overlapping segments', () => {
+    const merged = mergeAsrSegments([seg(0, 'Hello', 1_000), seg(800, 'world')])
+
+    expect(merged).toHaveLength(1)
+  })
+
+  test('falls back to previous start when end is missing', () => {
+    const merged = mergeAsrSegments([seg(0, 'First'), seg(701, 'Second')])
+
+    expect(merged).toHaveLength(2)
+  })
+
+  test('joins text only between adjacent ASCII alphanumerics', () => {
+    expect(mergeAsrSegments([seg(0, 'Hello'), seg(200, 'world')])[0]?.text).toBe('Hello world')
+    expect(mergeAsrSegments([seg(0, '你好'), seg(200, '世界')])[0]?.text).toBe('你好世界')
+    expect(mergeAsrSegments([seg(0, 'Hello'), seg(200, ',')])[0]?.text).toBe('Hello,')
+    expect(mergeAsrSegments([seg(0, '你好'), seg(200, '！')])[0]?.text).toBe('你好！')
   })
 
   test('breaks on accumulated chars > 120', () => {
@@ -57,6 +77,18 @@ describe('mergeAsrSegments', () => {
 
     const mergedLong = mergeAsrSegments(longer)
     expect(mergedLong).toHaveLength(2)
+  })
+
+  test('counts inserted ASCII separators toward the character limit', () => {
+    const input: CaptionSegment[] = []
+    for (let i = 0; i < 24; i++) {
+      input.push(seg(i * 200, 'abcde'))
+    }
+
+    const merged = mergeAsrSegments(input)
+
+    expect(merged).toHaveLength(2)
+    expect(merged[0]?.text).toHaveLength(119)
   })
 
   test('breaks on sentence-ending punctuation', () => {

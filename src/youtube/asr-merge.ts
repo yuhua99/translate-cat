@@ -4,6 +4,7 @@ const GAP_BREAK_MS = 700
 const MAX_CHARS = 120
 const DURATION_BREAK_MS = 6_000
 const SENTENCE_END = /[.?!。！？]$/
+const ASCII_ALPHANUMERIC = /^[A-Za-z0-9]$/
 const FALLBACK_END_MS = 1_500
 
 export function mergeAsrSegments(segments: readonly CaptionSegment[]): CaptionSegment[] {
@@ -14,16 +15,19 @@ export function mergeAsrSegments(segments: readonly CaptionSegment[]): CaptionSe
 
   for (const segment of segments) {
     const first = current[0]
+    const previous = current[current.length - 1]
 
-    if (first) {
-      const gap = segment.startMs - (current[current.length - 1]?.startMs ?? first.startMs)
+    if (first && previous) {
+      const previousEndMs = previous.endMs ?? previous.startMs
+      const gap = segment.startMs - previousEndMs
       const duration = segment.startMs - first.startMs
-      const accumulatedChars = current.reduce((sum, s) => sum + s.text.length, 0)
+      const accumulatedText = mergeGroupText(current)
+      const separatorLength = needsAsciiAlphanumericSeparator(accumulatedText, segment.text) ? 1 : 0
 
       if (
         gap > GAP_BREAK_MS ||
-        accumulatedChars + segment.text.length > MAX_CHARS ||
-        SENTENCE_END.test(current[current.length - 1]?.text ?? '') ||
+        accumulatedText.length + separatorLength + segment.text.length > MAX_CHARS ||
+        SENTENCE_END.test(previous.text) ||
         duration > DURATION_BREAK_MS
       ) {
         groups.push(current)
@@ -50,12 +54,7 @@ function createMergedSegment(
   const last = group[group.length - 1]
   if (!first || !last) throw new Error('Cannot merge empty ASR group')
 
-  const text = group
-    .map((s) => s.text)
-    .join('')
-    .replace(/\n/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+  const text = mergeGroupText(group).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
   const sourceIds = group.map((s) => s.id).join(',')
   const nextStartMs = nextGroup?.[0]?.startMs
 
@@ -65,6 +64,32 @@ function createMergedSegment(
     endMs: nextStartMs ?? last.endMs ?? last.startMs + FALLBACK_END_MS,
     text,
   }
+}
+
+function mergeGroupText(group: readonly CaptionSegment[]): string {
+  let text = ''
+
+  for (const segment of group) {
+    if (needsAsciiAlphanumericSeparator(text, segment.text)) {
+      text += ' '
+    }
+
+    text += segment.text
+  }
+
+  return text
+}
+
+function needsAsciiAlphanumericSeparator(previousText: string, nextText: string): boolean {
+  const lastCharacter = previousText[previousText.length - 1]
+  const firstCharacter = nextText[0]
+
+  return Boolean(
+    lastCharacter &&
+    firstCharacter &&
+    ASCII_ALPHANUMERIC.test(lastCharacter) &&
+    ASCII_ALPHANUMERIC.test(firstCharacter),
+  )
 }
 
 function hashSourceIds(input: string): string {
