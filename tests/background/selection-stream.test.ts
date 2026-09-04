@@ -15,7 +15,10 @@ class FakePort implements SelectionTranslationPort {
   private readonly disconnectListeners: Array<() => void> = []
   private readonly messageListeners: Array<(message: unknown) => void> = []
 
-  constructor(readonly name: string) {}
+  constructor(
+    readonly name: string,
+    readonly sender?: { documentId?: string },
+  ) {}
 
   onDisconnect = {
     addListener: (callback: () => void) => this.disconnectListeners.push(callback),
@@ -60,9 +63,11 @@ describe('selection translation port', () => {
 
   test('registers the handler and streams ordered events for one request', async () => {
     let listener: ((port: SelectionTranslationPort) => void) | undefined
+    let receivedRequestContext: unknown
     registerSelectionTranslationPort(
       { addListener: (callback) => (listener = callback) },
-      async (_request, lifecycle) => {
+      async (_request, lifecycle, requestContext) => {
+        receivedRequestContext = requestContext
         lifecycle.onDelta('你')
         lifecycle.onDelta('好')
         lifecycle.onReset()
@@ -70,7 +75,7 @@ describe('selection translation port', () => {
         return { ok: true }
       },
     )
-    const port = new FakePort(SELECTION_TRANSLATION_PORT)
+    const port = new FakePort(SELECTION_TRANSLATION_PORT, { documentId: 'selection-session-123' })
 
     listener?.(port)
     port.send({ type: 'translate', requestId: 'request-1', text: 'Hello', targetLanguage: 'zh-TW' })
@@ -85,6 +90,7 @@ describe('selection translation port', () => {
       { type: 'complete', requestId: 'request-1' },
     ])
     expect(port.disconnectCalls).toBe(1)
+    expect(receivedRequestContext).toEqual({ sessionId: 'selection-session-123' })
   })
 
   test('ignores a duplicate request and reports empty translation errors', async () => {

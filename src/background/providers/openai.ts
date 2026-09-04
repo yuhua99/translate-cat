@@ -180,6 +180,10 @@ export class OpenAiProvider implements AiProvider {
     return shouldDisableThinking(this.config)
   }
 
+  protected extraChatCompletionHeaders(): Record<string, string> {
+    return {}
+  }
+
   private async fetchChatCompletion(
     prompt: string,
     options: CompletionOptions,
@@ -203,6 +207,7 @@ export class OpenAiProvider implements AiProvider {
         headers: {
           authorization: `Bearer ${this.secret.apiKey}`,
           'content-type': 'application/json',
+          ...this.extraChatCompletionHeaders(),
         },
         body: JSON.stringify({
           model: this.config.model,

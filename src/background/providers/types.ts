@@ -30,6 +30,10 @@ export interface ManualTranslateOutput {
   translations: ManualTranslationItem[]
 }
 
+export interface ProviderRequestContext {
+  sessionId?: string
+}
+
 export interface SelectionTranslateInput {
   text: string
   targetLanguage: string

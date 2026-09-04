@@ -4,12 +4,13 @@ import { GeminiProvider } from './gemini'
 import { OpenAiProvider } from './openai'
 import { OpencodeZenProvider } from './opencode-zen'
 import type { ProviderStorageArea } from './storage'
-import type { AiProvider, ProviderConfig, ProviderSecret } from './types'
+import type { AiProvider, ProviderConfig, ProviderRequestContext, ProviderSecret } from './types'
 
 export function createProvider(
   config: ProviderConfig,
   secret: ProviderSecret,
   secretStorage: ProviderStorageArea,
+  requestContext?: ProviderRequestContext,
 ): AiProvider {
   if (config.type === 'openai') {
     return new OpenAiProvider(config, secret)
@@ -24,7 +25,7 @@ export function createProvider(
   }
 
   if (config.type === 'opencodeZen') {
-    return new OpencodeZenProvider(config, secret)
+    return new OpencodeZenProvider(config, secret, requestContext)
   }
 
   if (config.type === 'gemini') {

@@ -4,9 +4,13 @@ import {
   type SelectionTranslationRequest,
   type TranslationError,
 } from '../shared/messages'
+import type { ProviderRequestContext } from './providers/types'
 
 export interface SelectionTranslationPort {
   name: string
+  sender?: {
+    documentId?: string
+  }
   onDisconnect: {
     addListener(callback: () => void): void
   }
@@ -26,6 +30,7 @@ export interface SelectionTranslationLifecycle {
 export type SelectionTranslationHandler = (
   request: SelectionTranslationRequest,
   lifecycle: SelectionTranslationLifecycle,
+  requestContext?: ProviderRequestContext,
 ) => Promise<{ ok: true } | TranslationError>
 
 export function registerSelectionTranslationPort(
@@ -68,15 +73,19 @@ export function createSelectionTranslationPortHandler(
       receivedRequest = true
       if (!post({ type: 'started', requestId: message.requestId })) return
 
-      void translate(message, {
-        signal: controller.signal,
-        onDelta: (text) => {
-          if (text) post({ type: 'delta', requestId: message.requestId, text })
+      void translate(
+        message,
+        {
+          signal: controller.signal,
+          onDelta: (text) => {
+            if (text) post({ type: 'delta', requestId: message.requestId, text })
+          },
+          onReset: () => {
+            post({ type: 'reset', requestId: message.requestId })
+          },
         },
-        onReset: () => {
-          post({ type: 'reset', requestId: message.requestId })
-        },
-      })
+        { sessionId: port.sender?.documentId },
+      )
         .then((result) => {
           if (controller.signal.aborted) return
           if (result.ok) {

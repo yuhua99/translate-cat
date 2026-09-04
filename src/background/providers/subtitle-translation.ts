@@ -7,7 +7,7 @@ import {
   missingManualTranslationIds,
   validateManualTranslations,
 } from '../../youtube/translation-validation'
-import type { ProviderConfig, ProviderSecret, ProviderType } from './types'
+import type { ProviderConfig, ProviderRequestContext, ProviderSecret, ProviderType } from './types'
 import type {
   SelectionTranslationRequest,
   TranslateSubtitleMessage,
@@ -110,6 +110,7 @@ export async function translateSubtitleMessage(
   message: TranslateSubtitleMessage,
   stores: ProviderStores,
   signal?: AbortSignal,
+  requestContext?: ProviderRequestContext,
 ): Promise<TranslateSubtitleResult | TranslationError> {
   const providerConfig = message.provider
   const cacheKey = createWindowCacheKey(message)
@@ -120,7 +121,7 @@ export async function translateSubtitleMessage(
     return { ok: true, translations: validateManualTranslations(requestedIds, cached) }
   }
 
-  const provider = await resolveProvider(stores, providerConfig)
+  const provider = await resolveProvider(stores, providerConfig, requestContext)
   const providerItems = message.items.map((item, index) => ({ ...item, id: String(index) }))
   const providerIdToSourceId = new Map(
     providerItems.map((item, index) => [item.id, message.items[index]?.id]),
@@ -187,9 +188,13 @@ function hashString(input: string): string {
   return Math.abs(hash).toString(36)
 }
 
-async function resolveProvider(stores: ProviderStores, config: ProviderConfig) {
+async function resolveProvider(
+  stores: ProviderStores,
+  config: ProviderConfig,
+  requestContext?: ProviderRequestContext,
+) {
   const secret = await getProviderSecret(stores.local, config.type)
-  return createProvider(config, secret, stores.local)
+  return createProvider(config, secret, stores.local, requestContext)
 }
 
 export interface SelectionTranslationErrorMessages {
@@ -228,6 +233,7 @@ export async function translateSelectionMessage(
   request: SelectionTranslationRequest,
   stores: ProviderStores,
   options: SelectionTranslationStreamOptions,
+  requestContext?: ProviderRequestContext,
 ): Promise<{ ok: true } | TranslationError> {
   try {
     if (options.signal?.aborted) return abortedError()
@@ -235,7 +241,12 @@ export async function translateSelectionMessage(
     const activeProvider = await resolveActiveProvider(stores, options.errors)
     if (!activeProvider.ok) return activeProvider
 
-    const provider = createProvider(activeProvider.config, activeProvider.secret, stores.local)
+    const provider = createProvider(
+      activeProvider.config,
+      activeProvider.secret,
+      stores.local,
+      requestContext,
+    )
     let text = ''
     const result = await withRetry(
       () =>

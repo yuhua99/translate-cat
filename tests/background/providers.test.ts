@@ -474,6 +474,7 @@ describe('OpencodeZenProvider', () => {
     const provider = new OpencodeZenProvider(
       { type: 'opencodeZen', model: 'gpt-5.6-luna' },
       { apiKey: 'key' },
+      { sessionId: 'manual-session-123' },
     )
     await provider.translateManual({
       targetLanguage: 'zh-TW',
@@ -481,7 +482,27 @@ describe('OpencodeZenProvider', () => {
     })
 
     expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
+    expect(request?.headers.get('x-opencode-session')).toBe('manual-session-123')
     expect(await request?.json()).toMatchObject({ thinking: { type: 'disabled' } })
+  })
+
+  test('uses session context for connection tests', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({ choices: [{ message: { content: 'OK' } }] })
+    }
+
+    const provider = new OpencodeZenProvider(
+      { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+      { apiKey: 'key' },
+      { sessionId: 'connection-session-123' },
+    )
+
+    await expect(provider.testConnection()).resolves.toEqual({
+      ok: true,
+    })
+    expect(request?.headers.get('x-opencode-session')).toBe('connection-session-123')
   })
 
   test('omits thinking settings for custom models', async () => {

@@ -36,7 +36,7 @@ const activeProviderErrors = {
   noTranslation: () => chrome.i18n.getMessage('selectionNoTranslation'),
 } satisfies SelectionTranslationErrorMessages
 
-registerSelectionTranslationPort(chrome.runtime.onConnect, (request, lifecycle) =>
+registerSelectionTranslationPort(chrome.runtime.onConnect, (request, lifecycle, requestContext) =>
   translateSelectionMessage(
     request,
     { sync: chrome.storage.sync, local: chrome.storage.local },
@@ -44,10 +44,11 @@ registerSelectionTranslationPort(chrome.runtime.onConnect, (request, lifecycle) 
       ...lifecycle,
       errors: activeProviderErrors,
     },
+    requestContext,
   ),
 )
 
-chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
   void (async () => {
     try {
       if (message.type === 'GET_SETTINGS') {
@@ -88,11 +89,9 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           ? message.secret
           : await getProviderSecret(chrome.storage.local, message.config.type)
         sendResponse(
-          (await createProvider(
-            message.config,
-            secret,
-            chrome.storage.local,
-          ).testConnection()) satisfies ExtensionResponse,
+          (await createProvider(message.config, secret, chrome.storage.local, {
+            sessionId: sender.documentId,
+          }).testConnection()) satisfies ExtensionResponse,
         )
         return
       }
@@ -120,6 +119,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
               message,
               { sync: chrome.storage.sync, local: chrome.storage.local },
               controller?.signal,
+              { sessionId: sender.documentId },
             )) satisfies ExtensionResponse,
           )
         } finally {

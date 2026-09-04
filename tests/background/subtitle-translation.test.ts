@@ -73,6 +73,36 @@ describe('translateSubtitleMessage', () => {
     expect(requestBody?.messages?.at(-1)?.content).not.toContain('"id":"a"')
   })
 
+  test('forwards request context to subtitle providers', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"0","text":"你好"}]}' } }],
+      })
+    }
+    const stores: ProviderStores = {
+      sync: createMemoryStorage(),
+      local: createMemoryStorage({ providerSecrets: { opencodeZen: { apiKey: 'test-key' } } }),
+    }
+
+    await translateSubtitleMessage(
+      {
+        type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
+        provider: { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+        videoId: 'video-1',
+        trackId: 'en::manual',
+        targetLanguage: 'zh-TW',
+        items: [{ id: 'a', text: 'Hello', startMs: 0, endMs: 1000 }],
+      },
+      stores,
+      undefined,
+      { sessionId: 'subtitle-session-123' },
+    )
+
+    expect(request?.headers.get('x-opencode-session')).toBe('subtitle-session-123')
+  })
+
   test('does not reuse cached translations across provider models', async () => {
     let fetchCalls = 0
     globalThis.fetch = async () => {

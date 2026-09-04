@@ -4,6 +4,7 @@ import {
   ProviderJsonParseError,
   ProviderSseError,
 } from '../../src/background/providers/errors'
+import { createProvider as createAiProvider } from '../../src/background/providers/factory'
 import { OpenAiProvider } from '../../src/background/providers/openai'
 import { OpencodeZenProvider } from '../../src/background/providers/opencode-zen'
 import { sseResponse } from '../helpers/sse'
@@ -34,13 +35,22 @@ describe('OpenAiProvider translateSelection', () => {
     }
 
     const deltas: string[] = []
-    await createProvider().translateSelection(
+    await createAiProvider(
+      { type: 'openai', model: 'gpt-5.6-luna' },
+      { apiKey: 'key' },
+      {
+        get: async () => ({}),
+        set: async () => undefined,
+      },
+      { sessionId: 'openai-session-123' },
+    ).translateSelection(
       { text: 'Hello', targetLanguage: 'zh-TW' },
       { onDelta: (delta) => deltas.push(delta) },
     )
 
     const body = await request?.json()
     expect(request?.url).toBe('https://api.openai.com/v1/chat/completions')
+    expect(request?.headers.get('x-opencode-session')).toBeNull()
     expect(body).toMatchObject({
       model: 'gpt-5.6-luna',
       stream: true,
@@ -62,9 +72,11 @@ describe('OpenAiProvider translateSelection', () => {
     await new OpencodeZenProvider(
       { type: 'opencodeZen', model: 'gpt-5.6-luna' },
       { apiKey: 'key' },
+      { sessionId: 'selection-session-123' },
     ).translateSelection({ text: 'Hello', targetLanguage: 'zh-TW' }, { onDelta: () => undefined })
 
     expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
+    expect(request?.headers.get('x-opencode-session')).toBe('selection-session-123')
     expect(await request?.json()).toMatchObject({ stream: true, thinking: { type: 'disabled' } })
   })
 
