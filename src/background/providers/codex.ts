@@ -33,6 +33,7 @@ import type {
 
 const RESPONSES_URL = 'https://chatgpt.com/backend-api/codex/responses'
 const REFRESH_BUFFER_MS = 5 * 60 * 1_000
+const REFRESH_TIMEOUT_MS = 30_000
 
 let refreshInFlight: Promise<CodexTokens> | undefined
 
@@ -256,7 +257,10 @@ async function refreshAndPersistAuth(
   const authToRefresh = storedAuth ?? current
   let refreshed: CodexTokens
   try {
-    refreshed = await refreshCodexToken(authToRefresh.refreshToken)
+    refreshed = await refreshCodexToken(
+      authToRefresh.refreshToken,
+      AbortSignal.timeout(REFRESH_TIMEOUT_MS),
+    )
   } catch (error) {
     if (error instanceof CodexOAuthHttpError) {
       throw new ProviderHttpError(error.message, error.status)

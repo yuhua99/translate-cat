@@ -394,7 +394,8 @@ describe('CodexProvider', () => {
     controller.abort(aborted)
     await expect(first).rejects.toBe(aborted)
     expect(refreshCalls).toBe(1)
-    expect(refreshSignal).toBeUndefined()
+    expect(refreshSignal).toBeDefined()
+    expect(refreshSignal).not.toBe(controller.signal)
 
     releaseRefresh(
       Response.json({
