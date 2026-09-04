@@ -20,6 +20,8 @@ export function findActiveCue(
 
 export class SubtitleOverlayRenderer {
   private resizeObserver: ResizeObserver | null = null
+  private observedVideo: HTMLVideoElement | null = null
+  private observedOverlay: HTMLElement | null = null
 
   render(cues: readonly TranslatedCue[], currentTimeMs: number, pendingText?: string): void {
     const cue = findActiveCue(cues, currentTimeMs)
@@ -44,11 +46,12 @@ export class SubtitleOverlayRenderer {
   clear(): void {
     this.resizeObserver?.disconnect()
     this.resizeObserver = null
+    this.observedVideo = null
+    this.observedOverlay = null
     document.getElementById(OVERLAY_ID)?.remove()
   }
 
-  private syncFontSize(overlay: HTMLElement): void {
-    const video = document.querySelector<HTMLVideoElement>('video')
+  private syncFontSize(overlay: HTMLElement, video: HTMLVideoElement | null): void {
     overlay.style.fontSize = video?.offsetHeight
       ? `${Math.round(video.offsetHeight * 0.045)}px`
       : '18px'
@@ -56,7 +59,10 @@ export class SubtitleOverlayRenderer {
 
   private ensureOverlay(): HTMLElement {
     const existing = document.getElementById(OVERLAY_ID)
-    if (existing) return existing
+    if (existing) {
+      this.ensureResizeObservation(existing)
+      return existing
+    }
 
     const overlay = document.createElement('div')
     overlay.id = OVERLAY_ID
@@ -81,13 +87,25 @@ export class SubtitleOverlayRenderer {
     const player = document.querySelector<HTMLElement>('#movie_player') ?? document.body
     player.append(overlay)
 
-    this.syncFontSize(overlay)
+    this.ensureResizeObservation(overlay)
+
+    return overlay
+  }
+
+  private ensureResizeObservation(overlay: HTMLElement): void {
     const video = document.querySelector<HTMLVideoElement>('video')
+    if (this.observedVideo === video && this.observedOverlay === overlay) return
+
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = null
+    this.observedVideo = video
+    this.observedOverlay = overlay
+
     if (video) {
-      this.resizeObserver = new ResizeObserver(() => this.syncFontSize(overlay))
+      this.resizeObserver = new ResizeObserver(() => this.syncFontSize(overlay, video))
       this.resizeObserver.observe(video)
     }
 
-    return overlay
+    this.syncFontSize(overlay, video)
   }
 }

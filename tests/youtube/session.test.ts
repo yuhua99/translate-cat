@@ -34,12 +34,17 @@ describe('YoutubeSubtitleSession', () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({
-        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
-      }),
-    })
+    expect(
+      session.handleCapturedCaptions(
+        {
+          url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+          responseText: JSON.stringify({
+            events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
+          }),
+        },
+        undefined,
+      ),
+    ).toBe(true)
 
     await session.ensureTranslations(1000, true)
 
@@ -59,12 +64,15 @@ describe('YoutubeSubtitleSession', () => {
   test('returns pending segments only for in-flight windows', () => {
     const session = new YoutubeSubtitleSession(settings, createTranslatorClient())
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({
-        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
-      }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({
+          events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Hello' }] }],
+        }),
+      },
+      'video-1',
+    )
 
     session.windowsInFlight.add('0-30000')
     expect(session.pendingSegmentAt(1500)?.text).toBe('Hello')
@@ -88,10 +96,13 @@ describe('YoutubeSubtitleSession', () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
+      },
+      'video-1',
+    )
 
     await session.ensureTranslations(1000, false)
     expect(client.calls).toEqual([])
@@ -114,10 +125,13 @@ describe('YoutubeSubtitleSession', () => {
       lastError = error
     }
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
+      },
+      'video-1',
+    )
 
     await expect(session.ensureTranslations(1000, true)).resolves.toBeUndefined()
     expect(lastError).toBe('bad api key')
@@ -126,10 +140,13 @@ describe('YoutubeSubtitleSession', () => {
   test('resetForNavigation clears state and aborts in-flight windows', () => {
     const session = new YoutubeSubtitleSession(settings, createTranslatorClient())
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
+      },
+      'video-1',
+    )
     session.windowsInFlight.add('0-30000')
     session.windowsCompleted.add('0-30000')
     session.windowsFailed.set('0-30000', Date.now())
@@ -144,6 +161,54 @@ describe('YoutubeSubtitleSession', () => {
     expect(session.windowsFailed.size).toBe(0)
   })
 
+  test('rejects a stale capture without changing the active video session', async () => {
+    const client = createTranslatorClient()
+    const session = new YoutubeSubtitleSession(settings, client)
+
+    expect(
+      session.handleCapturedCaptions(
+        {
+          url: 'https://www.youtube.com/api/timedtext?v=video-b&lang=en',
+          responseText: JSON.stringify({
+            events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'B caption' }] }],
+          }),
+        },
+        'video-b',
+      ),
+    ).toBe(true)
+    await session.ensureTranslations(1000, true)
+    expect(session.translatedCues).toHaveLength(1)
+    expect(session.windowsCompleted.size).toBeGreaterThan(0)
+
+    const signalBefore = session.abortController.signal
+    const trackBefore = { ...session.track }
+    const segmentsBefore = [...session.segments]
+    const translatedCuesBefore = [...session.translatedCues]
+    const completedBefore = new Set(session.windowsCompleted)
+    const callsBefore = [...client.calls]
+
+    expect(
+      session.handleCapturedCaptions(
+        {
+          url: 'https://www.youtube.com/api/timedtext?v=video-a&lang=en',
+          responseText: JSON.stringify({
+            events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'A caption' }] }],
+          }),
+        },
+        'video-b',
+      ),
+    ).toBe(false)
+
+    expect(session.videoId).toBe('video-b')
+    expect(session.track).toEqual(trackBefore)
+    expect(session.segments).toEqual(segmentsBefore)
+    expect(session.translatedCues).toEqual(translatedCuesBefore)
+    expect(session.windowsCompleted).toEqual(completedBefore)
+    expect(session.abortController.signal).toBe(signalBefore)
+    expect(signalBefore.aborted).toBe(false)
+    expect(client.calls).toEqual(callsBefore)
+  })
+
   test('recapturing identical captions preserves translation state; changed input resets', async () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)
@@ -155,24 +220,27 @@ describe('YoutubeSubtitleSession', () => {
       }),
     }
 
-    session.handleCapturedCaptions(captured)
+    session.handleCapturedCaptions(captured, 'video-1')
     await session.ensureTranslations(1000, true)
 
     expect(session.windowsCompleted.size).toBeGreaterThan(0)
     const cuesBefore = session.translatedCues
     const completedBefore = new Set(session.windowsCompleted)
 
-    session.handleCapturedCaptions(captured)
+    expect(session.handleCapturedCaptions(captured, 'video-1')).toBe(true)
 
     expect(session.translatedCues).toBe(cuesBefore)
     expect(session.windowsCompleted).toEqual(completedBefore)
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({
-        events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Changed' }] }],
-      }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({
+          events: [{ tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'Changed' }] }],
+        }),
+      },
+      'video-1',
+    )
 
     expect(session.translatedCues).toEqual([])
     expect(session.windowsCompleted.size).toBe(0)
@@ -196,10 +264,13 @@ describe('YoutubeSubtitleSession', () => {
       },
     })
 
-    session.handleCapturedCaptions({
-      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
-      responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
-    })
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+        responseText: JSON.stringify({ events: [{ tStartMs: 1000, segs: [{ utf8: 'Hello' }] }] }),
+      },
+      'video-1',
+    )
 
     await session.ensureTranslations(1000, true)
     expect(attempts).toBe(1)
