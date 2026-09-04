@@ -1,9 +1,10 @@
 import type {
+  ContextCue,
   ProviderConfig,
   ProviderSecret,
   ProviderTestOutput,
   ProviderType,
-} from '../background/providers/types'
+} from './provider-types'
 import { getDefaultModel } from './providers'
 import type { ManualTranslationItem } from '../youtube/translation-validation'
 
@@ -42,11 +43,6 @@ export function assembleSettings(stored: Record<string, unknown>): ExtensionSett
     targetLanguage: (stored[TARGET_LANGUAGE_KEY] ?? DEFAULT_SETTINGS.targetLanguage) as string,
     provider: (stored[PROVIDER_KEY] ?? DEFAULT_SETTINGS.provider) as ProviderConfig,
   }
-}
-
-export interface ContextCue {
-  id: string
-  text: string
 }
 
 export interface SelectionTranslationRequest {

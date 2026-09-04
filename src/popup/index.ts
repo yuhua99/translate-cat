@@ -8,7 +8,7 @@ import {
   type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
-import type { ProviderConfig, ProviderSecret, ProviderType } from '../background/providers/types'
+import type { ProviderConfig, ProviderSecret, ProviderType } from '../shared/provider-types'
 import { localizePage } from '../shared/i18n'
 import {
   ALL_PROVIDER_TYPES,

@@ -1,5 +1,5 @@
 import type { CaptionSegment, CaptionTrack } from './caption-types'
-import type { ProviderConfig } from '../background/providers/types'
+import type { ProviderConfig } from '../shared/provider-types'
 import type { TranslateSubtitleResult, TranslationError } from '../shared/messages'
 
 export interface TranslatorClient {

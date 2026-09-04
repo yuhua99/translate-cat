@@ -1,4 +1,4 @@
-import type { ProviderConfig, ProviderType } from '../background/providers/types'
+import type { ProviderConfig, ProviderType } from './provider-types'
 
 interface ModelPreset {
   id: string

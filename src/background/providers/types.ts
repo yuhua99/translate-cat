@@ -1,18 +1,12 @@
-import type { CodexTokens } from '../../shared/codex-oauth'
 import type { ManualTranslationItem } from '../../youtube/translation-validation'
-import type { ContextCue } from '../../shared/messages'
+import type { ContextCue, ProviderTestOutput } from '../../shared/provider-types'
 
-export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini' | 'codex'
-
-export interface ProviderConfig {
-  type: ProviderType
-  model: string
-}
-
-export interface ProviderSecret {
-  apiKey?: string
-  codexAuth?: CodexTokens
-}
+export type {
+  ProviderType,
+  ProviderConfig,
+  ProviderSecret,
+  ProviderTestOutput,
+} from '../../shared/provider-types'
 
 export interface ManualTranslateInput {
   items: Array<{
@@ -42,10 +36,6 @@ export interface SelectionTranslateInput {
 export interface SelectionStreamOptions {
   signal?: AbortSignal
   onDelta: (text: string) => void
-}
-
-export interface ProviderTestOutput {
-  ok: true
 }
 
 export interface AiProvider {
