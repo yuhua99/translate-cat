@@ -13,7 +13,11 @@ describe('parseCapturedCaptions', () => {
       }),
     })
 
-    expect(result.track).toMatchObject({ videoId: 'video-1', mode: 'manual' })
+    expect(result.track).toMatchObject({
+      videoId: 'video-1',
+      languageCode: 'en',
+      mode: 'manual',
+    })
     expect(result.segments).toHaveLength(2)
     expect(result.segments[0]).toMatchObject({
       id: 'video-1:en:English:manual:0',
@@ -31,7 +35,26 @@ describe('parseCapturedCaptions', () => {
     })
 
     expect(result.track.mode).toBe('asr')
+    expect(result.track.languageCode).toBe('en')
     expect(result.track.trackId).toBe('en::asr')
+  })
+
+  test('preserves regional BCP 47 language codes', () => {
+    const result = parseCapturedCaptions({
+      url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=zh-TW',
+      responseText: '',
+    })
+
+    expect(result.track.languageCode).toBe('zh-TW')
+  })
+
+  test('falls back to unknown when the URL has no language code', () => {
+    const result = parseCapturedCaptions({
+      url: 'https://www.youtube.com/api/timedtext?v=video-1',
+      responseText: '',
+    })
+
+    expect(result.track.languageCode).toBe('unknown')
   })
 
   test('parses SRV-like XML and decodes entities', () => {

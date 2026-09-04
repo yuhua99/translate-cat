@@ -3,6 +3,7 @@ export type CaptionMode = 'manual' | 'asr'
 export interface CaptionTrack {
   videoId: string
   trackId: string
+  languageCode: string
   mode: CaptionMode
 }
 

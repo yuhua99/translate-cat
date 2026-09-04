@@ -5,9 +5,14 @@ const MAX_CHARS = 120
 const DURATION_BREAK_MS = 6_000
 const SENTENCE_END = /[.?!。！？]$/
 const ASCII_ALPHANUMERIC = /^[A-Za-z0-9]$/
+const UNICODE_LETTER_OR_NUMBER = /^[\p{L}\p{N}]$/u
+const NO_WORD_SPACE_LANGUAGES = new Set(['zh', 'yue', 'lzh', 'ja', 'th', 'lo', 'km', 'my', 'bo'])
 const FALLBACK_END_MS = 1_500
 
-export function mergeAsrSegments(segments: readonly CaptionSegment[]): CaptionSegment[] {
+export function mergeAsrSegments(
+  segments: readonly CaptionSegment[],
+  languageCode: string,
+): CaptionSegment[] {
   if (segments.length === 0) return []
 
   const groups: Array<CaptionSegment[]> = []
@@ -21,8 +26,10 @@ export function mergeAsrSegments(segments: readonly CaptionSegment[]): CaptionSe
       const previousEndMs = previous.endMs ?? previous.startMs
       const gap = segment.startMs - previousEndMs
       const duration = segment.startMs - first.startMs
-      const accumulatedText = mergeGroupText(current)
-      const separatorLength = needsAsciiAlphanumericSeparator(accumulatedText, segment.text) ? 1 : 0
+      const accumulatedText = mergeGroupText(current, languageCode)
+      const separatorLength = needsWordSeparator(accumulatedText, segment.text, languageCode)
+        ? 1
+        : 0
 
       if (
         gap > GAP_BREAK_MS ||
@@ -42,19 +49,22 @@ export function mergeAsrSegments(segments: readonly CaptionSegment[]): CaptionSe
     groups.push(current)
   }
 
-  return groups.map((group, index) => createMergedSegment(group, groups[index + 1], index))
+  return groups.map((group, index) =>
+    createMergedSegment(group, groups[index + 1], index, languageCode),
+  )
 }
 
 function createMergedSegment(
   group: readonly CaptionSegment[],
   nextGroup: readonly CaptionSegment[] | undefined,
   index: number,
+  languageCode: string,
 ): CaptionSegment {
   const first = group[0]
   const last = group[group.length - 1]
   if (!first || !last) throw new Error('Cannot merge empty ASR group')
 
-  const text = mergeGroupText(group).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
+  const text = mergeGroupText(group, languageCode).replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
   const sourceIds = group.map((s) => s.id).join(',')
   const nextStartMs = nextGroup?.[0]?.startMs
 
@@ -66,11 +76,11 @@ function createMergedSegment(
   }
 }
 
-function mergeGroupText(group: readonly CaptionSegment[]): string {
+function mergeGroupText(group: readonly CaptionSegment[], languageCode: string): string {
   let text = ''
 
   for (const segment of group) {
-    if (needsAsciiAlphanumericSeparator(text, segment.text)) {
+    if (needsWordSeparator(text, segment.text, languageCode)) {
       text += ' '
     }
 
@@ -80,15 +90,22 @@ function mergeGroupText(group: readonly CaptionSegment[]): string {
   return text
 }
 
-function needsAsciiAlphanumericSeparator(previousText: string, nextText: string): boolean {
-  const lastCharacter = previousText[previousText.length - 1]
-  const firstCharacter = nextText[0]
+function needsWordSeparator(previousText: string, nextText: string, languageCode: string): boolean {
+  const language = languageCode.split('-', 1)[0]?.toLowerCase()
+  if (language && NO_WORD_SPACE_LANGUAGES.has(language)) return false
+
+  const lastCharacter = Array.from(previousText).at(-1)
+  const firstCharacter = Array.from(nextText)[0]
+  const boundaryPattern =
+    language && language !== 'unknown' && language !== 'und'
+      ? UNICODE_LETTER_OR_NUMBER
+      : ASCII_ALPHANUMERIC
 
   return Boolean(
     lastCharacter &&
     firstCharacter &&
-    ASCII_ALPHANUMERIC.test(lastCharacter) &&
-    ASCII_ALPHANUMERIC.test(firstCharacter),
+    boundaryPattern.test(lastCharacter) &&
+    boundaryPattern.test(firstCharacter),
   )
 }
 

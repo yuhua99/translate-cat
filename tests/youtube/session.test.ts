@@ -10,13 +10,16 @@ const settings: ExtensionSettings = {
   provider: { type: 'openai', model: 'gpt-4o-mini' },
 }
 
-function createTranslatorClient(): TranslatorClient & { calls: string[][] } {
+function createTranslatorClient(): TranslatorClient & { calls: string[][]; texts: string[][] } {
   const calls: string[][] = []
+  const texts: string[][] = []
 
   return {
     calls,
+    texts,
     async translateSubtitle(input): Promise<TranslateSubtitleResult> {
       calls.push(input.segments.map((segment) => segment.id))
+      texts.push(input.segments.map((segment) => segment.text))
 
       return {
         ok: true,
@@ -59,6 +62,28 @@ describe('YoutubeSubtitleSession', () => {
         translatedText: 'zh:Hello',
       },
     ])
+  })
+
+  test('merges ASR captions using the captured language code', async () => {
+    const client = createTranslatorClient()
+    const session = new YoutubeSubtitleSession(settings, client)
+
+    session.handleCapturedCaptions(
+      {
+        url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=fr&kind=asr',
+        responseText: JSON.stringify({
+          events: [
+            { tStartMs: 1000, dDurationMs: 1000, segs: [{ utf8: 'café' }] },
+            { tStartMs: 2000, dDurationMs: 1000, segs: [{ utf8: 'latte' }] },
+          ],
+        }),
+      },
+      'video-1',
+    )
+
+    await session.ensureTranslations(1000, true)
+
+    expect(client.texts).toEqual([['café latte']])
   })
 
   test('returns pending segments only for in-flight windows', () => {

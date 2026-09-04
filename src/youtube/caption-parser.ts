@@ -46,6 +46,7 @@ function createTrack(url: string): CaptionTrack {
   return {
     videoId,
     trackId: `${languageCode}:${name}:${mode}`,
+    languageCode,
     mode,
   }
 }

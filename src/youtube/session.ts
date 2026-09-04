@@ -139,7 +139,7 @@ export class YoutubeSubtitleSession {
       const contextAfter = this.getContextCues(window, 'after', 2)
       if (this.track.mode === 'asr') {
         await this.translateManualSegments(
-          mergeAsrSegments(segments),
+          mergeAsrSegments(segments, this.track.languageCode),
           true,
           signal,
           contextBefore,

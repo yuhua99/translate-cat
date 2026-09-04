@@ -14,18 +14,18 @@ function seg(startMs: number, text: string, endMs?: number, id?: string): Captio
 
 describe('mergeAsrSegments', () => {
   test('returns empty for empty input', () => {
-    expect(mergeAsrSegments([])).toEqual([])
+    expect(mergeAsrSegments([], 'en')).toEqual([])
   })
 
   test('merges when gap from previous end is exactly 700ms', () => {
-    const merged = mergeAsrSegments([seg(0, 'Hello', 100), seg(800, 'world')])
+    const merged = mergeAsrSegments([seg(0, 'Hello', 100), seg(800, 'world')], 'en')
 
     expect(merged).toHaveLength(1)
     expect(merged[0]?.text).toBe('Hello world')
   })
 
   test('breaks when gap from previous end is 701ms', () => {
-    const merged = mergeAsrSegments([seg(0, 'First', 100), seg(801, 'Second')])
+    const merged = mergeAsrSegments([seg(0, 'First', 100), seg(801, 'Second')], 'en')
 
     expect(merged).toHaveLength(2)
     expect(merged[0]?.text).toBe('First')
@@ -33,22 +33,35 @@ describe('mergeAsrSegments', () => {
   })
 
   test('merges overlapping segments', () => {
-    const merged = mergeAsrSegments([seg(0, 'Hello', 1_000), seg(800, 'world')])
+    const merged = mergeAsrSegments([seg(0, 'Hello', 1_000), seg(800, 'world')], 'en')
 
     expect(merged).toHaveLength(1)
   })
 
   test('falls back to previous start when end is missing', () => {
-    const merged = mergeAsrSegments([seg(0, 'First'), seg(701, 'Second')])
+    const merged = mergeAsrSegments([seg(0, 'First'), seg(701, 'Second')], 'en')
 
     expect(merged).toHaveLength(2)
   })
 
-  test('joins text only between adjacent ASCII alphanumerics', () => {
-    expect(mergeAsrSegments([seg(0, 'Hello'), seg(200, 'world')])[0]?.text).toBe('Hello world')
-    expect(mergeAsrSegments([seg(0, '你好'), seg(200, '世界')])[0]?.text).toBe('你好世界')
-    expect(mergeAsrSegments([seg(0, 'Hello'), seg(200, ',')])[0]?.text).toBe('Hello,')
-    expect(mergeAsrSegments([seg(0, '你好'), seg(200, '！')])[0]?.text).toBe('你好！')
+  test.each([
+    ['en', 'Hello', 'world', 'Hello world'],
+    ['fr', 'café', 'latte', 'café latte'],
+    ['ru', 'Привет', 'мир', 'Привет мир'],
+    ['ar', 'مرحبا', 'بالعالم', 'مرحبا بالعالم'],
+    ['zh', '你好', '世界', '你好世界'],
+    ['zh-TW', '你好', '世界', '你好世界'],
+    ['ja', '日本', '語', '日本語'],
+    ['th', 'ภาษา', 'ไทย', 'ภาษาไทย'],
+    ['en', 'Hello', ',', 'Hello,'],
+    ['en', 'Hello ', 'world', 'Hello world'],
+    ['unknown', 'café', 'latte', 'cafélatte'],
+    ['und', 'Привет', 'мир', 'Приветмир'],
+    ['', 'Hello', 'world', 'Hello world'],
+  ])('joins segment boundaries for language %s', (languageCode, previous, next, expected) => {
+    expect(mergeAsrSegments([seg(0, previous), seg(200, next)], languageCode)[0]?.text).toBe(
+      expected,
+    )
   })
 
   test('breaks on accumulated chars > 120', () => {
@@ -59,7 +72,7 @@ describe('mergeAsrSegments', () => {
       t += 200
     }
 
-    const merged = mergeAsrSegments(words)
+    const merged = mergeAsrSegments(words, 'en')
     // 20 * 6 = 120 chars total, but accumulated before adding 20th: 19*6=114, +6=120 not > 120
     // Wait, 20*6 = 120. Need to check: the break is when accumulatedChars + segment.text.length > MAX_CHARS
     // accumulatedChars after 19 items = 114. Adding 20th: 114+6=120. 120 > 120 is false.
@@ -75,7 +88,7 @@ describe('mergeAsrSegments', () => {
       t += 200
     }
 
-    const mergedLong = mergeAsrSegments(longer)
+    const mergedLong = mergeAsrSegments(longer, 'en')
     expect(mergedLong).toHaveLength(2)
   })
 
@@ -85,14 +98,14 @@ describe('mergeAsrSegments', () => {
       input.push(seg(i * 200, 'abcde'))
     }
 
-    const merged = mergeAsrSegments(input)
+    const merged = mergeAsrSegments(input, 'en')
 
     expect(merged).toHaveLength(2)
     expect(merged[0]?.text).toHaveLength(119)
   })
 
   test('breaks on sentence-ending punctuation', () => {
-    const merged = mergeAsrSegments([seg(0, 'Hello.'), seg(200, 'World')])
+    const merged = mergeAsrSegments([seg(0, 'Hello.'), seg(200, 'World')], 'en')
 
     expect(merged).toHaveLength(2)
     expect(merged[0]?.text).toBe('Hello.')
@@ -100,7 +113,7 @@ describe('mergeAsrSegments', () => {
   })
 
   test('breaks on Chinese punctuation', () => {
-    const merged = mergeAsrSegments([seg(0, '你好！'), seg(200, '世界')])
+    const merged = mergeAsrSegments([seg(0, '你好！'), seg(200, '世界')], 'zh')
 
     expect(merged).toHaveLength(2)
   })
@@ -112,7 +125,7 @@ describe('mergeAsrSegments', () => {
       input.push(seg(i * 600, 'x'))
     }
 
-    const merged = mergeAsrSegments(input)
+    const merged = mergeAsrSegments(input, 'en')
 
     // group 1: 0..6000 (11 segments, duration 6000ms, not > 6000)
     // group 2: 6600.. (1 segment, because duration from 0 → 6600 > 6000)
@@ -122,7 +135,7 @@ describe('mergeAsrSegments', () => {
   })
 
   test('uses next group start as cue end', () => {
-    const merged = mergeAsrSegments([seg(0, 'First group.'), seg(400, 'Second group.')])
+    const merged = mergeAsrSegments([seg(0, 'First group.'), seg(400, 'Second group.')], 'en')
 
     expect(merged).toHaveLength(2)
     expect(merged[0]?.endMs).toBe(400)
@@ -139,7 +152,7 @@ describe('mergeAsrSegments', () => {
       seg(5200, 'Still close'),
     ]
 
-    const merged = mergeAsrSegments(input)
+    const merged = mergeAsrSegments(input, 'en')
 
     // Expected groups:
     // [0, "Short."] → punctuation break before "Okay" at 300
