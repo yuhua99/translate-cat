@@ -341,6 +341,102 @@ describe('CodexProvider', () => {
     expect(refreshCalls).toBe(1)
   })
 
+  test('keeps shared refresh running when one caller aborts', async () => {
+    const storage = createMemoryStorage()
+    const auth = createCodexAuth(Date.now())
+    await setProviderSecret(storage, 'codex', { codexAuth: auth })
+    let refreshCalls = 0
+    let responseCalls = 0
+    let refreshSignal: AbortSignal | null | undefined
+    let releaseRefresh: (response: Response) => void = () => {}
+    let refreshStarted: () => void = () => {}
+    const refreshResponse = new Promise<Response>((resolve) => {
+      releaseRefresh = resolve
+    })
+    const refreshStartedPromise = new Promise<void>((resolve) => {
+      refreshStarted = resolve
+    })
+    globalThis.fetch = async (input, init) => {
+      if (String(input) === TOKEN_URL) {
+        refreshCalls += 1
+        refreshSignal = init?.signal
+        refreshStarted()
+        return await refreshResponse
+      }
+      responseCalls += 1
+      return sse([
+        {
+          type: 'response.output_text.delta',
+          delta: '{"translations":[{"id":"a","text":"你好"}]}',
+        },
+        { type: 'response.completed' },
+      ])
+    }
+
+    const input = {
+      targetLanguage: 'zh-TW',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    }
+    const controller = new AbortController()
+    const aborted = new DOMException('aborted', 'AbortError')
+    const first = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      storage,
+    ).translateManual(input, controller.signal)
+    await refreshStartedPromise
+    const second = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      storage,
+    ).translateManual(input)
+
+    controller.abort(aborted)
+    await expect(first).rejects.toBe(aborted)
+    expect(refreshCalls).toBe(1)
+    expect(refreshSignal).toBeUndefined()
+
+    releaseRefresh(
+      Response.json({
+        access_token: createCodexAccessToken(),
+        refresh_token: 'new-refresh-token',
+        expires_in: 3600,
+      }),
+    )
+
+    await expect(second).resolves.toEqual({ translations: [{ id: 'a', text: '你好' }] })
+    expect(responseCalls).toBe(1)
+    await expect(getProviderSecret(storage, 'codex')).resolves.toMatchObject({
+      codexAuth: { refreshToken: 'new-refresh-token' },
+    })
+  })
+
+  test('does not refresh for a pre-aborted caller', async () => {
+    const auth = createCodexAuth(Date.now())
+    const controller = new AbortController()
+    const aborted = new DOMException('aborted', 'AbortError')
+    controller.abort(aborted)
+    let fetchCalls = 0
+    globalThis.fetch = async () => {
+      fetchCalls += 1
+      return new Response('unexpected request')
+    }
+
+    const provider = new CodexProvider(
+      { type: 'codex', model: 'gpt-5.4-mini' },
+      { codexAuth: auth },
+      createMemoryStorage(),
+    )
+
+    await expect(
+      provider.translateManual(
+        { targetLanguage: 'zh-TW', items: [{ id: 'a', text: 'Hello', startMs: 0 }] },
+        controller.signal,
+      ),
+    ).rejects.toBe(aborted)
+    expect(fetchCalls).toBe(0)
+  })
+
   test('converts refresh HTTP failures to ProviderHttpError', async () => {
     const auth = createCodexAuth(Date.now())
     globalThis.fetch = async () => new Response('invalid grant', { status: 400 })

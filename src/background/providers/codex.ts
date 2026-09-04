@@ -36,6 +36,35 @@ const REFRESH_BUFFER_MS = 5 * 60 * 1_000
 
 let refreshInFlight: Promise<CodexTokens> | undefined
 
+async function waitWithSignal<T>(start: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (signal?.aborted) {
+    throw signal.reason ?? new DOMException('The operation was aborted.', 'AbortError')
+  }
+
+  const promise = start()
+  if (!signal) return await promise
+
+  return await new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      cleanup()
+      reject(signal.reason ?? new DOMException('The operation was aborted.', 'AbortError'))
+    }
+    const cleanup = () => signal.removeEventListener('abort', onAbort)
+
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(
+      (value) => {
+        cleanup()
+        resolve(value)
+      },
+      (error) => {
+        cleanup()
+        reject(error)
+      },
+    )
+  })
+}
+
 type SseEvent = {
   type?: unknown
   delta?: unknown
@@ -179,7 +208,10 @@ export class CodexProvider implements AiProvider {
   }
 
   private async refreshAuth(signal?: AbortSignal): Promise<void> {
-    this.auth = await refreshStoredAuth(this.secretStorage, this.requireAuth(), signal)
+    this.auth = await waitWithSignal(
+      () => refreshStoredAuth(this.secretStorage, this.requireAuth()),
+      signal,
+    )
   }
 
   private requireAuth(): CodexTokens {
@@ -193,10 +225,9 @@ export class CodexProvider implements AiProvider {
 async function refreshStoredAuth(
   storage: ProviderStorageArea,
   current: CodexTokens,
-  signal?: AbortSignal,
 ): Promise<CodexTokens> {
   if (!refreshInFlight) {
-    const refresh = refreshAndPersistAuth(storage, current, signal)
+    const refresh = refreshAndPersistAuth(storage, current)
     refreshInFlight = refresh
     try {
       return await refresh
@@ -211,7 +242,6 @@ async function refreshStoredAuth(
 async function refreshAndPersistAuth(
   storage: ProviderStorageArea,
   current: CodexTokens,
-  signal?: AbortSignal,
 ): Promise<CodexTokens> {
   const storedSecret = await getProviderSecret(storage, 'codex')
   const storedAuth = storedSecret.codexAuth
@@ -226,9 +256,8 @@ async function refreshAndPersistAuth(
   const authToRefresh = storedAuth ?? current
   let refreshed: CodexTokens
   try {
-    refreshed = await refreshCodexToken(authToRefresh.refreshToken, signal)
+    refreshed = await refreshCodexToken(authToRefresh.refreshToken)
   } catch (error) {
-    if (signal?.aborted) throw error
     if (error instanceof CodexOAuthHttpError) {
       throw new ProviderHttpError(error.message, error.status)
     }
