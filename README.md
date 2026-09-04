@@ -46,3 +46,9 @@ API keys and ChatGPT tokens stay local, never synced.
 | --------------- | ------------------------------- |
 | `bun run dev`   | Watch rebuild                   |
 | `bun run check` | typecheck + lint + test + build |
+
+Enable the pre-commit hook (runs `bun run check`):
+
+```sh
+git config core.hooksPath .githooks
+```

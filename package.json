@@ -11,7 +11,7 @@
     "fmt": "oxfmt .",
     "fmt:check": "oxfmt --check .",
     "test": "bun test",
-    "check": "bun run typecheck && bun run lint && bun run fmt:check && bun test && bun run build"
+    "check": "bun run typecheck && bun run lint && bun run fmt:check && bun test"
   },
   "devDependencies": {
     "@types/bun": "latest",

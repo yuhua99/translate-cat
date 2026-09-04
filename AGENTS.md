@@ -12,4 +12,4 @@
 
 ## Verification
 
-Run `bun run check` before handoff.
+`bun run check` will be automatically executed via commit hook.
