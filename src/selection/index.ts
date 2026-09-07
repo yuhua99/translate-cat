@@ -350,10 +350,10 @@ function appendToBubble(content: string, first: boolean): void {
   if (!bubbleBody || !bubbleText) return
   if (first) {
     bubbleBody.className = 'tc-body'
-    bubbleText.data = content
+    bubbleText.data = content.replace(/\\n/g, '\n')
     return
   }
-  bubbleText.data += content
+  bubbleText.data = (bubbleText.data + content).replace(/\\n/g, '\n')
 }
 
 function attachDrag(handle: HTMLElement): void {
