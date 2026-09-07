@@ -90,12 +90,12 @@ export type ExtensionMessage =
   | { type: 'GET_SETTINGS' }
   | { type: 'SET_SUBTITLE_ENABLED'; enabled: boolean }
   | {
-      type: 'SET_APP_SETTINGS'
+      type: 'SET_PREFERENCES'
       selectionEnabled: boolean
       targetLanguage: string
-      provider: ProviderConfig
       darkMode: boolean
     }
+  | { type: 'SET_PROVIDER_CONFIG'; config: ProviderConfig }
   | { type: 'SET_PROVIDER_SECRET'; providerType: ProviderType; secret: ProviderSecret }
   | { type: 'GET_PROVIDER_AUTH_STATUS'; providerType: ProviderType }
   | { type: 'TEST_PROVIDER'; config: ProviderConfig; secret: ProviderSecret }

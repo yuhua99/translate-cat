@@ -8,6 +8,7 @@ import {
   TARGET_LANGUAGE_KEY,
   type ExtensionSettings,
 } from '../shared/messages'
+import type { ProviderConfig } from '../shared/provider-types'
 
 interface SettingsStorageArea {
   get(keys: string | string[]): Promise<Record<string, unknown>>
@@ -26,17 +27,20 @@ export async function setSubtitleEnabled(
   await storage.set({ [SUBTITLE_ENABLED_KEY]: enabled })
 }
 
-export async function setAppSettings(
+export async function setPreferences(
   storage: SettingsStorageArea,
-  settings: Pick<
-    ExtensionSettings,
-    'selectionEnabled' | 'targetLanguage' | 'provider' | 'darkMode'
-  >,
+  preferences: Pick<ExtensionSettings, 'selectionEnabled' | 'targetLanguage' | 'darkMode'>,
 ): Promise<void> {
   await storage.set({
-    [SELECTION_ENABLED_KEY]: settings.selectionEnabled,
-    [TARGET_LANGUAGE_KEY]: settings.targetLanguage,
-    [PROVIDER_KEY]: settings.provider,
-    [DARK_MODE_KEY]: settings.darkMode,
+    [SELECTION_ENABLED_KEY]: preferences.selectionEnabled,
+    [TARGET_LANGUAGE_KEY]: preferences.targetLanguage,
+    [DARK_MODE_KEY]: preferences.darkMode,
   })
+}
+
+export async function setProviderConfig(
+  storage: SettingsStorageArea,
+  config: ProviderConfig,
+): Promise<void> {
+  await storage.set({ [PROVIDER_KEY]: config })
 }

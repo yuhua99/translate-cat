@@ -7,7 +7,12 @@ import {
   type SelectionTranslationErrorMessages,
 } from './providers/subtitle-translation'
 import { registerSelectionTranslationPort } from './selection-stream'
-import { getSettings, setAppSettings, setSubtitleEnabled } from './settings-storage'
+import {
+  getSettings,
+  setPreferences,
+  setProviderConfig,
+  setSubtitleEnabled,
+} from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -65,8 +70,14 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
         return
       }
 
-      if (message.type === 'SET_APP_SETTINGS') {
-        await setAppSettings(chrome.storage.sync, message)
+      if (message.type === 'SET_PREFERENCES') {
+        await setPreferences(chrome.storage.sync, message)
+        sendResponse({ ok: true } satisfies ExtensionResponse)
+        return
+      }
+
+      if (message.type === 'SET_PROVIDER_CONFIG') {
+        await setProviderConfig(chrome.storage.sync, message.config)
         sendResponse({ ok: true } satisfies ExtensionResponse)
         return
       }

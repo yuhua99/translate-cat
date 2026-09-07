@@ -3,9 +3,9 @@ import {
   type ExtensionMessage,
   type ExtensionResponse,
   type ExtensionSettings,
+  type MessageResponse,
   type ProviderAuthStatusResponse,
   type ProviderTestResponse,
-  type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
 import type { ProviderConfig, ProviderSecret, ProviderType } from '../shared/provider-types'
@@ -58,6 +58,7 @@ const status = requiredElement<HTMLParagraphElement>('#status')
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
 let savedApiKey = ''
 let codexSignedIn = false
+let saveBusy = false
 let statusClearTimeout: number | undefined
 
 function applyTheme(darkMode: boolean): void {
@@ -86,8 +87,11 @@ function setStatus(text: string, kind: 'success' | 'error' | 'neutral' = 'neutra
       status.textContent = ''
       status.classList.remove('success', 'error', 'lcd-inverted')
       statusClearTimeout = undefined
+      updateSaveRequired()
     }, 5000)
   }
+
+  updateSaveRequired()
 }
 
 function getProviderType(): ProviderType {
@@ -205,15 +209,25 @@ function renderTargetLanguages(selected: string): void {
   targetLanguageInput.replaceChildren(...options)
 }
 
-function updateSaveRequired(): void {
-  const dirty =
+function preferencesAreDirty(): boolean {
+  return (
     targetLanguageInput.value !== currentSettings.targetLanguage ||
     selectionEnabledInput.checked !== currentSettings.selectionEnabled ||
-    darkModeInput.checked !== currentSettings.darkMode ||
+    darkModeInput.checked !== currentSettings.darkMode
+  )
+}
+
+function providerIsDirty(): boolean {
+  return (
     getProviderType() !== currentSettings.provider.type ||
     getSelectedModel() !== currentSettings.provider.model ||
     (!isOAuthProvider() && providerApiKeyInput.value.trim() !== savedApiKey)
-  saveButton.hidden = !dirty
+  )
+}
+
+function updateSaveRequired(): void {
+  saveButton.hidden =
+    saveBusy || status.textContent !== '' || !(preferencesAreDirty() || providerIsDirty())
 }
 
 function handleFormChange(): void {
@@ -230,7 +244,7 @@ function renderSettings(settings: ExtensionSettings): void {
   renderProviderTypes(settings.provider.type)
   renderModelPresets(settings.provider.type, settings.provider.model)
   syncProviderAuth()
-  updateSaveRequired() // called once, after model is known
+  updateSaveRequired()
 }
 
 async function loadSettings(): Promise<void> {
@@ -244,81 +258,89 @@ async function loadSettings(): Promise<void> {
   renderSettings(response.settings)
 }
 
-function getFormSettings(providerType: ProviderType): ExtensionSettings {
-  return {
-    ...currentSettings,
-    targetLanguage: targetLanguageInput.value,
-    selectionEnabled: selectionEnabledInput.checked,
-    darkMode: darkModeInput.checked,
-    provider: { type: providerType, model: getSelectedModel() },
-  }
-}
-
-async function persistProviderSettings(settings: ExtensionSettings): Promise<boolean> {
-  const response = await sendMessage<MessageResponse>({
-    type: 'SET_APP_SETTINGS',
-    selectionEnabled: settings.selectionEnabled,
-    darkMode: settings.darkMode,
-    targetLanguage: settings.targetLanguage,
-    provider: settings.provider,
-  })
-  if (!response.ok) {
-    setStatus(response.error, 'error')
-    return false
-  }
-
-  return true
-}
-
 async function saveSettings(): Promise<void> {
-  if (!validateCustomModel()) return
+  if (saveBusy) return
 
-  saveButton.hidden = true
-  setStatus(chrome.i18n.getMessage('popupTestingProvider'))
-
-  // snapshot form values so in-flight edits don't leak into saves
+  const savePreferences = preferencesAreDirty()
+  const saveProvider = providerIsDirty()
+  const providerIsValid = !saveProvider || validateCustomModel()
+  const preferences = {
+    selectionEnabled: selectionEnabledInput.checked,
+    targetLanguage: targetLanguageInput.value,
+    darkMode: darkModeInput.checked,
+  }
   const providerType = getProviderType()
-  const model = getSelectedModel()
+  const config: ProviderConfig = { type: providerType, model: getSelectedModel() }
   const isOAuth = isOAuthProvider(providerType)
   const apiKey = isOAuth ? '' : providerApiKeyInput.value.trim()
-  const config: ProviderConfig = { type: providerType, model }
   const secret: ProviderSecret = isOAuth ? {} : { apiKey: apiKey || undefined }
-  const settings = getFormSettings(providerType)
+
+  if (!savePreferences && !saveProvider) return
+
+  setStatus('')
+  saveBusy = true
+  updateSaveRequired()
 
   try {
-    const testResponse = await sendMessage<ProviderTestResponse>({
-      type: 'TEST_PROVIDER',
-      config,
-      secret,
-    })
-
-    if (!testResponse.ok) {
-      setStatus(testResponse.error, 'error')
-      return
-    }
-
-    if (!(await persistProviderSettings(settings))) return
-
-    if (!isOAuth && secret.apiKey) {
-      const secretResponse = await sendMessage({
-        type: 'SET_PROVIDER_SECRET',
-        providerType,
-        secret,
+    if (savePreferences) {
+      const response = await sendMessage<MessageResponse>({
+        type: 'SET_PREFERENCES',
+        ...preferences,
       })
-      if (!secretResponse.ok) {
-        setStatus(secretResponse.error, 'error')
+      if (!response.ok) {
+        setStatus(response.error, 'error')
         return
       }
+
+      currentSettings = { ...currentSettings, ...preferences }
+      applyTheme(preferences.darkMode)
     }
 
-    currentSettings = settings
-    savedApiKey = apiKey
-    applyTheme(settings.darkMode)
-    setStatus(chrome.i18n.getMessage('popupSaved'), 'success')
-    updateSaveRequired()
+    if (saveProvider) {
+      if (!providerIsValid) return
+
+      setStatus(chrome.i18n.getMessage('popupTestingProvider'))
+      const testResponse = await sendMessage<ProviderTestResponse>({
+        type: 'TEST_PROVIDER',
+        config,
+        secret,
+      })
+      if (!testResponse.ok) {
+        setStatus(testResponse.error, 'error')
+        return
+      }
+
+      const configResponse = await sendMessage<MessageResponse>({
+        type: 'SET_PROVIDER_CONFIG',
+        config,
+      })
+      if (!configResponse.ok) {
+        setStatus(configResponse.error, 'error')
+        return
+      }
+
+      if (!isOAuth && secret.apiKey) {
+        const secretResponse = await sendMessage<MessageResponse>({
+          type: 'SET_PROVIDER_SECRET',
+          providerType,
+          secret,
+        })
+        if (!secretResponse.ok) {
+          setStatus(secretResponse.error, 'error')
+          return
+        }
+      }
+
+      currentSettings = { ...currentSettings, provider: config }
+      savedApiKey = apiKey
+    }
+
+    if (preferencesAreDirty() || providerIsDirty()) setStatus('')
+    else setStatus(chrome.i18n.getMessage('popupSaved'), 'success')
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), 'error')
   } finally {
+    saveBusy = false
     updateSaveRequired()
   }
 }
@@ -355,13 +377,19 @@ async function signInWithChatGPT(): Promise<void> {
   if (!validateCustomModel()) return
 
   codexSignInButton.disabled = true
+  const config: ProviderConfig = { type: getProviderType(), model: getSelectedModel() }
 
   try {
-    const providerType = getProviderType()
-    const settings = getFormSettings(providerType)
+    const response = await sendMessage<MessageResponse>({
+      type: 'SET_PROVIDER_CONFIG',
+      config,
+    })
+    if (!response.ok) {
+      setStatus(response.error, 'error')
+      return
+    }
 
-    if (!(await persistProviderSettings(settings))) return
-    currentSettings = settings
+    currentSettings = { ...currentSettings, provider: config }
     savedApiKey = ''
     updateSaveRequired()
     await chrome.tabs.create({ url: chrome.runtime.getURL('codex-auth.html') })
@@ -376,7 +404,7 @@ async function signOutOfChatGPT(): Promise<void> {
   codexSignInButton.disabled = true
 
   try {
-    const response = await sendMessage({
+    const response = await sendMessage<MessageResponse>({
       type: 'SET_PROVIDER_SECRET',
       providerType: 'codex',
       secret: {},

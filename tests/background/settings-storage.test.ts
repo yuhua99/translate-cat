@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
   getSettings,
-  setAppSettings,
+  setPreferences,
+  setProviderConfig,
   setSubtitleEnabled,
 } from '../../src/background/settings-storage'
 import {
@@ -16,14 +17,17 @@ import {
 
 function createMemoryStorage(initial: Record<string, unknown> = {}) {
   const data = { ...initial }
+  const writes: Record<string, unknown>[] = []
 
   return {
     data,
+    writes,
     async get(keys: string | string[]): Promise<Record<string, unknown>> {
       const requestedKeys = Array.isArray(keys) ? keys : [keys]
       return Object.fromEntries(requestedKeys.map((key) => [key, data[key]]))
     },
     async set(items: Record<string, unknown>): Promise<void> {
+      writes.push(items)
       Object.assign(data, items)
     },
   }
@@ -75,22 +79,30 @@ describe('settings storage', () => {
     expect(storage.data).toEqual({ [SUBTITLE_ENABLED_KEY]: true })
   })
 
-  test('writes app settings without subtitle enabled', async () => {
+  test('writes only preferences keys', async () => {
     const storage = createMemoryStorage()
-    const provider = { type: 'opencodeZen' as const, model: 'mimo-v2.5' }
 
-    await setAppSettings(storage, {
+    await setPreferences(storage, {
       selectionEnabled: false,
       targetLanguage: 'ja',
-      provider,
       darkMode: true,
     })
 
-    expect(storage.data).toEqual({
-      [SELECTION_ENABLED_KEY]: false,
-      [TARGET_LANGUAGE_KEY]: 'ja',
-      [PROVIDER_KEY]: provider,
-      [DARK_MODE_KEY]: true,
-    })
+    expect(storage.writes).toEqual([
+      {
+        [SELECTION_ENABLED_KEY]: false,
+        [TARGET_LANGUAGE_KEY]: 'ja',
+        [DARK_MODE_KEY]: true,
+      },
+    ])
+  })
+
+  test('writes only provider config key', async () => {
+    const storage = createMemoryStorage()
+    const provider = { type: 'opencodeZen' as const, model: 'mimo-v2.5' }
+
+    await setProviderConfig(storage, provider)
+
+    expect(storage.writes).toEqual([{ [PROVIDER_KEY]: provider }])
   })
 })
