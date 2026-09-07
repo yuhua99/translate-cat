@@ -20,6 +20,7 @@
 | Anthropic                           | apikey       |
 | Google Gemini                       | apikey       |
 | [opencode Zen](https://opencode.ai) | apikey       |
+| OpenRouter                          | apikey       |
 | ChatGPT subscription                | subscription |
 
 ## Install

@@ -46,6 +46,7 @@ choose. Your use of these services is governed by their own privacy policies:
 - Anthropic — https://www.anthropic.com/legal/privacy
 - Google Gemini — https://generativelanguage.googleapis.com
 - opencode Zen — https://opencode.ai
+- OpenRouter — https://openrouter.ai/api/v1
 
 ## Data retention
 

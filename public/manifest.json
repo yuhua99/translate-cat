@@ -51,6 +51,7 @@
     "https://chatgpt.com/*",
     "https://api.anthropic.com/*",
     "https://opencode.ai/*",
+    "https://openrouter.ai/*",
     "https://generativelanguage.googleapis.com/*"
   ]
 }

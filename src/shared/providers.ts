@@ -66,6 +66,16 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
       { id: 'gemini-3.8-flash' },
     ],
   },
+  openrouter: {
+    label: 'OpenRouter',
+    defaultModel: 'z-ai/glm-5.3-flash',
+    models: [
+      { id: 'tencent/hy4-preview', disableThinking: true },
+      { id: 'openai/gpt-5.6-luna', disableThinking: true },
+      { id: 'z-ai/glm-5.3-flash', disableThinking: true },
+      { id: 'deepseek/deepseek-v4-flash-0731', disableThinking: true },
+    ],
+  },
 }
 
 export const ALL_PROVIDER_TYPES = Object.keys(PROVIDER_REGISTRY) as ProviderType[]

@@ -1,6 +1,12 @@
 import type { CodexTokens } from './codex-oauth'
 
-export type ProviderType = 'openai' | 'anthropic' | 'opencodeZen' | 'gemini' | 'codex'
+export type ProviderType =
+  | 'openai'
+  | 'anthropic'
+  | 'opencodeZen'
+  | 'gemini'
+  | 'codex'
+  | 'openrouter'
 
 export interface ProviderConfig {
   type: ProviderType

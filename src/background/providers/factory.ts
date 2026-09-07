@@ -3,6 +3,7 @@ import { CodexProvider } from './codex'
 import { GeminiProvider } from './gemini'
 import { OpenAiProvider } from './openai'
 import { OpencodeZenProvider } from './opencode-zen'
+import { OpenRouterProvider } from './openrouter'
 import type { ProviderStorageArea } from './storage'
 import type { AiProvider, ProviderConfig, ProviderRequestContext, ProviderSecret } from './types'
 
@@ -26,6 +27,10 @@ export function createProvider(
 
   if (config.type === 'opencodeZen') {
     return new OpencodeZenProvider(config, secret, requestContext)
+  }
+
+  if (config.type === 'openrouter') {
+    return new OpenRouterProvider(config, secret)
   }
 
   if (config.type === 'gemini') {

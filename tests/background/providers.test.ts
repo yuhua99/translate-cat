@@ -11,6 +11,7 @@ import { parseJsonObject } from '../../src/background/providers/json'
 import { TOKEN_URL } from '../../src/shared/codex-oauth'
 import { OpenAiProvider } from '../../src/background/providers/openai'
 import { OpencodeZenProvider } from '../../src/background/providers/opencode-zen'
+import { OpenRouterProvider } from '../../src/background/providers/openrouter'
 import {
   getProviderSecret,
   setProviderSecret,
@@ -711,6 +712,74 @@ describe('OpencodeZenProvider', () => {
     )
 
     expect(receivedSignal).toBe(controller.signal)
+  })
+})
+
+describe('OpenRouterProvider', () => {
+  test('sends chat completion request with OpenRouter headers', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
+      })
+    }
+
+    const provider = new OpenRouterProvider(
+      { type: 'openrouter', model: 'deepseek/deepseek-v4-flash-0731' },
+      { apiKey: 'key' },
+    )
+    const result = await provider.translateManual({
+      targetLanguage: 'Traditional Chinese',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    expect(request?.url).toBe('https://openrouter.ai/api/v1/chat/completions')
+    expect(request?.headers.get('authorization')).toBe('Bearer key')
+    expect(request?.headers.get('x-openrouter-title')).toBe('translate-cat')
+    expect(await request?.json()).toMatchObject({ reasoning: { effort: 'none' } })
+    expect(result).toEqual({
+      translations: [{ id: 'a', text: '你好' }],
+    })
+  })
+
+  test('omits reasoning settings for custom models', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({
+        choices: [{ message: { content: '{"translations":[{"id":"a","text":"你好"}]}' } }],
+      })
+    }
+
+    const provider = new OpenRouterProvider(
+      { type: 'openrouter', model: 'some-vendor/custom-model' },
+      { apiKey: 'key' },
+    )
+    await provider.translateManual({
+      targetLanguage: 'Traditional Chinese',
+      items: [{ id: 'a', text: 'Hello', startMs: 0 }],
+    })
+
+    const requestBody = await request?.json()
+    expect(requestBody).not.toHaveProperty('reasoning')
+    expect(requestBody).not.toHaveProperty('reasoning_effort')
+  })
+
+  test('tests connection against OpenRouter endpoint', async () => {
+    let request: Request | undefined
+    globalThis.fetch = async (input, init) => {
+      request = new Request(input, init)
+      return Response.json({ choices: [{ message: { content: 'OK' } }] })
+    }
+
+    const provider = new OpenRouterProvider(
+      { type: 'openrouter', model: 'deepseek/deepseek-v4-flash-0731' },
+      { apiKey: 'key' },
+    )
+
+    await expect(provider.testConnection()).resolves.toEqual({ ok: true })
+    expect(request?.url).toBe('https://openrouter.ai/api/v1/chat/completions')
   })
 })
 
