@@ -1,8 +1,8 @@
 body {
   min-width: 420px;
   margin: 0;
-  color: var(--lcd-bezel-ink);
-  background: var(--lcd-bezel);
+  color: var(--lcd-frame-text);
+  background: var(--lcd-frame);
   font-family: var(--lcd-font);
 }
 
@@ -35,7 +35,7 @@ select {
   align-items: center;
   min-height: 32px;
   padding: 0 1px calc(var(--lcd-space) + 1px);
-  border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
+  border-bottom: var(--lcd-hairline) solid var(--lcd-border);
   font: 700 var(--lcd-size-ui)/1 var(--lcd-font);
   letter-spacing: 0.08em;
 }
@@ -46,6 +46,10 @@ select {
   height: 24px;
   margin-right: 7px;
   shape-rendering: crispEdges;
+}
+
+:root[data-theme='dark'] .popup__logo {
+  content: url('icons/icon-dark.svg');
 }
 
 .popup__settings {
@@ -64,7 +68,7 @@ select {
 input,
 select {
   min-width: 0;
-  color: var(--lcd-ink);
+  color: var(--lcd-text);
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -77,12 +81,17 @@ input[type='text'],
 input[type='password'] {
   flex: 1;
   padding: 0 0 2px calc(var(--lcd-space) * 2);
-  border-bottom: var(--lcd-hairline) dotted var(--lcd-ink);
+  border-bottom: var(--lcd-hairline) dotted var(--lcd-border);
 }
 
 input::placeholder {
-  color: var(--lcd-ink);
+  color: var(--lcd-text);
   opacity: 0.8;
+}
+
+:root[data-theme='dark'] input::placeholder {
+  color: var(--lcd-text-soft);
+  opacity: 1;
 }
 
 select,
@@ -101,8 +110,8 @@ select {
 }
 
 select:hover {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
+  color: var(--lcd-surface);
+  background: var(--lcd-text);
 }
 
 select > button {
@@ -128,9 +137,9 @@ select::picker-icon {
   max-block-size: calc(6 * 28px + var(--lcd-space) * 2 + var(--lcd-hairline) * 2);
   overflow-y: auto;
   padding: var(--lcd-space);
-  color: var(--lcd-ink);
-  background: var(--lcd-screen-raised);
-  border: var(--lcd-hairline) solid var(--lcd-ink);
+  color: var(--lcd-text);
+  background: var(--lcd-surface-raised);
+  border: var(--lcd-hairline) solid var(--lcd-border);
   border-radius: 0;
 }
 
@@ -145,17 +154,17 @@ select::picker-icon {
 }
 
 .popup .lcd-row > select::picker(select)::-webkit-scrollbar-track {
-  background: var(--lcd-screen);
+  background: var(--lcd-surface);
 }
 
 .popup .lcd-row > select::picker(select)::-webkit-scrollbar-thumb {
-  background: var(--lcd-ink-soft);
+  background: var(--lcd-text-soft);
   border: 0;
   border-radius: 0;
 }
 
 .popup .lcd-row > select::picker(select)::-webkit-scrollbar-thumb:hover {
-  background: var(--lcd-ink);
+  background: var(--lcd-text);
 }
 
 option {
@@ -168,8 +177,8 @@ option {
 
 option:hover,
 option:focus-visible {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
+  color: var(--lcd-surface);
+  background: var(--lcd-text);
 }
 
 option::checkmark {
@@ -181,7 +190,8 @@ option::checkmark {
   position: relative;
 }
 
-#selection-enabled {
+#selection-enabled,
+#dark-mode {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -208,26 +218,29 @@ option::checkmark {
   content: 'OFF';
 }
 
-#selection-enabled:checked + .popup__toggle-chip .popup__toggle-label::before {
+#selection-enabled:checked + .popup__toggle-chip .popup__toggle-label::before,
+#dark-mode:checked + .popup__toggle-chip .popup__toggle-label::before {
   content: 'ON';
 }
 
-#selection-enabled:focus-visible + .popup__toggle-chip {
-  outline: var(--lcd-hairline) solid var(--lcd-ink);
+#selection-enabled:focus-visible + .popup__toggle-chip,
+#dark-mode:focus-visible + .popup__toggle-chip {
+  outline: var(--lcd-hairline) solid var(--lcd-text);
   outline-offset: 1px;
 }
 
 .popup__toggle:hover .popup__toggle-chip {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
+  color: var(--lcd-surface);
+  background: var(--lcd-text);
 }
 
 .popup__toggle:active .popup__toggle-chip {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink-soft);
+  color: var(--lcd-surface);
+  background: var(--lcd-text-soft);
 }
 
-#selection-enabled:disabled + .popup__toggle-chip {
+#selection-enabled:disabled + .popup__toggle-chip,
+#dark-mode:disabled + .popup__toggle-chip {
   cursor: default;
   opacity: 0.55;
 }
@@ -293,8 +306,8 @@ option::checkmark {
 }
 
 ::selection {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
+  color: var(--lcd-surface);
+  background: var(--lcd-text);
 }
 
 ::-webkit-scrollbar {
@@ -302,10 +315,10 @@ option::checkmark {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--lcd-screen);
+  background: var(--lcd-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--lcd-ink);
-  border: 2px solid var(--lcd-screen);
+  background: var(--lcd-text);
+  border: 2px solid var(--lcd-surface);
 }

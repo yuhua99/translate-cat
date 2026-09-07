@@ -40,6 +40,7 @@ function requiredElement<T extends Element>(selector: string): T {
 
 const targetLanguageInput = requiredElement<HTMLSelectElement>('#target-language')
 const selectionEnabledInput = requiredElement<HTMLInputElement>('#selection-enabled')
+const darkModeInput = requiredElement<HTMLInputElement>('#dark-mode')
 const providerTypeInput = requiredElement<HTMLSelectElement>('#provider-type')
 const providerModelPresetInput = requiredElement<HTMLSelectElement>('#provider-model-preset')
 const customModelRow = requiredElement<HTMLElement>('#custom-model-row')
@@ -58,6 +59,10 @@ let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
 let savedApiKey = ''
 let codexSignedIn = false
 let statusClearTimeout: number | undefined
+
+function applyTheme(darkMode: boolean): void {
+  document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'
+}
 
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
@@ -204,6 +209,7 @@ function updateSaveRequired(): void {
   const dirty =
     targetLanguageInput.value !== currentSettings.targetLanguage ||
     selectionEnabledInput.checked !== currentSettings.selectionEnabled ||
+    darkModeInput.checked !== currentSettings.darkMode ||
     getProviderType() !== currentSettings.provider.type ||
     getSelectedModel() !== currentSettings.provider.model ||
     (!isOAuthProvider() && providerApiKeyInput.value.trim() !== savedApiKey)
@@ -217,8 +223,10 @@ function handleFormChange(): void {
 
 function renderSettings(settings: ExtensionSettings): void {
   currentSettings = settings
+  applyTheme(settings.darkMode)
   renderTargetLanguages(settings.targetLanguage)
   selectionEnabledInput.checked = settings.selectionEnabled
+  darkModeInput.checked = settings.darkMode
   renderProviderTypes(settings.provider.type)
   renderModelPresets(settings.provider.type, settings.provider.model)
   syncProviderAuth()
@@ -241,6 +249,7 @@ function getFormSettings(providerType: ProviderType): ExtensionSettings {
     ...currentSettings,
     targetLanguage: targetLanguageInput.value,
     selectionEnabled: selectionEnabledInput.checked,
+    darkMode: darkModeInput.checked,
     provider: { type: providerType, model: getSelectedModel() },
   }
 }
@@ -249,6 +258,7 @@ async function persistProviderSettings(settings: ExtensionSettings): Promise<boo
   const response = await sendMessage<MessageResponse>({
     type: 'SET_APP_SETTINGS',
     selectionEnabled: settings.selectionEnabled,
+    darkMode: settings.darkMode,
     targetLanguage: settings.targetLanguage,
     provider: settings.provider,
   })
@@ -303,6 +313,7 @@ async function saveSettings(): Promise<void> {
 
     currentSettings = settings
     savedApiKey = apiKey
+    applyTheme(settings.darkMode)
     setStatus(chrome.i18n.getMessage('popupSaved'), 'success')
     updateSaveRequired()
   } catch (error) {
@@ -334,6 +345,7 @@ providerApiKeyInput.addEventListener('keydown', (event) => {
 })
 
 selectionEnabledInput.addEventListener('change', handleFormChange)
+darkModeInput.addEventListener('change', handleFormChange)
 
 saveButton.addEventListener('click', () => {
   void saveSettings()

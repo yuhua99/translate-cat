@@ -13,7 +13,7 @@ const STYLE_ID = 'translate-cat-selection-style'
 const MAX_LEN = 2000
 const Z = 2147483647
 
-// Mirror public/lcd.css tokens used by this injected host-page stylesheet.
+// Mirror public/lcd.css physical tokens, then map them to injected UI roles.
 const STYLE = `
 #${ROOT_ID},
 #${ROOT_ID} * {
@@ -30,13 +30,28 @@ const STYLE = `
   --lcd-size-ui: 12px;
   --lcd-size-meta: 11px;
   --lcd-size-read: 13px;
+  --tc-surface: var(--lcd-screen);
+  --tc-text: var(--lcd-ink);
+  --tc-border: var(--lcd-ink);
+  --tc-grid: var(--lcd-grid);
+  --tc-inverted-surface: var(--lcd-ink);
+  --tc-inverted-text: var(--lcd-screen);
   position: fixed;
   z-index: ${Z};
-  color: var(--lcd-ink);
+  color: var(--tc-text);
   font-family: var(--lcd-font);
   font-size: var(--lcd-size-read);
   font-weight: 700;
   line-height: 1.45;
+}
+#${ROOT_ID}[data-theme='dark'] {
+  --tc-surface: var(--lcd-ink);
+  --tc-text: var(--lcd-screen);
+  --tc-border: #4a5344;
+  --tc-grid: rgb(168 179 154 / 3%);
+  /* Match --lcd-surface-raised in public/lcd.css for large highlighted areas. */
+  --tc-inverted-surface: #2a3226;
+  --tc-inverted-text: var(--lcd-screen);
 }
 #${ROOT_ID} .tc-trigger {
   all: unset;
@@ -70,10 +85,10 @@ const STYLE = `
 #${ROOT_ID} .tc-bubble {
   max-width: 360px;
   overflow: hidden;
-  color: var(--lcd-ink);
-  background-color: var(--lcd-screen);
-  background-image: repeating-linear-gradient(90deg, var(--lcd-grid) 0 1px, transparent 1px 4px);
-  border: var(--lcd-hairline) solid var(--lcd-ink);
+  color: var(--tc-text);
+  background-color: var(--tc-surface);
+  background-image: repeating-linear-gradient(90deg, var(--tc-grid) 0 1px, transparent 1px 4px);
+  border: var(--lcd-hairline) solid var(--tc-border);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
 }
 #${ROOT_ID} .tc-titlebar {
@@ -81,7 +96,7 @@ const STYLE = `
   align-items: center;
   min-height: 24px;
   padding: 0 calc(var(--lcd-space) * 1.5);
-  border-bottom: var(--lcd-hairline) solid var(--lcd-ink);
+  border-bottom: var(--lcd-hairline) solid var(--tc-border);
   cursor: move;
   font: 700 var(--lcd-size-ui)/1 var(--lcd-font);
   letter-spacing: 0.08em;
@@ -89,8 +104,8 @@ const STYLE = `
   user-select: none;
 }
 #${ROOT_ID} .tc-titlebar:hover {
-  color: var(--lcd-screen);
-  background-color: var(--lcd-ink);
+  color: var(--tc-inverted-text);
+  background-color: var(--tc-inverted-surface);
 }
 #${ROOT_ID} .tc-titlebar__logo {
   display: block;
@@ -103,20 +118,23 @@ const STYLE = `
   pointer-events: none;
   shape-rendering: crispEdges;
 }
+#${ROOT_ID} .tc-titlebar .tc-logo__ink {
+  fill: var(--tc-text);
+}
 #${ROOT_ID} .tc-titlebar .tc-logo__face {
-  fill: var(--lcd-screen);
+  fill: var(--tc-surface);
 }
 #${ROOT_ID} .tc-titlebar:hover .tc-logo__ink {
-  fill: var(--lcd-screen);
+  fill: var(--tc-inverted-text);
 }
 #${ROOT_ID} .tc-titlebar:hover .tc-logo__face {
-  fill: var(--lcd-ink);
+  fill: var(--tc-inverted-surface);
 }
 #${ROOT_ID} .tc-body {
   max-height: 40vh;
   padding: calc(var(--lcd-space) * 2) calc(var(--lcd-space) * 3);
   overflow: auto;
-  color: var(--lcd-ink);
+  color: var(--tc-text);
   font: 700 var(--lcd-size-read)/1.45 var(--lcd-font);
   white-space: pre-wrap;
   word-break: break-word;
@@ -126,11 +144,11 @@ const STYLE = `
   width: 8px;
 }
 #${ROOT_ID} .tc-body::-webkit-scrollbar-track {
-  background: var(--lcd-screen);
+  background: var(--tc-surface);
 }
 #${ROOT_ID} .tc-body::-webkit-scrollbar-thumb {
-  background: var(--lcd-ink);
-  border: 2px solid var(--lcd-screen);
+  background: var(--tc-text);
+  border: 2px solid var(--tc-surface);
 }
 #${ROOT_ID} .tc-body.tc-loading::after {
   display: inline-block;
@@ -139,16 +157,20 @@ const STYLE = `
   animation: tc-cursor-blink 1s steps(1, end) infinite;
 }
 #${ROOT_ID} .tc-body.tc-error {
-  color: var(--lcd-screen);
-  background: var(--lcd-ink);
+  color: var(--tc-inverted-text);
+  background: var(--tc-inverted-surface);
   font-size: var(--lcd-size-meta);
   line-height: 1.25;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 #${ROOT_ID} .tc-body.tc-error::selection {
-  color: var(--lcd-ink);
-  background: var(--lcd-screen);
+  color: var(--tc-inverted-surface);
+  background: var(--tc-inverted-text);
+}
+#${ROOT_ID}[data-theme='dark'] .tc-body::selection {
+  color: var(--tc-surface);
+  background: var(--tc-text);
 }
 @keyframes tc-cursor-blink {
   50% { opacity: 0; }
@@ -187,6 +209,7 @@ let bubbleText: Text | null = null
 let showingIcon = false
 let enabled = false
 let targetLanguage = DEFAULT_SETTINGS.targetLanguage
+let darkMode = DEFAULT_SETTINGS.darkMode
 let activeTranslation: SelectionTranslationHandle | null = null
 let contextMenuSelection: { x: number; y: number; text: string; oversized: boolean } | null = null
 
@@ -239,6 +262,7 @@ function makeRoot(x: number, y: number): HTMLDivElement {
   ensureStyle()
   const el = document.createElement('div')
   el.id = ROOT_ID
+  el.dataset.theme = darkMode ? 'dark' : 'light'
   el.style.left = `${x}px`
   el.style.top = `${y}px`
   return el
@@ -478,6 +502,7 @@ function subscribeToSettings(): void {
   watchSettings((settings) => {
     enabled = settings.selectionEnabled
     targetLanguage = settings.targetLanguage
+    darkMode = settings.darkMode
     if (!enabled) dismiss()
   })
 }
@@ -495,6 +520,7 @@ async function main(): Promise<void> {
   const settings = await loadSettings()
   enabled = settings.selectionEnabled
   targetLanguage = settings.targetLanguage
+  darkMode = settings.darkMode
   subscribeToSettings()
   document.addEventListener('mouseup', onMouseUp, true)
   document.addEventListener('mousedown', onMouseDown, true)

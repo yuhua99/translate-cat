@@ -5,6 +5,7 @@ import {
   setSubtitleEnabled,
 } from '../../src/background/settings-storage'
 import {
+  DARK_MODE_KEY,
   DEFAULT_SETTINGS,
   PROVIDER_KEY,
   SELECTION_ENABLED_KEY,
@@ -40,6 +41,7 @@ describe('settings storage', () => {
       [SELECTION_ENABLED_KEY]: false,
       [TARGET_LANGUAGE_KEY]: 'ja',
       [PROVIDER_KEY]: provider,
+      [DARK_MODE_KEY]: true,
     }
 
     for (const missingKey of SETTINGS_STORAGE_KEYS) {
@@ -60,6 +62,7 @@ describe('settings storage', () => {
             ? DEFAULT_SETTINGS.targetLanguage
             : stored[TARGET_LANGUAGE_KEY],
         provider: missingKey === PROVIDER_KEY ? DEFAULT_SETTINGS.provider : stored[PROVIDER_KEY],
+        darkMode: missingKey === DARK_MODE_KEY ? DEFAULT_SETTINGS.darkMode : stored[DARK_MODE_KEY],
       })
     }
   })
@@ -80,12 +83,14 @@ describe('settings storage', () => {
       selectionEnabled: false,
       targetLanguage: 'ja',
       provider,
+      darkMode: true,
     })
 
     expect(storage.data).toEqual({
       [SELECTION_ENABLED_KEY]: false,
       [TARGET_LANGUAGE_KEY]: 'ja',
       [PROVIDER_KEY]: provider,
+      [DARK_MODE_KEY]: true,
     })
   })
 })

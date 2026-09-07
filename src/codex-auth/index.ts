@@ -5,7 +5,12 @@ import {
   requestDeviceCode,
 } from '../shared/codex-oauth'
 import { localizePage } from '../shared/i18n'
-import type { ExtensionMessage, MessageResponse } from '../shared/messages'
+import type {
+  ExtensionMessage,
+  ExtensionResponse,
+  MessageResponse,
+  SettingsResponse,
+} from '../shared/messages'
 
 function requiredElement<T extends Element>(selector: string): T {
   const element = document.querySelector<T>(selector)
@@ -17,12 +22,26 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-function sendMessage(message: ExtensionMessage): Promise<MessageResponse> {
+function sendMessage<TResponse extends ExtensionResponse = MessageResponse>(
+  message: ExtensionMessage,
+): Promise<TResponse> {
   return chrome.runtime.sendMessage(message)
+}
+
+async function loadTheme(): Promise<void> {
+  try {
+    const response = await sendMessage<SettingsResponse>({ type: 'GET_SETTINGS' })
+    if (response.ok) {
+      document.documentElement.dataset.theme = response.settings.darkMode ? 'dark' : 'light'
+    }
+  } catch {
+    // Theme loading must not delay or interrupt OAuth.
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   localizePage()
+  void loadTheme()
 
   const loading = requiredElement<HTMLElement>('#auth-loading')
   const code = requiredElement<HTMLElement>('#auth-code')

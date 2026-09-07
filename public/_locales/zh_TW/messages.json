@@ -13,6 +13,7 @@
   "popupCustomModelLabel": { "message": "自訂模型" },
   "popupModelId": { "message": "模型 ID" },
   "popupSelection": { "message": "選取內容" },
+  "popupDarkMode": { "message": "深色模式" },
   "popupLanguage": { "message": "語言" },
   "popupSave": { "message": "儲存" },
   "signOut": { "message": "登出" },

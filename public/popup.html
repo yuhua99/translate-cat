@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -77,6 +77,13 @@
             <select id="target-language">
               <button><selectedcontent></selectedcontent></button>
             </select>
+          </label>
+          <label class="lcd-row popup__toggle">
+            <span class="lcd-row__label" data-i18n="popupDarkMode">DARK MODE</span>
+            <input id="dark-mode" type="checkbox" />
+            <span class="lcd-chip popup__toggle-chip" aria-hidden="true">
+              <span class="popup__toggle-label"></span>
+            </span>
           </label>
           <div class="popup__save-row lcd-row">
             <button class="lcd-chip" id="save" type="button" data-i18n="popupSave">Save</button>

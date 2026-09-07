@@ -12,11 +12,13 @@ export const SUBTITLE_ENABLED_KEY = 'subtitleEnabled'
 export const SELECTION_ENABLED_KEY = 'selectionEnabled'
 export const TARGET_LANGUAGE_KEY = 'targetLanguage'
 export const PROVIDER_KEY = 'provider'
+export const DARK_MODE_KEY = 'darkMode'
 export const SETTINGS_STORAGE_KEYS = [
   SUBTITLE_ENABLED_KEY,
   SELECTION_ENABLED_KEY,
   TARGET_LANGUAGE_KEY,
   PROVIDER_KEY,
+  DARK_MODE_KEY,
 ]
 export const PROVIDER_SECRETS_KEY = 'providerSecrets'
 export const SELECTION_TRANSLATION_PORT = 'translate-cat-selection-translation'
@@ -26,6 +28,7 @@ export interface ExtensionSettings {
   selectionEnabled: boolean
   targetLanguage: string
   provider: ProviderConfig
+  darkMode: boolean
 }
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
@@ -33,6 +36,7 @@ export const DEFAULT_SETTINGS: ExtensionSettings = {
   selectionEnabled: true,
   targetLanguage: 'zh-TW',
   provider: { type: 'codex', model: getDefaultModel('codex') },
+  darkMode: false,
 }
 
 export function assembleSettings(stored: Record<string, unknown>): ExtensionSettings {
@@ -42,6 +46,7 @@ export function assembleSettings(stored: Record<string, unknown>): ExtensionSett
       DEFAULT_SETTINGS.selectionEnabled) as boolean,
     targetLanguage: (stored[TARGET_LANGUAGE_KEY] ?? DEFAULT_SETTINGS.targetLanguage) as string,
     provider: (stored[PROVIDER_KEY] ?? DEFAULT_SETTINGS.provider) as ProviderConfig,
+    darkMode: (stored[DARK_MODE_KEY] ?? DEFAULT_SETTINGS.darkMode) as boolean,
   }
 }
 
@@ -89,6 +94,7 @@ export type ExtensionMessage =
       selectionEnabled: boolean
       targetLanguage: string
       provider: ProviderConfig
+      darkMode: boolean
     }
   | { type: 'SET_PROVIDER_SECRET'; providerType: ProviderType; secret: ProviderSecret }
   | { type: 'GET_PROVIDER_AUTH_STATUS'; providerType: ProviderType }

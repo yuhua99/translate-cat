@@ -1,5 +1,6 @@
 import {
   assembleSettings,
+  DARK_MODE_KEY,
   PROVIDER_KEY,
   SELECTION_ENABLED_KEY,
   SETTINGS_STORAGE_KEYS,
@@ -27,11 +28,15 @@ export async function setSubtitleEnabled(
 
 export async function setAppSettings(
   storage: SettingsStorageArea,
-  settings: Pick<ExtensionSettings, 'selectionEnabled' | 'targetLanguage' | 'provider'>,
+  settings: Pick<
+    ExtensionSettings,
+    'selectionEnabled' | 'targetLanguage' | 'provider' | 'darkMode'
+  >,
 ): Promise<void> {
   await storage.set({
     [SELECTION_ENABLED_KEY]: settings.selectionEnabled,
     [TARGET_LANGUAGE_KEY]: settings.targetLanguage,
     [PROVIDER_KEY]: settings.provider,
+    [DARK_MODE_KEY]: settings.darkMode,
   })
 }

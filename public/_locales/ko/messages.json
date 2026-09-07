@@ -13,6 +13,7 @@
   "popupCustomModelLabel": { "message": "사용자 지정 모델" },
   "popupModelId": { "message": "모델 ID" },
   "popupSelection": { "message": "선택" },
+  "popupDarkMode": { "message": "다크 모드" },
   "popupLanguage": { "message": "언어" },
   "popupSave": { "message": "저장" },
   "signOut": { "message": "로그아웃" },

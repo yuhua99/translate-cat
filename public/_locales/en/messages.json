@@ -15,6 +15,7 @@
   "popupCustomModelLabel": { "message": "CUSTOM MODEL" },
   "popupModelId": { "message": "MODEL ID" },
   "popupSelection": { "message": "SELECTION" },
+  "popupDarkMode": { "message": "DARK MODE" },
   "popupLanguage": { "message": "LANGUAGE" },
   "popupSave": { "message": "Save" },
   "signOut": { "message": "Sign out" },

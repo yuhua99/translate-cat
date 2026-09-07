@@ -15,6 +15,7 @@
   "popupCustomModelLabel": { "message": "カスタムモデル" },
   "popupModelId": { "message": "モデル ID" },
   "popupSelection": { "message": "選択" },
+  "popupDarkMode": { "message": "ダークモード" },
   "popupLanguage": { "message": "言語" },
   "popupSave": { "message": "保存" },
   "signOut": { "message": "サインアウト" },
