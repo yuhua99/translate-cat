@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-09-08
+
+### Added
+
+- OpenRouter as a translation provider.
+- Dark mode for the popup and sign-in page, following the system theme.
+- Support for `/live/` watch pages and videos with empty video ids.
+
+### Changed
+
+- Separated preference and provider saves, so each can be saved independently.
+
+### Fixed
+
+- Rendered escaped newlines as line breaks in the translation bubble.
+- Merged ASR segments by source language and actual gap.
+- Rejected captions without an active video.
+- Bounded the shared Codex refresh lifetime and isolated its cancellation.
+- Guarded caption and overlay lifecycles.
+- Serialized provider secret writes.
+- Added OpenCode session headers.
+
 ## [0.3.2] - 2026-09-03
 
 ### Added
