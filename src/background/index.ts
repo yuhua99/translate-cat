@@ -99,9 +99,10 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
         const secret = message.secret.apiKey
           ? message.secret
           : await getProviderSecret(chrome.storage.local, message.config.type)
+        const sessionId = sender.documentId ?? crypto.randomUUID()
         sendResponse(
           (await createProvider(message.config, secret, chrome.storage.local, {
-            sessionId: sender.documentId,
+            sessionId,
           }).testConnection()) satisfies ExtensionResponse,
         )
         return

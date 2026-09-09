@@ -65,7 +65,7 @@ export class OpenAiProvider implements AiProvider {
 
   async testConnection(): Promise<ProviderTestOutput> {
     const response = await this.complete('Reply exactly: OK', {
-      maxTokens: 40,
+      maxTokens: 512,
       json: false,
       system: 'Reply exactly: OK',
     })

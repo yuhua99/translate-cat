@@ -554,7 +554,7 @@ describe('OpenAiProvider', () => {
     )
 
     await expect(provider.testConnection()).resolves.toEqual({ ok: true })
-    expect(requestBody?.max_completion_tokens).toBe(40)
+    expect(requestBody?.max_completion_tokens).toBe(512)
     expect(requestBody).not.toHaveProperty('response_format')
     expect(requestBody).not.toHaveProperty('reasoning_effort')
   })
