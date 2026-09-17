@@ -9,17 +9,27 @@ import {
 import { createSelectionStreamingClient, type SelectionTranslationHandle } from './streaming-client'
 
 const ROOT_ID = 'translate-cat-selection-root'
-const STYLE_ID = 'translate-cat-selection-style'
 const MAX_LEN = 2000
 const Z = 2147483647
 
 // Mirror public/lcd.css physical tokens, then map them to injected UI roles.
 const STYLE = `
+/* Important shadow-host rules take precedence over page author styles. */
+:host {
+  all: initial !important;
+  display: contents !important;
+  direction: ltr !important;
+}
+:host::before,
+:host::after {
+  content: none !important;
+}
 #${ROOT_ID},
 #${ROOT_ID} * {
   box-sizing: border-box;
 }
 #${ROOT_ID} {
+  unicode-bidi: isolate;
   --lcd-screen: #a8b39a;
   --lcd-ink: #1e241c;
   --lcd-bezel-ink: #d1d5ca;
@@ -179,14 +189,6 @@ const STYLE = `
 
 const PIXEL_LOGO = `<svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><g class="tc-logo__ink"><rect x="1" width="14" height="1"/><rect y="1" width="16" height="14"/><rect x="1" y="15" width="14" height="1"/></g><g class="tc-logo__face"><rect x="3" y="6" width="2" height="2"/><rect x="11" y="6" width="2" height="2"/><rect x="2" y="8" width="12" height="7"/><rect x="1" y="11" width="14" height="3"/></g><g class="tc-logo__ink"><rect x="3" y="10" width="3" height="1"/><rect x="10" y="10" width="3" height="1"/><rect x="4" y="11" width="2" height="1"/><rect x="10" y="11" width="2" height="1"/><rect x="7" y="12" width="2" height="1"/><rect x="1" y="12" width="2" height="1"/><rect x="13" y="12" width="2" height="1"/><rect x="1" y="14" width="3" height="1"/><rect x="12" y="14" width="3" height="1"/></g></svg>`
 
-function ensureStyle(): void {
-  if (document.getElementById(STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = STYLE
-  ;(document.head ?? document.documentElement).appendChild(style)
-}
-
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
 ): Promise<TResponse> {
@@ -203,6 +205,7 @@ async function loadSettings(): Promise<ExtensionSettings> {
   }
 }
 
+let host: HTMLDivElement | null = null
 let root: HTMLDivElement | null = null
 let bubbleBody: HTMLDivElement | null = null
 let bubbleText: Text | null = null
@@ -214,9 +217,8 @@ let activeTranslation: SelectionTranslationHandle | null = null
 let contextMenuSelection: { x: number; y: number; text: string; oversized: boolean } | null = null
 
 function isInsideRoot(node: Node | null): boolean {
-  if (!node) return false
-  const el = node.nodeType === Node.ELEMENT_NODE ? (node as Element) : node.parentElement
-  return !!el && !!el.closest(`#${ROOT_ID}`)
+  // Document listeners see the host as target; selections can expose shadow nodes.
+  return !!node && (node === host || !!root?.contains(node))
 }
 
 function cancelActiveTranslation(): void {
@@ -227,7 +229,8 @@ function cancelActiveTranslation(): void {
 
 function dismiss(): void {
   cancelActiveTranslation()
-  root?.remove()
+  host?.remove()
+  host = null
   root = null
   bubbleBody = null
   bubbleText = null
@@ -259,12 +262,18 @@ function clampPosition(
 }
 
 function makeRoot(x: number, y: number): HTMLDivElement {
-  ensureStyle()
+  host = document.createElement('div')
+  host.id = 'translate-cat-selection-host'
+  const shadow = host.attachShadow({ mode: 'open' })
+  const style = document.createElement('style')
+  style.textContent = STYLE
   const el = document.createElement('div')
   el.id = ROOT_ID
   el.dataset.theme = darkMode ? 'dark' : 'light'
   el.style.left = `${x}px`
   el.style.top = `${y}px`
+  shadow.append(style, el)
+  document.body.appendChild(host)
   return el
 }
 
@@ -288,7 +297,6 @@ function renderIcon(x: number, y: number, text: string): void {
     translate(x, y, text)
   })
   root.appendChild(btn)
-  document.body.appendChild(root)
 }
 
 function renderBubble(
@@ -319,7 +327,6 @@ function renderBubble(
   bubble.appendChild(body)
   root.appendChild(bubble)
   bubbleBody = body
-  document.body.appendChild(root)
   const bubbleRect = bubble.getBoundingClientRect()
   // Streaming content grows to max-width after measuring, so clamp against the cap.
   const effectiveWidth = isLoading ? BUBBLE_MAX_WIDTH : bubbleRect.width
