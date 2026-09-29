@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-09-29
+
+### Added
+
+- GPT-6 Luna for OpenAI, ChatGPT subscription, and opencode Zen.
+- Claude Opus 5.5 and Claude Sonnet 5.5 for Anthropic.
+
+### Changed
+
+- Changed the default OpenAI and ChatGPT subscription model to GPT-6 Luna.
+
+### Removed
+
+- Claude Opus 4.6 and Claude Sonnet 4.6 from the Anthropic model list.
+- GPT-5.6 Luna from the opencode Zen model list.
+
+### Fixed
+
+- Isolated the selection popup styles in a shadow root, so page styles no longer affect it.
+
 ## [0.3.4] - 2026-09-09
 
 ### Fixed
