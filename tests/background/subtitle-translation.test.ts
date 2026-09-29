@@ -89,7 +89,7 @@ describe('translateSubtitleMessage', () => {
     await translateSubtitleMessage(
       {
         type: 'TRANSLATE_SUBTITLE_AI_PROVIDER',
-        provider: { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+        provider: { type: 'opencodeZen', model: 'gpt-6-luna' },
         videoId: 'video-1',
         trackId: 'en::manual',
         targetLanguage: 'zh-TW',

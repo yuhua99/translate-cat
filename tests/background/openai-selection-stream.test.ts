@@ -70,7 +70,7 @@ describe('OpenAiProvider translateSelection', () => {
     }
 
     await new OpencodeZenProvider(
-      { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+      { type: 'opencodeZen', model: 'gpt-6-luna' },
       { apiKey: 'key' },
       { sessionId: 'selection-session-123' },
     ).translateSelection({ text: 'Hello', targetLanguage: 'zh-TW' }, { onDelta: () => undefined })

@@ -64,7 +64,7 @@ async function testProvider(sender: { documentId?: string }): Promise<Request> {
     messageListener(
       {
         type: 'TEST_PROVIDER',
-        config: { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+        config: { type: 'opencodeZen', model: 'gpt-6-luna' },
         secret: { apiKey: 'key' },
       },
       sender,

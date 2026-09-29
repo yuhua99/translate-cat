@@ -621,7 +621,7 @@ describe('OpencodeZenProvider', () => {
     }
 
     const provider = new OpencodeZenProvider(
-      { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+      { type: 'opencodeZen', model: 'gpt-6-luna' },
       { apiKey: 'key' },
       { sessionId: 'manual-session-123' },
     )
@@ -643,7 +643,7 @@ describe('OpencodeZenProvider', () => {
     }
 
     const provider = new OpencodeZenProvider(
-      { type: 'opencodeZen', model: 'gpt-5.6-luna' },
+      { type: 'opencodeZen', model: 'gpt-6-luna' },
       { apiKey: 'key' },
       { sessionId: 'connection-session-123' },
     )

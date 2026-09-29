@@ -14,7 +14,7 @@ interface ProviderEntry {
 const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
   openai: {
     label: 'OpenAI',
-    defaultModel: 'gpt-5.6-luna',
+    defaultModel: 'gpt-6-luna',
     models: [
       { id: 'gpt-4o-mini' },
       { id: 'gpt-5-mini' },
@@ -22,27 +22,29 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
       { id: 'gpt-5.4-nano', disableThinking: true },
       { id: 'gpt-5.6-terra', disableThinking: true },
       { id: 'gpt-5.6-luna', disableThinking: true },
+      { id: 'gpt-6-luna', disableThinking: true },
     ],
   },
   codex: {
     label: 'ChatGPT subscription',
-    defaultModel: 'gpt-5.6-luna',
+    defaultModel: 'gpt-6-luna',
     models: [
       { id: 'gpt-5.4-mini', disableThinking: true },
       { id: 'gpt-5.5', disableThinking: true },
       { id: 'gpt-5.6-luna', disableThinking: true },
       { id: 'gpt-5.6-terra', disableThinking: true },
+      { id: 'gpt-6-luna', disableThinking: true },
     ],
   },
   anthropic: {
     label: 'Anthropic Claude',
     defaultModel: 'claude-haiku-4-5',
     models: [
+      { id: 'claude-opus-5.5', disableThinking: true },
       { id: 'claude-opus-5', disableThinking: true },
       { id: 'claude-opus-4-8', disableThinking: true },
-      { id: 'claude-opus-4-6', disableThinking: true },
+      { id: 'claude-sonnet-5.5', disableThinking: true },
       { id: 'claude-sonnet-5', disableThinking: true },
-      { id: 'claude-sonnet-4-6', disableThinking: true },
       { id: 'claude-haiku-4-5', disableThinking: true },
     ],
   },
@@ -52,7 +54,7 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
     models: [
       { id: 'mimo-v2.5', disableThinking: true },
       { id: 'deepseek-v4-flash', disableThinking: true },
-      { id: 'gpt-5.6-luna', disableThinking: true },
+      { id: 'gpt-6-luna', disableThinking: true },
     ],
   },
   gemini: {
