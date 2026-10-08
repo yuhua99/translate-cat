@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2026-10-08
+
+### Added
+
+- Claude Haiku 5.5 for Anthropic.
+- Feedback link in the popup header.
+- Optional uninstall survey, described in the privacy policy.
+
+### Changed
+
+- Changed the default Anthropic model to Claude Haiku 5.5.
+
+### Fixed
+
+- Corrected the Claude Opus 5.5 and Claude Sonnet 5.5 model IDs.
+- Stopped sending `temperature` to Anthropic and raised the connection test token limit.
+- Sent `reasoning_effort` instead of `thinking` to disable thinking on opencode Zen.
+- Kept thinking enabled for models that do not support disabling it: Claude Opus 5.5, Claude Sonnet 5.5, and the OpenRouter GLM 5.3 Flash and DeepSeek V4 Flash models.
+
 ## [0.3.5] - 2026-09-29
 
 ### Added
