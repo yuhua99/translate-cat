@@ -16,6 +16,7 @@
   "popupDarkMode": { "message": "深色模式" },
   "popupLanguage": { "message": "语言" },
   "popupSave": { "message": "保存" },
+  "popupFeedback": { "message": "反馈" },
   "signOut": { "message": "退出登录" },
   "popupSignedIn": { "message": "已登录" },
   "popupCustomModelOption": { "message": "自定义模型" },

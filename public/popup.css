@@ -48,6 +48,10 @@ select {
   shape-rendering: crispEdges;
 }
 
+.popup__feedback {
+  margin-left: auto;
+}
+
 :root[data-theme='dark'] .popup__logo {
   content: url('icons/icon-dark.svg');
 }

@@ -16,6 +16,7 @@
   "popupDarkMode": { "message": "다크 모드" },
   "popupLanguage": { "message": "언어" },
   "popupSave": { "message": "저장" },
+  "popupFeedback": { "message": "피드백" },
   "signOut": { "message": "로그아웃" },
   "popupSignedIn": { "message": "로그인됨" },
   "popupCustomModelOption": { "message": "사용자 지정 모델" },

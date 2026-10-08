@@ -55,6 +55,8 @@ const codexSignOutLabel = requiredElement<HTMLSpanElement>(
 )
 const saveButton = requiredElement<HTMLButtonElement>('#save')
 const status = requiredElement<HTMLParagraphElement>('#status')
+requiredElement<HTMLAnchorElement>('#feedback').href =
+  `https://tally.so/r/jaOA04?v=${chrome.runtime.getManifest().version}&lang=${chrome.i18n.getUILanguage()}`
 let currentSettings: ExtensionSettings = DEFAULT_SETTINGS
 let savedApiKey = ''
 let codexSignedIn = false

@@ -129,6 +129,7 @@
   font: 700 var(--lcd-size-ui)/1.15 var(--lcd-font);
   letter-spacing: 0.04em;
   text-align: center;
+  text-decoration: none;
   text-transform: uppercase;
   white-space: nowrap;
 }

@@ -18,6 +18,7 @@
   "popupDarkMode": { "message": "ダークモード" },
   "popupLanguage": { "message": "言語" },
   "popupSave": { "message": "保存" },
+  "popupFeedback": { "message": "フィードバック" },
   "signOut": { "message": "サインアウト" },
   "popupSignedIn": { "message": "サインイン済み" },
   "popupCustomModelOption": { "message": "カスタムモデル" },

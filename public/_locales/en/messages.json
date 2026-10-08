@@ -18,6 +18,7 @@
   "popupDarkMode": { "message": "DARK MODE" },
   "popupLanguage": { "message": "LANGUAGE" },
   "popupSave": { "message": "Save" },
+  "popupFeedback": { "message": "Feedback" },
   "signOut": { "message": "Sign out" },
   "popupSignedIn": { "message": "Signed in" },
   "popupCustomModelOption": { "message": "Custom model" },
