@@ -15,6 +15,10 @@ import {
 } from './settings-storage'
 import type { ExtensionMessage, ExtensionResponse } from '../shared/messages'
 
+void chrome.runtime.setUninstallURL(
+  `https://tally.so/r/rjxMdo?v=${chrome.runtime.getManifest().version}&lang=${chrome.i18n.getUILanguage()}`,
+)
+
 chrome.runtime.onInstalled.addListener(() => {
   console.info('translate cat installed')
   chrome.contextMenus.removeAll(() => {

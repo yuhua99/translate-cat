@@ -20,8 +20,10 @@ chromeGlobal.chrome = {
     create() {},
     onClicked: { addListener() {} },
   },
-  i18n: { getMessage: () => '' },
+  i18n: { getMessage: () => '', getUILanguage: () => 'en' },
   runtime: {
+    getManifest: () => ({ version: '0.0.0' }),
+    setUninstallURL: async () => {},
     onConnect: { addListener() {} },
     onInstalled: { addListener() {} },
     onMessage: {

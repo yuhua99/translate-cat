@@ -1,6 +1,6 @@
 # Privacy Policy — translate cat
 
-_Last updated: 2026-08-27_
+_Last updated: 2026-10-08_
 
 translate cat ("the extension") is a browser extension that translates YouTube
 subtitles and selected text using third-party AI providers. This policy
@@ -33,7 +33,8 @@ explains what data the extension handles and how.
 ## What we do NOT do
 
 - We do **not** collect, transmit, or store any of your data on servers we
-  control. The extension has no backend.
+  control. The extension has no backend. The only exception is the optional
+  uninstall survey described below.
 - We do **not** use analytics, tracking, or advertising.
 - We do **not** sell or share your data with anyone.
 
@@ -47,6 +48,15 @@ choose. Your use of these services is governed by their own privacy policies:
 - Google Gemini — https://generativelanguage.googleapis.com
 - opencode Zen — https://opencode.ai
 - OpenRouter — https://openrouter.ai/api/v1
+
+## Uninstall survey
+
+When you remove the extension, Chrome opens a short feedback form hosted on
+Tally (https://tally.so). The form URL includes the extension version and your
+browser's interface language. No settings, API keys, tokens, or translated text
+are included. Opening the page sends Tally standard request data such as your IP
+address and user agent. Filling out the form is optional; answers are stored by
+Tally and governed by its privacy policy: https://tally.so/help/privacy-policy
 
 ## Data retention
 
