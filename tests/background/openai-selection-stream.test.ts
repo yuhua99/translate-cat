@@ -77,7 +77,7 @@ describe('OpenAiProvider translateSelection', () => {
 
     expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
     expect(request?.headers.get('x-opencode-session')).toBe('selection-session-123')
-    expect(await request?.json()).toMatchObject({ stream: true, thinking: { type: 'disabled' } })
+    expect(await request?.json()).toMatchObject({ stream: true, reasoning_effort: 'none' })
   })
 
   test('rejects malformed SSE JSON and streamed API errors', async () => {

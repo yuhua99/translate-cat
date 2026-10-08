@@ -81,7 +81,6 @@ export class AnthropicProvider implements AiProvider {
         body: JSON.stringify({
           model: this.config.model,
           max_tokens: 8192,
-          temperature: 0,
           stream: true,
           ...(shouldDisableThinking(this.config) ? { thinking: { type: 'disabled' } } : {}),
           system: createSelectionSystemPrompt(input),
@@ -107,7 +106,7 @@ export class AnthropicProvider implements AiProvider {
 
   async testConnection(): Promise<ProviderTestOutput> {
     const response = await this.complete('Reply exactly: OK', {
-      maxTokens: 40,
+      maxTokens: 512,
       system: 'Reply exactly: OK',
     })
     const text = response.content.trim()
@@ -141,7 +140,6 @@ export class AnthropicProvider implements AiProvider {
         body: JSON.stringify({
           model: this.config.model,
           max_tokens: options.maxTokens ?? 8192,
-          temperature: 0,
           ...(shouldDisableThinking(this.config) ? { thinking: { type: 'disabled' } } : {}),
           system: options.system,
           messages: [{ role: 'user', content: prompt }],

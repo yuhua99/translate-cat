@@ -12,10 +12,6 @@ export class OpencodeZenProvider extends OpenAiProvider {
     super(config, secret, OPENCODE_ZEN_BASE_URL, 'opencode Zen')
   }
 
-  protected override extraChatCompletionBody(): Record<string, unknown> {
-    return this.shouldDisableThinking() ? { thinking: { type: 'disabled' } } : {}
-  }
-
   protected override extraChatCompletionHeaders(): Record<string, string> {
     return this.requestContext?.sessionId
       ? { 'x-opencode-session': this.requestContext.sessionId }

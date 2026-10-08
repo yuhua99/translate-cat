@@ -57,14 +57,15 @@ describe('AnthropicProvider selection streaming', () => {
     expect(request?.url).toBe('https://api.anthropic.com/v1/messages')
     expect(request?.headers.get('x-api-key')).toBe('key')
     expect(request?.headers.get('anthropic-version')).toBe('2023-06-01')
-    expect(await request?.json()).toMatchObject({
+    const requestBody = await request?.json()
+    expect(requestBody).toMatchObject({
       model: 'claude-haiku-4-5',
       max_tokens: 8192,
-      temperature: 0,
       stream: true,
       thinking: { type: 'disabled' },
       messages: [{ role: 'user' }],
     })
+    expect(requestBody).not.toHaveProperty('temperature')
     expect(receivedSignal).toBe(controller.signal)
     expect(deltas).toEqual(['你', '好'])
   })

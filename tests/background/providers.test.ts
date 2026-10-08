@@ -632,7 +632,7 @@ describe('OpencodeZenProvider', () => {
 
     expect(request?.url).toBe('https://opencode.ai/zen/go/v1/chat/completions')
     expect(request?.headers.get('x-opencode-session')).toBe('manual-session-123')
-    expect(await request?.json()).toMatchObject({ thinking: { type: 'disabled' } })
+    expect(await request?.json()).toMatchObject({ reasoning_effort: 'none' })
   })
 
   test('uses session context for connection tests', async () => {
@@ -672,7 +672,7 @@ describe('OpencodeZenProvider', () => {
       items: [{ id: 'a', text: 'Hello', startMs: 0 }],
     })
 
-    expect(await request?.json()).not.toHaveProperty('thinking')
+    expect(await request?.json()).not.toHaveProperty('reasoning_effort')
   })
 
   test('reports opencode Zen in request errors', async () => {
@@ -726,7 +726,7 @@ describe('OpenRouterProvider', () => {
     }
 
     const provider = new OpenRouterProvider(
-      { type: 'openrouter', model: 'deepseek/deepseek-v4-flash-0731' },
+      { type: 'openrouter', model: 'tencent/hy4-preview' },
       { apiKey: 'key' },
     )
     const result = await provider.translateManual({
@@ -962,8 +962,9 @@ describe('AnthropicProvider', () => {
     )
 
     await expect(provider.testConnection()).resolves.toEqual({ ok: true })
-    expect(requestBody?.max_tokens).toBe(40)
+    expect(requestBody?.max_tokens).toBe(512)
     expect(requestBody).toMatchObject({ thinking: { type: 'disabled' } })
+    expect(requestBody).not.toHaveProperty('temperature')
   })
 
   test('translates with 8192 max_tokens and fails clearly on truncation', async () => {

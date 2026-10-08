@@ -40,10 +40,10 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
     label: 'Anthropic Claude',
     defaultModel: 'claude-haiku-5-5',
     models: [
-      { id: 'claude-opus-5.5', disableThinking: true },
+      { id: 'claude-opus-5-5' },
       { id: 'claude-opus-5', disableThinking: true },
       { id: 'claude-opus-4-8', disableThinking: true },
-      { id: 'claude-sonnet-5.5', disableThinking: true },
+      { id: 'claude-sonnet-5-5' },
       { id: 'claude-sonnet-5', disableThinking: true },
       { id: 'claude-haiku-5-5', disableThinking: true },
       { id: 'claude-haiku-4-5', disableThinking: true },
@@ -75,8 +75,8 @@ const PROVIDER_REGISTRY: Record<ProviderType, ProviderEntry> = {
     models: [
       { id: 'tencent/hy4-preview', disableThinking: true },
       { id: 'openai/gpt-5.6-luna', disableThinking: true },
-      { id: 'z-ai/glm-5.3-flash', disableThinking: true },
-      { id: 'deepseek/deepseek-v4-flash-0731', disableThinking: true },
+      { id: 'z-ai/glm-5.3-flash' },
+      { id: 'deepseek/deepseek-v4-flash-0731' },
     ],
   },
 }
