@@ -126,7 +126,7 @@ function captureXhrResponse(xhr: XMLHttpRequest, url: string): void {
     if (xhr.status < 200 || xhr.status >= 300) return
     if (xhr.responseType !== '' && xhr.responseType !== 'text') return
     const responseText = xhr.responseText
-    if (responseText.trim()) dispatchCaptionCapture({ url, responseText })
+    dispatchCaptionCapture({ url, responseText })
   } catch {}
 }
 
@@ -152,7 +152,7 @@ async function captureFetchResponse(input: RequestInfo | URL, response: Response
   if (!response.ok) return
 
   const responseText = await response.clone().text()
-  if (responseText.trim()) dispatchCaptionCapture({ url, responseText })
+  dispatchCaptionCapture({ url, responseText })
 }
 
 function installCaptionAvailabilityHandler(): void {

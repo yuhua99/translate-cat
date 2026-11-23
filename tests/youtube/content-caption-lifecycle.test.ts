@@ -204,6 +204,50 @@ test('empty timedtext still retries, and navigation preserves a capture for the 
   }
 })
 
+test('an empty different track restores native captions and allows one more reload', async () => {
+  const dom = installCaptionPage(true)
+  const capture = (lang: string, responseText: string) =>
+    window.dispatchEvent(
+      new CustomEvent(CAPTION_EVENT, {
+        detail: {
+          url: `https://www.youtube.com/api/timedtext?v=video-1&lang=${lang}`,
+          responseText,
+        },
+      }),
+    )
+
+  try {
+    await import('../../src/content/index.ts?empty-track-switch')
+    await Bun.sleep(0)
+    capture('en', '{"events":[{"tStartMs":1000,"dDurationMs":1000,"segs":[{"utf8":"Hello"}]}]}')
+    await Bun.sleep(0)
+    dom.fireCaptionRetry()
+    dom.renderFrame()
+    expect(document.getElementById('simple-translator-subtitle-overlay')?.textContent).toBe('Hello')
+    expect(document.getElementById(HIDER_ID)).not.toBeNull()
+
+    capture('en', '')
+    expect(document.getElementById(HIDER_ID)).not.toBeNull()
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
+
+    capture('fr', '')
+    expect(document.getElementById('simple-translator-subtitle-overlay')).toBeNull()
+    expect(document.getElementById(HIDER_ID)).toBeNull()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    capture('fr', '')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(1)
+    dom.fireCaptionRetry()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    dom.fireCaptionRetry(250)
+    await Bun.sleep(0)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
+    expect(dom.translationCount).toBe(1)
+  } finally {
+    dom.restore()
+  }
+})
+
 function element() {
   const attributes = new Map<string, string>()
   return {
@@ -245,6 +289,8 @@ function installCaptionPage(translationSucceeds = false) {
   let nextTimeoutId = 0
   let translationCount = 0
   let captionTracks: string[] | undefined = ['en']
+  let renderFrame: FrameRequestCallback | undefined
+  const video = { currentTime: 1.5 }
   const aiButton = { ...element(), querySelector: () => null }
   nodes.set('simple-translator-toggle', aiButton)
   const statusMessage = element()
@@ -267,7 +313,7 @@ function installCaptionPage(translationSucceeds = false) {
   }
   let captionButton = makeCaptionButton(false)
   const documentMock = Object.assign(new EventTarget(), {
-    body: {},
+    body: { append: (node: ReturnType<typeof element>) => nodes.set(node.id, node) },
     documentElement: {
       append: (node: ReturnType<typeof element>) => nodes.set(node.id, node),
     },
@@ -278,7 +324,7 @@ function installCaptionPage(translationSucceeds = false) {
     getElementById: (id: string) => nodes.get(id) ?? null,
     querySelector: (selector: string) => {
       if (selector === '.ytp-subtitles-button') return captionButton
-      if (selector === 'video') return { currentTime: 1.5 }
+      if (selector === 'video') return video
       return null
     },
   })
@@ -304,13 +350,20 @@ function installCaptionPage(translationSucceeds = false) {
     clearTimeout: (id: number) => timeouts.delete(id),
     setInterval: () => 1,
     clearInterval: () => {},
-    requestAnimationFrame: () => 1,
+    requestAnimationFrame(callback: FrameRequestCallback) {
+      renderFrame = callback
+      return 1
+    },
     cancelAnimationFrame: () => {},
   })
   const mocks = {
     window: windowMock,
     document: documentMock,
     location: new URL('https://www.youtube.com/watch?v=video-1'),
+    ResizeObserver: class {
+      observe() {}
+      disconnect() {}
+    },
     MutationObserver: class {
       constructor(private readonly callback: MutationCallback) {}
       observe(_target: Node, options: MutationObserverInit) {
@@ -347,6 +400,9 @@ function installCaptionPage(translationSucceeds = false) {
   })
   return {
     aiButton,
+    renderFrame() {
+      renderFrame?.(0)
+    },
     get translationCount() {
       return translationCount
     },

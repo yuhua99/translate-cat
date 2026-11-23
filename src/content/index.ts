@@ -112,12 +112,21 @@ function listenForCaptionCapture(): void {
 
 function handleCaptionCapture(detail: CaptionsCapturedEventDetail): void {
   const run = currentRun
-  if (!run || run.aborted || !run.session || !detail.responseText.trim()) return
+  if (!run || run.aborted || !run.session) return
 
-  const expectedVideoId = readVideoId()
-  if (!run.session.handleCapturedCaptions(detail, expectedVideoId)) return
+  const hadCaptions = run.session.segments.length > 0
+  if (run.session.handleCapturedCaptions(detail, readVideoId())) {
+    void scheduleCurrentWindow(run)
+    return
+  }
+  if (!hadCaptions || run.session.segments.length > 0) return
 
-  void scheduleCurrentWindow(run)
+  run.renderer?.clear()
+  showNativeCaptions()
+  run.waitingForInitialCaptions = true
+  const reload = (run.captionReload ??= new CaptionReload())
+  reload.autoCcToggled = false
+  if (reload.retryTimeoutId === undefined) scheduleCaptionReload(run, reload, 1_000)
 }
 
 function listenForPlayback(): void {

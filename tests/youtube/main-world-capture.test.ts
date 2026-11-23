@@ -84,7 +84,7 @@ test('fetch and XHR capture 2xx responses and skip other response bodies', async
   expect(captions.sort()).toEqual(['XHR captions', 'fetch captions'])
 })
 
-test('empty successful timedtext bodies do not emit caption captures', async () => {
+test('empty successful timedtext bodies are reported so caption track changes can be detected', async () => {
   captions.length = 0
   for (const body of ['', '  ']) {
     fetchResponse = new Response(body)
@@ -94,7 +94,7 @@ test('empty successful timedtext bodies do not emit caption captures', async () 
     xhr.open('GET', timedTextUrl)
     xhr.send()
   }
-  expect(captions).toEqual([])
+  expect(captions).toEqual(['', '', '  ', '  '])
 })
 
 test('availability distinguishes missing, empty, and stale caption track lists', () => {
