@@ -73,6 +73,17 @@ test('a page cooldown defers caption reloads and resumes on the same video', asy
     dom.fireCaptionRetry(50_000)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
     expect(dom.captionRetriesAt(1_000)).toHaveLength(1)
+
+    retryAfterMs = 60_000
+    dom.navigate('video-3')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(60_000)).toHaveLength(1)
+
+    dom.captionButton.click()
+    retryAfterMs = 0
+    dom.fireCaptionRetry(60_000)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
   } finally {
     dom.restore()
   }
