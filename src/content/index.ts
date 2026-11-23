@@ -228,7 +228,7 @@ function scheduleCaptionReload(
   reload: CaptionReload,
   delayMs: number,
   retryIfMissing = false,
-  expectedCcState?: string,
+  wasCcOn = false,
 ): void {
   window.clearTimeout(reload.retryTimeoutId)
   reload.retryTimeoutId = window.setTimeout(
@@ -242,10 +242,7 @@ function scheduleCaptionReload(
       ) {
         return
       }
-      if (
-        expectedCcState !== undefined &&
-        findCaptionButton()?.getAttribute('aria-pressed') !== expectedCcState
-      ) {
+      if (wasCcOn && findCaptionButton()?.getAttribute('aria-pressed') === 'false') {
         return
       }
       void forceSubtitleReload(run, reload, retryIfMissing)
@@ -357,8 +354,8 @@ async function forceSubtitleReload(
   window.removeEventListener(CAPTION_RELOAD_COOLDOWN_EVENT, readCooldown)
   if (!allowed) {
     if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
-      const ccState = findCaptionButton()?.getAttribute('aria-pressed') ?? undefined
-      scheduleCaptionReload(run, reload, retryAfterMs, retryIfMissing, ccState)
+      const wasCcOn = findCaptionButton()?.getAttribute('aria-pressed') === 'true'
+      scheduleCaptionReload(run, reload, retryAfterMs, retryIfMissing, wasCcOn)
     }
     return
   }
