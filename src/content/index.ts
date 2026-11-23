@@ -65,6 +65,7 @@ class TranslateRun {
     this.retryTimeoutId = undefined
     this.captionReload?.dispose()
     this.captionReload = undefined
+    showNativeCaptions()
     this.active = false
     this.waitingForInitialCaptions = false
     this.session?.stop()
@@ -166,7 +167,6 @@ function restartAiTranslate(settingsOverride?: ExtensionSettings): void {
   const wasActive = currentRun?.active ?? false
   const run = startActivation()
   if (wasActive) void syncTranslateToggle()
-  if (wasActive || settingsOverride?.enabled === false) showNativeCaptions()
 
   if (settingsOverride) {
     if (!settingsOverride.enabled) {
@@ -280,7 +280,6 @@ function teardownAiTranslate(run: TranslateRun): void {
 
 function deactivateAiTranslate(): void {
   if (currentRun) teardownAiTranslate(currentRun)
-  showNativeCaptions()
 }
 
 async function scheduleCurrentWindow(
@@ -412,7 +411,6 @@ function createSession(run: TranslateRun, settings: ExtensionSettings): void {
   nextSession.fatalErrorHandler = (error: string) => {
     if (run.aborted) return
     showStatusOverlay(chrome.i18n.getMessage('aiTranslateDetail', String(error)))
-    // Per spec: do not restore native captions on fatal error
     teardownAiTranslate(run)
   }
 
