@@ -195,6 +195,7 @@ test('empty timedtext still retries, and navigation preserves a capture for the 
     expect(document.getElementById(HIDER_ID)).not.toBeNull()
 
     dom.navigate('video-2')
+    await Bun.sleep(0)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
     expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
     expect(document.getElementById(HIDER_ID)).not.toBeNull()
@@ -215,12 +216,35 @@ function element() {
   }
 }
 
+test('a delayed caption track enables the AI toggle and activates stored AI subtitles', async () => {
+  const dom = installCaptionPage()
+  dom.setCaptionTracks(undefined)
+
+  try {
+    await import('../../src/content/index.ts?delayed-caption-availability')
+    await Bun.sleep(0)
+    expect(dom.aiButton.getAttribute('aria-disabled')).toBe('true')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(dom.captionRetriesAt(500)).toHaveLength(1)
+
+    dom.setCaptionTracks(['en'])
+    dom.fireCaptionRetry(500)
+    await Bun.sleep(0)
+    expect(dom.aiButton.getAttribute('aria-disabled')).toBe('false')
+    expect(dom.aiButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+  } finally {
+    dom.restore()
+  }
+})
+
 function installCaptionPage(translationSucceeds = false) {
   const nodes = new Map<string, ReturnType<typeof element>>()
   const timeouts = new Map<number, { callback: () => void; delay: number }>()
   const ccObservers: MutationCallback[] = []
   let nextTimeoutId = 0
   let translationCount = 0
+  let captionTracks: string[] | undefined = ['en']
   const aiButton = { ...element(), querySelector: () => null }
   nodes.set('simple-translator-toggle', aiButton)
   const statusMessage = element()
@@ -267,7 +291,8 @@ function installCaptionPage(translationSucceeds = false) {
             ...data,
             type: CAPTION_AVAILABILITY_RESPONSE_EVENT,
             hasPlayerResponse: true,
-            hasClosedCaptions: true,
+            hasCaptionTracks: captionTracks !== undefined,
+            hasClosedCaptions: Boolean(captionTracks?.length),
           },
         }),
       )
@@ -333,6 +358,9 @@ function installCaptionPage(translationSucceeds = false) {
     },
     replaceCaptionButton(on: boolean) {
       captionButton = makeCaptionButton(on)
+    },
+    setCaptionTracks(tracks: string[] | undefined) {
+      captionTracks = tracks
     },
     toggleNativeCc() {
       const oldValue = captionButton.getAttribute('aria-pressed')

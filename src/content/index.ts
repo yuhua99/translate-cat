@@ -4,11 +4,7 @@ import {
   CAPTION_RELOAD_REQUEST_EVENT,
   type CaptionsCapturedEventDetail,
 } from '../youtube/caption-capture-event'
-import {
-  findCaptionButton,
-  getCaptionAvailability,
-  type CaptionAvailability,
-} from '../youtube/caption-availability'
+import { findCaptionButton, waitForCaptionAvailability } from '../youtube/caption-availability'
 import { hideNativeCaptions, showNativeCaptions } from '../youtube/native-caption-hider'
 
 import { YoutubeSubtitleSession } from '../youtube/session'
@@ -55,7 +51,6 @@ class TranslateRun {
   renderer?: SubtitleOverlayRenderer
   active = false
   waitingForInitialCaptions = false
-  retryTimeoutId?: number
   captionReload?: CaptionReload
   animationFrameId?: number
   navigationPollId?: number
@@ -66,8 +61,6 @@ class TranslateRun {
 
   dispose(): void {
     this.controller.abort()
-    window.clearTimeout(this.retryTimeoutId)
-    this.retryTimeoutId = undefined
     this.captionReload?.dispose()
     this.captionReload = undefined
     showNativeCaptions()
@@ -210,7 +203,7 @@ function restartAiTranslate(settingsOverride?: ExtensionSettings): void {
     if (!settingsOverride.enabled) {
       return
     }
-    void activateAiTranslate(settingsOverride, true, undefined, run)
+    void activateAiTranslate(settingsOverride, true, run)
     return
   }
 
@@ -223,7 +216,7 @@ async function restartAiTranslateWithLatestSettings(run: TranslateRun): Promise<
 
   if (!settings.enabled) return
 
-  await activateAiTranslate(settings, true, undefined, run)
+  await activateAiTranslate(settings, true, run)
 }
 
 function handleMaybeVideoChanged(): void {
@@ -233,14 +226,14 @@ function handleMaybeVideoChanged(): void {
   lastVideoId = videoId
   if (videoId !== manuallyDisabledVideoId) manuallyDisabledVideoId = undefined
   const run = currentRun
-  if (!run || run.aborted) return
-
-  run.renderer?.clear()
-  if (!run.active) {
-    run.session?.stop()
+  if (!run?.active || run.aborted) {
+    void applyStoredEnabledState()
+    void syncTranslateToggle()
     return
   }
 
+  run.renderer?.clear()
+  void syncTranslateToggle()
   if (run.session?.videoId !== videoId) run.session?.resetForNavigation(videoId)
   armCaptionCapture(run)
 }
@@ -292,18 +285,17 @@ function scheduleCaptionReload(
 async function activateAiTranslate(
   settingsOverride?: ExtensionSettings,
   showUnavailableStatus = true,
-  availabilityOverride?: CaptionAvailability,
   run = startActivation(),
 ): Promise<boolean> {
   const settings = settingsOverride ?? (await loadSettingsForActivation(run))
   if (run.aborted || !settings) return false
 
-  const availability = availabilityOverride ?? (await getCurrentCaptionAvailability())
+  const availability = await waitForCaptionAvailability()
   if (run.aborted) return false
+  if (availability === 'not-ready') return false
 
   if (availability !== 'available') {
     deactivateAiTranslate()
-    void syncTranslateToggle()
     if (showUnavailableStatus) {
       showStatusOverlay(
         chrome.i18n.getMessage('aiTranslateDetail', chrome.i18n.getMessage('captionsNotProvided')),
@@ -470,14 +462,6 @@ function isCcEnabled(): boolean {
   return button !== null && button.getAttribute('aria-pressed') !== 'false'
 }
 
-async function getCurrentCaptionAvailability(): Promise<CaptionAvailability> {
-  try {
-    return await getCaptionAvailability()
-  } catch {
-    return 'not-ready'
-  }
-}
-
 function createSession(run: TranslateRun, settings: ExtensionSettings): void {
   run.session?.stop()
   run.renderer?.clear()
@@ -517,40 +501,11 @@ async function loadSettingsForActivation(
   return response.settings
 }
 
-const ACTIVATION_RETRY_DELAY_MS = 500
-const ACTIVATION_RETRY_MAX_ATTEMPTS = 20
-
 function startActivation(): TranslateRun {
   currentRun?.dispose()
   const run = new TranslateRun()
   currentRun = run
   return run
-}
-
-async function retryStoredStateActivation(
-  settings: ExtensionSettings,
-  run: TranslateRun,
-  attempt = 0,
-): Promise<void> {
-  const availability = await getCurrentCaptionAvailability()
-  if (run.aborted) return
-
-  if (availability === 'available') {
-    await activateAiTranslate(settings, false, availability, run)
-    return
-  }
-
-  if (availability === 'unavailable' || attempt === ACTIVATION_RETRY_MAX_ATTEMPTS) {
-    deactivateAiTranslate()
-    void syncTranslateToggle()
-    return
-  }
-
-  run.retryTimeoutId = window.setTimeout(() => {
-    run.retryTimeoutId = undefined
-    if (run.aborted) return
-    void retryStoredStateActivation(settings, run, attempt + 1)
-  }, ACTIVATION_RETRY_DELAY_MS)
 }
 
 async function applyStoredEnabledState(): Promise<void> {
@@ -563,7 +518,7 @@ async function applyStoredEnabledState(): Promise<void> {
   if (run.aborted || !response.ok) return
 
   if (response.settings.enabled) {
-    void retryStoredStateActivation(response.settings, run)
+    void activateAiTranslate(response.settings, false, run)
   }
 }
 

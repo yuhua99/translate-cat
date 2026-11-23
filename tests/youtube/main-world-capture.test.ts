@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import {
+  CAPTION_AVAILABILITY_REQUEST_EVENT,
+  CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
   CAPTION_RELOAD_COOLDOWN_EVENT,
   CAPTION_RELOAD_REQUEST_EVENT,
@@ -26,7 +28,7 @@ class NativeXhr extends EventTarget {
 
 const windowMock = Object.assign(new EventTarget(), {
   fetch: async (_input: string) => fetchResponse,
-  postMessage: () => {},
+  postMessage: (_message: unknown) => {},
 })
 const originals = new Map<string, PropertyDescriptor | undefined>()
 
@@ -93,6 +95,71 @@ test('empty successful timedtext bodies do not emit caption captures', async () 
     xhr.send()
   }
   expect(captions).toEqual([])
+})
+
+test('availability distinguishes missing, empty, and stale caption track lists', () => {
+  let videoId = 'video-1'
+  let captionTracks: string[] | undefined
+  const globals = {
+    location: new URL('https://www.youtube.com/watch?v=video-1'),
+    document: {
+      getElementById: () => ({
+        getPlayerResponse: () => ({
+          videoDetails: { videoId },
+          captions: { playerCaptionsTracklistRenderer: { captionTracks } },
+        }),
+      }),
+    },
+  }
+  const restore = Object.entries(globals).map(([key, value]) => {
+    const descriptor = Object.getOwnPropertyDescriptor(globalThis, key)
+    Object.defineProperty(globalThis, key, { configurable: true, writable: true, value })
+    return () => {
+      if (descriptor) Object.defineProperty(globalThis, key, descriptor)
+      else Reflect.deleteProperty(globalThis, key)
+    }
+  })
+  const postMessage = spyOn(windowMock, 'postMessage')
+  const request = (
+    hasPlayerResponse: boolean,
+    hasCaptionTracks: boolean,
+    hasClosedCaptions: boolean,
+  ) => {
+    windowMock.dispatchEvent(
+      Object.assign(new Event('message'), {
+        source: windowMock,
+        data: {
+          source: 'simple-translator',
+          type: CAPTION_AVAILABILITY_REQUEST_EVENT,
+          requestId: 'availability',
+        },
+      }),
+    )
+    expect(postMessage).toHaveBeenLastCalledWith(
+      {
+        source: 'simple-translator',
+        type: CAPTION_AVAILABILITY_RESPONSE_EVENT,
+        requestId: 'availability',
+        hasPlayerResponse,
+        hasCaptionTracks,
+        hasClosedCaptions,
+      },
+      '*',
+    )
+  }
+
+  try {
+    request(true, false, false)
+    captionTracks = []
+    request(true, true, false)
+    captionTracks = ['en']
+    request(true, true, true)
+    videoId = 'old-video'
+    request(false, true, true)
+  } finally {
+    postMessage.mockRestore()
+    restore.forEach((restoreGlobal) => restoreGlobal())
+  }
 })
 
 test('429s gate caption reloads using Retry-After seconds, dates, or a 60-second default', async () => {

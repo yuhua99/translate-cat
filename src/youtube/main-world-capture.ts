@@ -7,12 +7,14 @@ import {
   isTimedTextUrl,
   type CaptionsCapturedEventDetail,
 } from './caption-capture-event'
+import { parseYouTubeVideoId } from './video-load'
 
 interface YoutubePlayerElement extends HTMLElement {
   getPlayerResponse?: () => YoutubePlayerResponse | undefined
 }
 
 interface YoutubePlayerResponse {
+  videoDetails?: { videoId?: string }
   captions?: {
     playerCaptionsTracklistRenderer?: {
       captionTracks?: unknown[]
@@ -162,13 +164,18 @@ function installCaptionAvailabilityHandler(): void {
 
     try {
       const response = readPlayerResponse()
+      const currentVideoId = parseYouTubeVideoId(new URL(location.href))
+      const responseVideoId = response?.videoDetails?.videoId
+      const isCurrentVideo =
+        !currentVideoId || !responseVideoId || currentVideoId === responseVideoId
       const captionTracks = response?.captions?.playerCaptionsTracklistRenderer?.captionTracks
       window.postMessage(
         {
           source: 'simple-translator',
           type: CAPTION_AVAILABILITY_RESPONSE_EVENT,
           requestId: data.requestId,
-          hasPlayerResponse: Boolean(response),
+          hasPlayerResponse: Boolean(response) && isCurrentVideo,
+          hasCaptionTracks: Array.isArray(captionTracks),
           hasClosedCaptions: Array.isArray(captionTracks) && captionTracks.length > 0,
         },
         '*',
