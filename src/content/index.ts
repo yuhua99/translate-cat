@@ -376,9 +376,9 @@ async function forceSubtitleReload(
       return
     }
 
-    reload.autoCcToggled = true
     reload.suppressCcOffUntil = Date.now() + 3_000
     button.click()
+    reload.autoCcToggled = button.getAttribute('aria-pressed') === 'true'
     return
   }
 
@@ -388,7 +388,10 @@ async function forceSubtitleReload(
   if (run.aborted || reload.aborted || reloadSession !== run.session) return
 
   reload.captionButtonTurnedOff = undefined
-  if (run.active) button.click()
+  const currentButton = findCaptionButton()
+  if (run.active && currentButton?.getAttribute('aria-pressed') === 'false') {
+    currentButton.click()
+  }
 }
 
 function waitForDelay(delayMs: number, signal: AbortSignal): Promise<void> {

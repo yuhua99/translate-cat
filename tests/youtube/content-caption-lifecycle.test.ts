@@ -106,6 +106,37 @@ test('a page cooldown defers caption reloads and resumes on the same video', asy
   }
 })
 
+test('retries an ignored CC enable and only re-enables the current button if it is off', async () => {
+  const dom = installCaptionPage()
+  dom.ignoreNextCaptionClick()
+
+  try {
+    await import('../../src/content/index.ts?cc-reload')
+    await Bun.sleep(0)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    dom.fireCaptionRetry()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
+
+    dom.navigate('video-2')
+    const previousButton = dom.captionButton
+    expect(previousButton.getAttribute('aria-pressed')).toBe('false')
+    dom.replaceCaptionButton(true)
+    dom.fireCaptionRetry(250)
+    await Bun.sleep(0)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(previousButton.getAttribute('aria-pressed')).toBe('false')
+
+    dom.navigate('video-3')
+    dom.replaceCaptionButton(false)
+    dom.fireCaptionRetry(250)
+    await Bun.sleep(0)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+  } finally {
+    dom.restore()
+  }
+})
+
 function element() {
   const attributes = new Map<string, string>()
   return {
@@ -127,13 +158,22 @@ function installCaptionPage() {
   const statusMessage = element()
   const statusOverlay = { ...element(), querySelector: () => statusMessage }
   nodes.set('simple-translator-status-overlay', statusOverlay)
-  const captionButton = {
-    ...element(),
-    click() {
-      this.setAttribute('aria-pressed', String(this.getAttribute('aria-pressed') !== 'true'))
-    },
+  let ignoreNextCaptionClick = false
+  function makeCaptionButton(on: boolean) {
+    const button = {
+      ...element(),
+      click() {
+        if (ignoreNextCaptionClick) {
+          ignoreNextCaptionClick = false
+          return
+        }
+        this.setAttribute('aria-pressed', String(this.getAttribute('aria-pressed') !== 'true'))
+      },
+    }
+    button.setAttribute('aria-pressed', String(on))
+    return button
   }
-  captionButton.setAttribute('aria-pressed', 'false')
+  let captionButton = makeCaptionButton(false)
   const documentMock = Object.assign(new EventTarget(), {
     body: {},
     documentElement: {
@@ -204,7 +244,15 @@ function installCaptionPage() {
   })
   return {
     aiButton,
-    captionButton,
+    get captionButton() {
+      return captionButton
+    },
+    ignoreNextCaptionClick() {
+      ignoreNextCaptionClick = true
+    },
+    replaceCaptionButton(on: boolean) {
+      captionButton = makeCaptionButton(on)
+    },
     statusMessage,
     captionRetriesAt(delayMs: number) {
       return [...timeouts.values()].filter(({ delay }) => delay === delayMs)
