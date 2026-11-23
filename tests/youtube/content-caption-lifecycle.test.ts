@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, type ExtensionMessage } from '../../src/shared/messag
 import {
   CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
+  CAPTION_RELOAD_COOLDOWN_EVENT,
   CAPTION_RELOAD_REQUEST_EVENT,
 } from '../../src/youtube/caption-capture-event'
 
@@ -41,11 +42,13 @@ test('restores native captions after a fatal AI subtitle error without reloading
   }
 })
 
-test('a page cooldown blocks the caption retry and subsequent re-arms, but not manual CC', async () => {
+test('a page cooldown defers caption reloads and resumes on the same video', async () => {
   const dom = installCaptionPage()
-  let coolingDown = false
+  let retryAfterMs = 0
   window.addEventListener(CAPTION_RELOAD_REQUEST_EVENT, (event) => {
-    if (coolingDown) event.preventDefault()
+    if (retryAfterMs === 0) return
+    event.preventDefault()
+    window.dispatchEvent(new CustomEvent(CAPTION_RELOAD_COOLDOWN_EVENT, { detail: retryAfterMs }))
   })
 
   try {
@@ -53,18 +56,23 @@ test('a page cooldown blocks the caption retry and subsequent re-arms, but not m
     await Bun.sleep(0)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
 
-    coolingDown = true
+    retryAfterMs = 60_000
     dom.fireCaptionRetry()
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(60_000)).toHaveLength(1)
 
     dom.captionButton.click()
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    retryAfterMs = 50_000
     dom.navigate('video-2')
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(dom.captionRetriesAt(60_000)).toHaveLength(0)
+    expect(dom.captionRetriesAt(50_000)).toHaveLength(1)
 
-    coolingDown = false
-    dom.navigate('video-3')
+    retryAfterMs = 0
+    dom.fireCaptionRetry(50_000)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(1)
   } finally {
     dom.restore()
   }
@@ -170,10 +178,15 @@ function installCaptionPage() {
     aiButton,
     captionButton,
     statusMessage,
-    fireCaptionRetry() {
-      const retry = [...timeouts.values()].find(({ delay }) => delay === 1_000)
+    captionRetriesAt(delayMs: number) {
+      return [...timeouts.values()].filter(({ delay }) => delay === delayMs)
+    },
+    fireCaptionRetry(delayMs = 1_000) {
+      const retry = [...timeouts].find(([, { delay }]) => delay === delayMs)
       if (!retry) throw new Error('Caption retry was not scheduled')
-      retry.callback()
+      const [id, { callback }] = retry
+      timeouts.delete(id)
+      callback()
     },
     navigate(videoId: string) {
       mocks.location.searchParams.set('v', videoId)

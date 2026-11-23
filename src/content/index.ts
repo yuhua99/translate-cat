@@ -1,5 +1,6 @@
 import {
   CAPTION_EVENT,
+  CAPTION_RELOAD_COOLDOWN_EVENT,
   CAPTION_RELOAD_REQUEST_EVENT,
   type CaptionsCapturedEventDetail,
 } from '../youtube/caption-capture-event'
@@ -218,20 +219,32 @@ function armCaptionCapture(run: TranslateRun): void {
   run.captionReload = reload
   hideNativeCaptions()
   run.waitingForInitialCaptions = true
-  void forceSubtitleReload(run, reload)
+  void forceSubtitleReload(run, reload, true)
   void scheduleCurrentWindow(run)
-  reload.retryTimeoutId = window.setTimeout(() => {
-    reload.retryTimeoutId = undefined
-    if (
-      run.aborted ||
-      reload.aborted ||
-      !run.active ||
-      (run.session?.track && run.session.segments.length > 0)
-    ) {
-      return
-    }
-    void forceSubtitleReload(run, reload)
-  }, 1_000)
+}
+
+function scheduleCaptionReload(
+  run: TranslateRun,
+  reload: CaptionReload,
+  delayMs: number,
+  retryIfMissing = false,
+): void {
+  window.clearTimeout(reload.retryTimeoutId)
+  reload.retryTimeoutId = window.setTimeout(
+    () => {
+      reload.retryTimeoutId = undefined
+      if (
+        run.aborted ||
+        reload.aborted ||
+        !run.active ||
+        (run.session?.track && run.session.segments.length > 0)
+      ) {
+        return
+      }
+      void forceSubtitleReload(run, reload, retryIfMissing)
+    },
+    Math.min(delayMs, 2_147_483_647),
+  )
 }
 
 async function activateAiTranslate(
@@ -320,9 +333,28 @@ function disposeCaptionReload(run: TranslateRun): void {
   run.captionReload = undefined
 }
 
-async function forceSubtitleReload(run: TranslateRun, reload: CaptionReload): Promise<void> {
+async function forceSubtitleReload(
+  run: TranslateRun,
+  reload: CaptionReload,
+  retryIfMissing = false,
+): Promise<void> {
   if (run.aborted || reload.aborted) return
-  if (!window.dispatchEvent(new Event(CAPTION_RELOAD_REQUEST_EVENT, { cancelable: true }))) return
+  let retryAfterMs = 0
+  const readCooldown = (event: Event) => {
+    retryAfterMs = (event as CustomEvent<number>).detail
+  }
+  window.addEventListener(CAPTION_RELOAD_COOLDOWN_EVENT, readCooldown)
+  const allowed = window.dispatchEvent(
+    new Event(CAPTION_RELOAD_REQUEST_EVENT, { cancelable: true }),
+  )
+  window.removeEventListener(CAPTION_RELOAD_COOLDOWN_EVENT, readCooldown)
+  if (!allowed) {
+    if (Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+      scheduleCaptionReload(run, reload, retryAfterMs, retryIfMissing)
+    }
+    return
+  }
+  if (retryIfMissing) scheduleCaptionReload(run, reload, 1_000)
 
   const reloadSession = run.session
   const button = findCaptionButton()

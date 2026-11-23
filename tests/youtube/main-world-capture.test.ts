@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import {
   CAPTION_EVENT,
+  CAPTION_RELOAD_COOLDOWN_EVENT,
   CAPTION_RELOAD_REQUEST_EVENT,
 } from '../../src/youtube/caption-capture-event'
 
@@ -85,8 +86,19 @@ test('429s gate caption reloads using Retry-After seconds, dates, or a 60-second
   captions.length = 0
   let now = Date.UTC(2030, 0, 1)
   const clock = spyOn(Date, 'now').mockImplementation(() => now)
-  const canReload = () =>
-    windowMock.dispatchEvent(new Event(CAPTION_RELOAD_REQUEST_EVENT, { cancelable: true }))
+  const requestReload = () => {
+    let retryAfterMs = 0
+    const readCooldown = (event: Event) => {
+      retryAfterMs = (event as CustomEvent<number>).detail
+    }
+    windowMock.addEventListener(CAPTION_RELOAD_COOLDOWN_EVENT, readCooldown)
+    const allowed = windowMock.dispatchEvent(
+      new Event(CAPTION_RELOAD_REQUEST_EVENT, { cancelable: true }),
+    )
+    windowMock.removeEventListener(CAPTION_RELOAD_COOLDOWN_EVENT, readCooldown)
+    return { allowed, retryAfterMs }
+  }
+  const canReload = () => requestReload().allowed
 
   try {
     const fetch429 = async (url: string, retryAfter?: string) => {
@@ -101,9 +113,9 @@ test('429s gate caption reloads using Retry-After seconds, dates, or a 60-second
     await fetch429('https://www.youtube.com/watch', '5')
     expect(canReload()).toBe(true)
     await fetch429(timedTextUrl, '5')
-    expect(canReload()).toBe(false)
+    expect(requestReload()).toEqual({ allowed: false, retryAfterMs: 5_000 })
     now += 4_999
-    expect(canReload()).toBe(false)
+    expect(requestReload()).toEqual({ allowed: false, retryAfterMs: 1 })
     now += 1
     expect(canReload()).toBe(true)
 

@@ -1,5 +1,6 @@
 export const CAPTION_EVENT = 'simple-translator-yt-captions'
 export const CAPTION_RELOAD_REQUEST_EVENT = 'simple-translator-request-caption-reload'
+export const CAPTION_RELOAD_COOLDOWN_EVENT = 'simple-translator-caption-reload-cooldown'
 export const CAPTION_AVAILABILITY_REQUEST_EVENT = 'simple-translator-request-caption-availability'
 export const CAPTION_AVAILABILITY_RESPONSE_EVENT = 'simple-translator-caption-availability'
 

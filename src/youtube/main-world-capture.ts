@@ -2,6 +2,7 @@ import {
   CAPTION_AVAILABILITY_REQUEST_EVENT,
   CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
+  CAPTION_RELOAD_COOLDOWN_EVENT,
   CAPTION_RELOAD_REQUEST_EVENT,
   isTimedTextUrl,
   type CaptionsCapturedEventDetail,
@@ -34,7 +35,11 @@ if (!window.__simpleTranslatorCaptionCaptureInstalled) {
   installFetchCapture()
   installCaptionAvailabilityHandler()
   window.addEventListener(CAPTION_RELOAD_REQUEST_EVENT, (event) => {
-    if (Date.now() < captionCooldownUntil) event.preventDefault()
+    const retryAfterMs = captionCooldownUntil - Date.now()
+    if (retryAfterMs <= 0) return
+
+    event.preventDefault()
+    window.dispatchEvent(new CustomEvent(CAPTION_RELOAD_COOLDOWN_EVENT, { detail: retryAfterMs }))
   })
 }
 
