@@ -1,4 +1,8 @@
-import { CAPTION_EVENT, type CaptionsCapturedEventDetail } from '../youtube/caption-capture-event'
+import {
+  CAPTION_EVENT,
+  CAPTION_RELOAD_REQUEST_EVENT,
+  type CaptionsCapturedEventDetail,
+} from '../youtube/caption-capture-event'
 import {
   findCaptionButton,
   getCaptionAvailability,
@@ -318,6 +322,7 @@ function disposeCaptionReload(run: TranslateRun): void {
 
 async function forceSubtitleReload(run: TranslateRun, reload: CaptionReload): Promise<void> {
   if (run.aborted || reload.aborted) return
+  if (!window.dispatchEvent(new Event(CAPTION_RELOAD_REQUEST_EVENT, { cancelable: true }))) return
 
   const reloadSession = run.session
   const button = findCaptionButton()

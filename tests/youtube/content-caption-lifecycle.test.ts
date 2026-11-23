@@ -3,6 +3,7 @@ import { DEFAULT_SETTINGS, type ExtensionMessage } from '../../src/shared/messag
 import {
   CAPTION_AVAILABILITY_RESPONSE_EVENT,
   CAPTION_EVENT,
+  CAPTION_RELOAD_REQUEST_EVENT,
 } from '../../src/youtube/caption-capture-event'
 
 const HIDER_ID = 'simple-translator-hide-native-captions'
@@ -40,6 +41,35 @@ test('restores native captions after a fatal AI subtitle error without reloading
   }
 })
 
+test('a page cooldown blocks the caption retry and subsequent re-arms, but not manual CC', async () => {
+  const dom = installCaptionPage()
+  let coolingDown = false
+  window.addEventListener(CAPTION_RELOAD_REQUEST_EVENT, (event) => {
+    if (coolingDown) event.preventDefault()
+  })
+
+  try {
+    await import('../../src/content/index.ts?caption-cooldown')
+    await Bun.sleep(0)
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+
+    coolingDown = true
+    dom.fireCaptionRetry()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+
+    dom.captionButton.click()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    dom.navigate('video-2')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+
+    coolingDown = false
+    dom.navigate('video-3')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+  } finally {
+    dom.restore()
+  }
+})
+
 function element() {
   const attributes = new Map<string, string>()
   return {
@@ -54,6 +84,8 @@ function element() {
 
 function installCaptionPage() {
   const nodes = new Map<string, ReturnType<typeof element>>()
+  const timeouts = new Map<number, { callback: () => void; delay: number }>()
+  let nextTimeoutId = 0
   const aiButton = { ...element(), querySelector: () => null }
   nodes.set('simple-translator-toggle', aiButton)
   const statusMessage = element()
@@ -96,8 +128,11 @@ function installCaptionPage() {
         }),
       )
     },
-    setTimeout: () => 1,
-    clearTimeout: () => {},
+    setTimeout(callback: () => void, delay: number) {
+      timeouts.set(++nextTimeoutId, { callback, delay })
+      return nextTimeoutId
+    },
+    clearTimeout: (id: number) => timeouts.delete(id),
     setInterval: () => 1,
     clearInterval: () => {},
     requestAnimationFrame: () => 1,
@@ -135,6 +170,15 @@ function installCaptionPage() {
     aiButton,
     captionButton,
     statusMessage,
+    fireCaptionRetry() {
+      const retry = [...timeouts.values()].find(({ delay }) => delay === 1_000)
+      if (!retry) throw new Error('Caption retry was not scheduled')
+      retry.callback()
+    },
+    navigate(videoId: string) {
+      mocks.location.searchParams.set('v', videoId)
+      window.dispatchEvent(new Event('yt-navigate-finish'))
+    },
     restore() {
       for (const [key, original] of originals) {
         if (original) Object.defineProperty(globalThis, key, original)
