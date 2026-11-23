@@ -17,7 +17,7 @@ test('restores native captions after a fatal AI subtitle error without reloading
     await Bun.sleep(0)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
     expect(dom.aiButton.getAttribute('aria-pressed')).toBe('true')
-    expect(document.getElementById(HIDER_ID)).not.toBeNull()
+    expect(document.getElementById(HIDER_ID)).toBeNull()
 
     window.dispatchEvent(
       new CustomEvent(CAPTION_EVENT, {
@@ -29,6 +29,7 @@ test('restores native captions after a fatal AI subtitle error without reloading
         },
       }),
     )
+    expect(document.getElementById(HIDER_ID)).not.toBeNull()
     await Bun.sleep(0)
 
     expect(dom.statusMessage.textContent).toBe('Unauthorized')
@@ -121,6 +122,7 @@ test('retries an ignored CC enable and only re-enables the current button if it 
     dom.navigate('video-2')
     const previousButton = dom.captionButton
     expect(previousButton.getAttribute('aria-pressed')).toBe('false')
+    dom.reportCcMutation('true')
     dom.replaceCaptionButton(true)
     dom.fireCaptionRetry(250)
     await Bun.sleep(0)
@@ -132,6 +134,34 @@ test('retries an ignored CC enable and only re-enables the current button if it 
     dom.fireCaptionRetry(250)
     await Bun.sleep(0)
     expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+  } finally {
+    dom.restore()
+  }
+})
+
+test('manual native CC off stops AI and cancels a cooldown while waiting for captions', async () => {
+  const dom = installCaptionPage()
+
+  try {
+    await import('../../src/content/index.ts?native-cc-off')
+    await Bun.sleep(0)
+    expect(dom.aiButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(document.getElementById(HIDER_ID)).toBeNull()
+
+    window.addEventListener(CAPTION_RELOAD_REQUEST_EVENT, (event) => {
+      event.preventDefault()
+      window.dispatchEvent(new CustomEvent(CAPTION_RELOAD_COOLDOWN_EVENT, { detail: 60_000 }))
+    })
+    dom.fireCaptionRetry()
+    expect(dom.captionRetriesAt(60_000)).toHaveLength(1)
+    dom.toggleNativeCc()
+    await Bun.sleep(0)
+
+    expect(dom.aiButton.getAttribute('aria-pressed')).toBe('false')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    expect(dom.captionRetriesAt(60_000)).toHaveLength(0)
+    expect(document.getElementById(HIDER_ID)).toBeNull()
   } finally {
     dom.restore()
   }
@@ -152,6 +182,7 @@ function element() {
 function installCaptionPage() {
   const nodes = new Map<string, ReturnType<typeof element>>()
   const timeouts = new Map<number, { callback: () => void; delay: number }>()
+  const ccObservers: MutationCallback[] = []
   let nextTimeoutId = 0
   const aiButton = { ...element(), querySelector: () => null }
   nodes.set('simple-translator-toggle', aiButton)
@@ -219,7 +250,10 @@ function installCaptionPage() {
     document: documentMock,
     location: new URL('https://www.youtube.com/watch?v=video-1'),
     MutationObserver: class {
-      observe() {}
+      constructor(private readonly callback: MutationCallback) {}
+      observe(_target: Node, options: MutationObserverInit) {
+        if (options.attributeFilter?.includes('aria-pressed')) ccObservers.push(this.callback)
+      }
     },
     chrome: {
       runtime: {
@@ -252,6 +286,15 @@ function installCaptionPage() {
     },
     replaceCaptionButton(on: boolean) {
       captionButton = makeCaptionButton(on)
+    },
+    toggleNativeCc() {
+      const oldValue = captionButton.getAttribute('aria-pressed')
+      captionButton.click()
+      this.reportCcMutation(oldValue)
+    },
+    reportCcMutation(oldValue: string | null) {
+      const record = { target: captionButton, oldValue } as unknown as MutationRecord
+      for (const observer of ccObservers) observer([record], {} as MutationObserver)
     },
     statusMessage,
     captionRetriesAt(delayMs: number) {
