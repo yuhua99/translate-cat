@@ -119,7 +119,7 @@ function listenForCaptionCapture(): void {
 
 function handleCaptionCapture(detail: CaptionsCapturedEventDetail): void {
   const run = currentRun
-  if (!run || run.aborted || !run.session || !detail.responseText) return
+  if (!run || run.aborted || !run.session || !detail.responseText.trim()) return
 
   const expectedVideoId = readVideoId()
   if (!run.session.handleCapturedCaptions(detail, expectedVideoId)) return
@@ -241,7 +241,7 @@ function handleMaybeVideoChanged(): void {
     return
   }
 
-  run.session?.resetForNavigation(videoId)
+  if (run.session?.videoId !== videoId) run.session?.resetForNavigation(videoId)
   armCaptionCapture(run)
 }
 
@@ -249,6 +249,10 @@ function armCaptionCapture(run: TranslateRun): void {
   if (run.aborted) return
 
   disposeCaptionReload(run)
+  if (run.session?.segments.length && isCcEnabled()) {
+    void scheduleCurrentWindow(run)
+    return
+  }
   const reload = new CaptionReload()
   run.captionReload = reload
   showNativeCaptions()
@@ -272,7 +276,7 @@ function scheduleCaptionReload(
         run.aborted ||
         reload.aborted ||
         !run.active ||
-        (run.session?.track && run.session.segments.length > 0)
+        (run.session?.segments.length && isCcEnabled())
       ) {
         return
       }

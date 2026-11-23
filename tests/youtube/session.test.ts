@@ -34,6 +34,20 @@ function createTranslatorClient(): TranslatorClient & { calls: string[][]; texts
 }
 
 describe('YoutubeSubtitleSession', () => {
+  test('ignores a response with no usable captions', () => {
+    const session = new YoutubeSubtitleSession(settings, createTranslatorClient())
+    expect(
+      session.handleCapturedCaptions(
+        {
+          url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+          responseText: '{"events":[]}',
+        },
+        'video-1',
+      ),
+    ).toBe(false)
+    expect(session.track).toBeUndefined()
+  })
+
   test('parses captured manual captions and translates current window', async () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)

@@ -167,6 +167,42 @@ test('manual native CC off stops AI and cancels a cooldown while waiting for cap
   }
 })
 
+test('empty timedtext still retries, and navigation preserves a capture for the new video', async () => {
+  const dom = installCaptionPage(true)
+  const capture = (videoId: string, responseText: string) =>
+    window.dispatchEvent(
+      new CustomEvent(CAPTION_EVENT, {
+        detail: { url: `https://www.youtube.com/api/timedtext?v=${videoId}&lang=en`, responseText },
+      }),
+    )
+
+  try {
+    await import('../../src/content/index.ts?early-caption')
+    await Bun.sleep(0)
+    capture('video-1', '')
+    dom.fireCaptionRetry()
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('false')
+    dom.fireCaptionRetry(250)
+    await Bun.sleep(0)
+
+    dom.setVideoId('video-2')
+    capture(
+      'video-2',
+      JSON.stringify({ events: [{ tStartMs: 1_000, dDurationMs: 1_000, segs: [{ utf8: 'Hi' }] }] }),
+    )
+    await Bun.sleep(0)
+    expect(dom.translationCount).toBe(1)
+    expect(document.getElementById(HIDER_ID)).not.toBeNull()
+
+    dom.navigate('video-2')
+    expect(dom.captionButton.getAttribute('aria-pressed')).toBe('true')
+    expect(dom.captionRetriesAt(1_000)).toHaveLength(0)
+    expect(document.getElementById(HIDER_ID)).not.toBeNull()
+  } finally {
+    dom.restore()
+  }
+})
+
 function element() {
   const attributes = new Map<string, string>()
   return {
@@ -179,11 +215,12 @@ function element() {
   }
 }
 
-function installCaptionPage() {
+function installCaptionPage(translationSucceeds = false) {
   const nodes = new Map<string, ReturnType<typeof element>>()
   const timeouts = new Map<number, { callback: () => void; delay: number }>()
   const ccObservers: MutationCallback[] = []
   let nextTimeoutId = 0
+  let translationCount = 0
   const aiButton = { ...element(), querySelector: () => null }
   nodes.set('simple-translator-toggle', aiButton)
   const statusMessage = element()
@@ -262,6 +299,13 @@ function installCaptionPage() {
             return { ok: true, settings: { ...DEFAULT_SETTINGS, enabled: true } }
           }
           if (message.type === 'TRANSLATE_SUBTITLE_AI_PROVIDER') {
+            translationCount++
+            if (translationSucceeds) {
+              return {
+                ok: true,
+                translations: message.items.map(({ id, text }) => ({ id, text })),
+              }
+            }
             return { ok: false, fatal: true, error: 'Unauthorized' }
           }
           return { ok: true }
@@ -278,6 +322,9 @@ function installCaptionPage() {
   })
   return {
     aiButton,
+    get translationCount() {
+      return translationCount
+    },
     get captionButton() {
       return captionButton
     },
@@ -307,8 +354,11 @@ function installCaptionPage() {
       timeouts.delete(id)
       callback()
     },
-    navigate(videoId: string) {
+    setVideoId(videoId: string) {
       mocks.location.searchParams.set('v', videoId)
+    },
+    navigate(videoId: string) {
+      this.setVideoId(videoId)
       window.dispatchEvent(new Event('yt-navigate-finish'))
     },
     restore() {

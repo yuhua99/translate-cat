@@ -82,6 +82,19 @@ test('fetch and XHR capture 2xx responses and skip other response bodies', async
   expect(captions.sort()).toEqual(['XHR captions', 'fetch captions'])
 })
 
+test('empty successful timedtext bodies do not emit caption captures', async () => {
+  captions.length = 0
+  for (const body of ['', '  ']) {
+    fetchResponse = new Response(body)
+    expect(await (await windowMock.fetch(timedTextUrl)).text()).toBe(body)
+
+    const xhr = Object.assign(new NativeXhr(), { responseText: body })
+    xhr.open('GET', timedTextUrl)
+    xhr.send()
+  }
+  expect(captions).toEqual([])
+})
+
 test('429s gate caption reloads using Retry-After seconds, dates, or a 60-second default', async () => {
   captions.length = 0
   let now = Date.UTC(2030, 0, 1)

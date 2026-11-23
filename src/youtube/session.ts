@@ -49,7 +49,7 @@ export class YoutubeSubtitleSession {
   handleCapturedCaptions(input: CapturedCaptionResponse, expectedVideoId: string): boolean {
     const parsed = parseCapturedCaptions(input)
 
-    if (parsed.track.videoId !== expectedVideoId) {
+    if (parsed.track.videoId !== expectedVideoId || parsed.segments.length === 0) {
       return false
     }
 
