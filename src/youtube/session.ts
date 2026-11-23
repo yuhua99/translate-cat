@@ -49,24 +49,17 @@ export class YoutubeSubtitleSession {
   handleCapturedCaptions(input: CapturedCaptionResponse, expectedVideoId: string): boolean {
     const parsed = parseCapturedCaptions(input)
 
-    if (parsed.track.videoId !== expectedVideoId) {
-      return false
-    }
+    if (parsed.track.videoId !== expectedVideoId) return false
 
-    if (this.videoId && this.videoId !== parsed.track.videoId) {
-      this.resetForNavigation(parsed.track.videoId)
-    }
+    const sameTrack =
+      this.videoId === parsed.track.videoId && this.track?.trackId === parsed.track.trackId
+    const hasCaptions = parsed.segments.length > 0
+    if (!hasCaptions && (!this.track || sameTrack)) return false
 
-    if (
-      this.videoId === parsed.track.videoId &&
-      this.track?.trackId === parsed.track.trackId &&
-      sameSegments(this.segments, parsed.segments)
-    ) {
-      return true
-    }
+    if (sameTrack && sameSegments(this.segments, parsed.segments)) return true
 
     this.videoId = parsed.track.videoId
-    this.track = parsed.track
+    this.track = hasCaptions ? parsed.track : undefined
     this.segments = inferSegmentEndTimes(parsed.segments)
     this.abortController.abort()
     this.abortController = new AbortController()
@@ -74,7 +67,7 @@ export class YoutubeSubtitleSession {
     this.windowsInFlight.clear()
     this.windowsCompleted.clear()
     this.windowsFailed.clear()
-    return true
+    return hasCaptions
   }
 
   pendingSegmentAt(currentTimeMs: number): CaptionSegment | undefined {

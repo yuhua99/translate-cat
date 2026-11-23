@@ -8,7 +8,11 @@ import {
   type MessageResponse,
   type SettingsResponse,
 } from '../shared/messages'
-import { findCaptionButton, getCaptionAvailability } from './caption-availability'
+import {
+  findCaptionButton,
+  getCaptionAvailability,
+  waitForCaptionAvailability,
+} from './caption-availability'
 
 function sendMessage<TResponse extends ExtensionResponse>(
   message: ExtensionMessage,
@@ -70,11 +74,7 @@ function createToggleButton(): HTMLButtonElement {
   return button
 }
 
-async function resolveToggleState(captionButton: HTMLButtonElement): Promise<ToggleState> {
-  if ((await getCaptionAvailability(captionButton)) !== 'available') {
-    return { kind: 'unavailable', reason: chrome.i18n.getMessage('captionsNotProvided') }
-  }
-
+async function resolveToggleState(): Promise<ToggleState> {
   const validation = await sendMessage<MessageResponse>({ type: 'VALIDATE_ACTIVE_PROVIDER' })
   if (!validation.ok) return { kind: 'unavailable', reason: validation.error }
 
@@ -163,7 +163,7 @@ export async function syncTranslateToggle(): Promise<void> {
       return
     }
 
-    const state = await resolveToggleState(captionButton)
+    const availability = await getCaptionAvailability(captionButton).catch(() => 'not-ready')
     if (sequence !== syncSequence) return
 
     let button = document.getElementById(BUTTON_ID) as HTMLButtonElement | null
@@ -175,7 +175,21 @@ export async function syncTranslateToggle(): Promise<void> {
       parent.insertBefore(button, captionButton)
     }
 
-    applyToggleState(button, state)
+    if (availability !== 'available') {
+      applyToggleState(button, {
+        kind: 'unavailable',
+        reason: chrome.i18n.getMessage('captionsNotProvided'),
+      })
+      if (
+        availability === 'unavailable' ||
+        (await waitForCaptionAvailability()) !== 'available' ||
+        sequence !== syncSequence
+      )
+        return
+    }
+
+    const state = await resolveToggleState()
+    if (sequence === syncSequence) applyToggleState(button, state)
   } catch (error) {
     console.error('Failed to sync AI translate toggle', error)
   }

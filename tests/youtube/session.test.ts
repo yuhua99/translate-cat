@@ -34,6 +34,20 @@ function createTranslatorClient(): TranslatorClient & { calls: string[][]; texts
 }
 
 describe('YoutubeSubtitleSession', () => {
+  test('ignores a response with no usable captions', () => {
+    const session = new YoutubeSubtitleSession(settings, createTranslatorClient())
+    expect(
+      session.handleCapturedCaptions(
+        {
+          url: 'https://www.youtube.com/api/timedtext?v=video-1&lang=en',
+          responseText: '{"events":[]}',
+        },
+        'video-1',
+      ),
+    ).toBe(false)
+    expect(session.track).toBeUndefined()
+  })
+
   test('parses captured manual captions and translates current window', async () => {
     const client = createTranslatorClient()
     const session = new YoutubeSubtitleSession(settings, client)
@@ -64,6 +78,48 @@ describe('YoutubeSubtitleSession', () => {
       },
     ])
   })
+
+  test.each([
+    ['lang=fr', ''],
+    ['lang=en&name=Alternate', '{"events":[]}'],
+    ['lang=en&tlang=fr', '{'],
+  ])(
+    'only preserves existing captions when unusable responses are for the same track (%s)',
+    async (query, responseText) => {
+      const client = createTranslatorClient()
+      const session = new YoutubeSubtitleSession(settings, client)
+      const url = 'https://www.youtube.com/api/timedtext?v=video-1'
+      session.handleCapturedCaptions(
+        {
+          url: `${url}&lang=en&expire=1`,
+          responseText:
+            '{"events":[{"tStartMs":1000,"dDurationMs":1000,"segs":[{"utf8":"Hello"}]}]}',
+        },
+        'video-1',
+      )
+      await session.ensureTranslations(1000, true)
+      const signal = session.abortController.signal
+      const cues = session.translatedCues
+      expect(cues).toHaveLength(1)
+
+      expect(
+        session.handleCapturedCaptions({ url: `${url}&lang=en&expire=2`, responseText }, 'video-1'),
+      ).toBe(false)
+      expect(session.translatedCues).toBe(cues)
+      expect(signal.aborted).toBe(false)
+
+      expect(
+        session.handleCapturedCaptions({ url: `${url}&${query}`, responseText }, 'video-1'),
+      ).toBe(false)
+      expect(signal.aborted).toBe(true)
+      expect(session.track).toBeUndefined()
+      expect(session.segments).toEqual([])
+      expect(session.translatedCues).toEqual([])
+      expect(session.windowsCompleted.size).toBe(0)
+      await session.ensureTranslations(1000, true)
+      expect(client.calls).toHaveLength(1)
+    },
+  )
 
   test('merges ASR captions using the captured language code', async () => {
     const client = createTranslatorClient()

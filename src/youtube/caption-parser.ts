@@ -25,7 +25,11 @@ export function parseCapturedCaptions(input: CapturedCaptionResponse): ParsedCap
   }
 
   if (response.startsWith('{')) {
-    return { track, segments: parseJson3(response, track) }
+    try {
+      return { track, segments: parseJson3(response, track) }
+    } catch {
+      return { track, segments: [] }
+    }
   }
 
   if (response.startsWith('WEBVTT') || response.includes('-->')) {
@@ -42,10 +46,11 @@ function createTrack(url: string): CaptionTrack {
   const languageCode = parsedUrl.searchParams.get('lang') ?? 'unknown'
   const name = parsedUrl.searchParams.get('name') ?? ''
   const mode: CaptionMode = parsedUrl.searchParams.get('kind') === 'asr' ? 'asr' : 'manual'
+  const translatedLanguage = parsedUrl.searchParams.get('tlang')
 
   return {
     videoId,
-    trackId: `${languageCode}:${name}:${mode}`,
+    trackId: `${languageCode}:${name}:${mode}${translatedLanguage ? `:${translatedLanguage}` : ''}`,
     languageCode,
     mode,
   }
